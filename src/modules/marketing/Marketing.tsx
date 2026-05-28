@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, MessageSquare, Plus, Send, Copy } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { PageHeader, Button, Badge, Card, Tabs } from '@/components/ui/primitives';
+import { PageHeader, Button, Badge, Tabs } from '@/components/ui/primitives';
 import { SimpleTable, MiniStat } from '@/components/tables/SimpleTable';
 import type { Column } from '@/components/tables/SimpleTable';
 import { Modal } from '@/components/ui/Modal';
@@ -171,15 +171,17 @@ const TEMPLATE_LIST = [
   { name:'Re-engagement', type:'email', uses:5 }, { name:'Review Request', type:'sms', uses:33 },
 ];
 function TemplatesTab() {
+  const pushToast = useStore(s => s.pushToast);
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {TEMPLATE_LIST.map(t => (
-        <Card key={t.name} className="cursor-pointer p-4 transition-colors hover:border-brand/40">
+        <div key={t.name} className="rounded-xl border border-line bg-surface shadow-card cursor-pointer p-4 transition-colors hover:border-brand/40"
+          onClick={() => pushToast({ title: t.name, description: 'Template editing opens here in the live product (demo only).', variant: 'info' })}>
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand">{t.type==='email'?<Mail size={16}/>:<MessageSquare size={16}/>}</span>
             <div><p className="text-sm font-semibold text-ink">{t.name}</p><p className="text-xs text-ink-subtle">{t.uses} uses</p></div>
           </div>
-        </Card>
+        </div>
       ))}
     </div>
   );

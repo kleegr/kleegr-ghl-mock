@@ -25,11 +25,12 @@ import {
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Button, Badge, Avatar, Tabs } from '@/components/ui/primitives';
+import { Modal } from '@/components/ui/Modal';
 import type { Channel, Conversation, Contact, Message } from '@/types';
 import { cx, fullName, relativeTime, dateLabel, userById } from '@/utils';
 import { ConvFilter, FILTER_TABS, CHANNEL_LABEL } from './utils';
 
-// ─── Channel icon helper ───────────────────────────────────────────────────
+// --- Channel icon helper ---------------------------------------------------
 
 const CHANNEL_ICON_MAP: Record<Channel, React.ElementType> = {
   sms: MessageSquare,
@@ -56,7 +57,7 @@ function ChannelIcon({ channel }: { channel: Channel }) {
   return <Icon size={12} className="shrink-0 text-ink-subtle" aria-hidden />;
 }
 
-// ─── Conversation list item ────────────────────────────────────────────────
+// --- Conversation list item ------------------------------------------------
 
 interface ListItemProps {
   conv: Conversation;
@@ -110,7 +111,7 @@ function ConvListItem({ conv, contact, lastMessage, isSelected, onClick }: ListI
   );
 }
 
-// ─── Message bubble ────────────────────────────────────────────────────────
+// --- Message bubble --------------------------------------------------------
 
 function MessageBubble({ msg }: { msg: Message }) {
   const isOut = msg.direction === 'outbound';
@@ -142,7 +143,7 @@ function MessageBubble({ msg }: { msg: Message }) {
   );
 }
 
-// ─── Reply composer ────────────────────────────────────────────────────────
+// --- Reply composer --------------------------------------------------------
 
 const AI_REPLY_SUGGESTION =
   "Thanks for reaching out! I'd be happy to help. Could you share a little more about what you're looking for so I can point you in the right direction?";
@@ -153,6 +154,7 @@ interface ComposerProps {
 
 function ReplyComposer({ conversationId }: ComposerProps) {
   const sendMessage = useStore((s) => s.sendMessage);
+  const pushToast = useStore((s) => s.pushToast);
   const [text, setText] = useState('');
   const [aiUsed, setAiUsed] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -201,6 +203,7 @@ function ReplyComposer({ conversationId }: ComposerProps) {
           <button
             type="button"
             title="Attach file (demo)"
+            onClick={() => pushToast({ title: 'Attachments', description: 'File attachments are available in the live product (demo only).', variant: 'info' })}
             className="rounded p-1.5 text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink"
           >
             <Paperclip size={14} aria-hidden />
@@ -208,6 +211,7 @@ function ReplyComposer({ conversationId }: ComposerProps) {
           <button
             type="button"
             title="Emoji (demo)"
+            onClick={() => pushToast({ title: 'Emoji picker', description: 'The emoji picker is available in the live product (demo only).', variant: 'info' })}
             className="rounded p-1.5 text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink"
           >
             <Smile size={14} aria-hidden />
@@ -241,7 +245,7 @@ function ReplyComposer({ conversationId }: ComposerProps) {
   );
 }
 
-// ─── Contact context panel ─────────────────────────────────────────────────
+// --- Contact context panel -------------------------------------------------
 
 function ContextDetail({
   icon,
@@ -439,7 +443,124 @@ function ContactContextPanel({ contactId }: ContextPanelProps) {
   );
 }
 
-// ─── Main Conversations component ─────────────────────────────────────────
+// --- New Message modal (demo-safe) ----------------------------------------
+
+function NewMessageModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const contacts = useStore((s) => s.contacts);
+  const pushToast = useStore((s) => s.pushToast);
+
+  const [channel, setChannel] = useState<'sms' | 'email' | 'webchat'>('sms');
+  const [contactId, setContactId] = useState('');
+  const [body, setBody] = useState('');
+
+  // Reset fields each time the modal opens
+  useEffect(() => {
+    if (open) {
+      setChannel('sms');
+      setContactId(contacts[0]?.id ?? '');
+      setBody('');
+    }
+  }, [open, contacts]);
+
+  const recipient = contacts.find((c) => c.id === contactId);
+  const canSend = !!recipient && body.trim().length > 0;
+
+  const handleSend = () => {
+    if (!canSend) return;
+    pushToast({
+      title: 'Message sent (demo)',
+      description: `Your ${CHANNEL_LABEL[channel as Channel]} to ${fullName(recipient!)} would be delivered in the live product.`,
+      variant: 'success',
+    });
+    onClose();
+  };
+
+  const fieldCls =
+    'w-full rounded-lg border border-line bg-surface-sunken px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30';
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="New Message"
+      size="md"
+      footer={
+        <>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button size="sm" disabled={!canSend} onClick={handleSend}>
+            <Send size={13} aria-hidden />
+            Send
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-ink-muted">Channel</label>
+          <div className="flex gap-2">
+            {([
+              { id: 'sms', label: 'SMS', Icon: MessageSquare },
+              { id: 'email', label: 'Email', Icon: Mail },
+              { id: 'webchat', label: 'Web Chat', Icon: Globe },
+            ] as const).map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setChannel(id)}
+                className={cx(
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors',
+                  channel === id
+                    ? 'border-brand bg-brand-soft text-brand'
+                    : 'border-line text-ink-muted hover:border-brand/40 hover:text-ink',
+                )}
+                aria-pressed={channel === id}
+              >
+                <Icon size={13} aria-hidden /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-ink-muted">To</label>
+          <select
+            value={contactId}
+            onChange={(e) => setContactId(e.target.value)}
+            className={fieldCls}
+            aria-label="Recipient"
+          >
+            {contacts.length === 0 && <option value="">No contacts</option>}
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {fullName(c)} {channel === 'email' ? `· ${c.email}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-ink-muted">Message</label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={4}
+            placeholder="Write your message…"
+            className={cx(fieldCls, 'resize-none')}
+            aria-label="Message body"
+          />
+        </div>
+
+        <p className="rounded-lg bg-surface-sunken px-3 py-2 text-[11px] text-ink-subtle">
+          Demo mode — no real message is sent. This previews the compose experience only.
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+// --- Main Conversations component -----------------------------------------
 
 export function Conversations() {
   const conversations = useStore((s) => s.conversations);
@@ -452,6 +573,7 @@ export function Conversations() {
     conversations[0]?.id ?? null,
   );
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
+  const [newMsgOpen, setNewMsgOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Pre-compute last message per conversation for the list
@@ -527,7 +649,7 @@ export function Conversations() {
               Unified inbox — SMS, Email, Chat, Social, Calls
             </p>
           </div>
-          <Button size="sm" variant="secondary">
+          <Button size="sm" variant="secondary" onClick={() => setNewMsgOpen(true)}>
             <MessageSquare size={13} aria-hidden />
             New Message
           </Button>
@@ -547,7 +669,7 @@ export function Conversations() {
         data-tour="conversations.inbox"
         className="flex min-h-0 flex-1 overflow-hidden"
       >
-        {/* LEFT pane — conversation list */}
+        {/* LEFT pane -- conversation list */}
         <div
           data-tour="conversations.list"
           className={cx(
@@ -573,7 +695,7 @@ export function Conversations() {
           )}
         </div>
 
-        {/* CENTER pane — thread + composer */}
+        {/* CENTER pane -- thread + composer */}
         <div
           className={cx(
             'flex min-w-0 flex-1 flex-col min-h-0',
@@ -627,7 +749,7 @@ export function Conversations() {
                 </div>
               </div>
 
-              {/* Reply composer — wired to sendMessage() */}
+              {/* Reply composer -- wired to sendMessage() */}
               <ReplyComposer conversationId={selectedConv.id} />
             </>
           ) : (
@@ -640,7 +762,7 @@ export function Conversations() {
           )}
         </div>
 
-        {/* RIGHT pane — contact context (xl+ only) */}
+        {/* RIGHT pane -- contact context (xl+ only) */}
         <div
           className={cx(
             'hidden w-56 xl:block',
@@ -652,6 +774,8 @@ export function Conversations() {
           )}
         </div>
       </div>
+
+      <NewMessageModal open={newMsgOpen} onClose={() => setNewMsgOpen(false)} />
     </div>
   );
 }

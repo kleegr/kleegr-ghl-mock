@@ -10,7 +10,7 @@ import { useStore } from '@/store/useStore';
 import { cx, relativeTime, initials } from '@/utils';
 import { kleegrTheme } from '@/theme/tokens';
 
-// ─── close when clicking outside ───
+// --- close when clicking outside ---
 function useClickOutside(
   ref: React.RefObject<HTMLElement | null>,
   cb: () => void,
@@ -85,7 +85,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   const me     = users.find((u) => u.isCurrentUser) ?? users[0];
   const unread = notifications.filter((n) => !n.read).length;
 
-  // ── dropdown open flags ──
+  // -- dropdown open flags --
   const [searchOpen,   setSearchOpen]   = useState(false);
   const [query,        setQuery]        = useState('');
   const [notifOpen,    setNotifOpen]    = useState(false);
@@ -93,10 +93,10 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   const [userOpen,     setUserOpen]     = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
-  // ── local selected account (cosmetic only) ──
+  // -- local selected account (cosmetic only) --
   const [selectedAcct, setSelectedAcct] = useState(DEMO_ACCOUNTS[0]);
 
-  // ── refs for click-outside ──
+  // -- refs for click-outside --
   const notifRef    = useRef<HTMLDivElement>(null);
   const acctRef     = useRef<HTMLDivElement>(null);
   const userRef     = useRef<HTMLDivElement>(null);
@@ -111,7 +111,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
 
   const closeSearch = () => { setSearchOpen(false); setQuery(''); };
 
-  // ── Search: build grouped results ──
+  // -- Search: build grouped results --
   const q        = query.trim().toLowerCase();
   const hasQuery = q.length >= 2;
 
@@ -164,7 +164,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
             month: 'short',
             day: 'numeric',
           }),
-          path: '/appointments',
+          path: '/calendars',
         }))
     : [];
 
@@ -178,10 +178,10 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
 
   const totalResults = grouped.reduce((acc, g) => acc + g.items.length, 0);
 
-  // ── Quick-add menu items ──
+  // -- Quick-add menu items --
   const quickAddItems = [
     { label: 'Add Contact',        Icon: UserPlus,    path: '/contacts'     },
-    { label: 'Book Appointment',   Icon: Calendar,    path: '/appointments' },
+    { label: 'Book Appointment',   Icon: Calendar,    path: '/calendars'    },
     { label: 'Create Opportunity', Icon: Briefcase,   path: '/opportunities'},
     { label: 'Create Invoice',     Icon: FileText,    path: '/payments'     },
     { label: 'New Task',           Icon: CheckSquare, path: '/tasks'        },
@@ -192,7 +192,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
       className="relative z-30 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4"
       data-tour="topbar"
     >
-      {/* ── Mobile hamburger ── */}
+      {/* -- Mobile hamburger -- */}
       <button
         className="flex items-center justify-center rounded-lg p-1.5 text-ink-muted hover:bg-surface-sunken hover:text-ink lg:hidden"
         onClick={onOpenMobileNav}
@@ -202,7 +202,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         <Menu size={20} />
       </button>
 
-      {/* ── Account switcher ── */}
+      {/* -- Account switcher -- */}
       <div className="relative" ref={acctRef}>
         <button
           onClick={() => setAcctOpen((v) => !v)}
@@ -276,7 +276,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
 
       <div className="flex-1" />
 
-      {/* ── Global search ── */}
+      {/* -- Global search -- */}
       <div className="relative" ref={searchRef}>
         {!searchOpen ? (
           <button
@@ -375,7 +375,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         )}
       </div>
 
-      {/* ── Quick Add ── */}
+      {/* -- Quick Add -- */}
       <div className="relative" ref={quickAddRef}>
         <button
           onClick={() => setQuickAddOpen((v) => !v)}
@@ -420,7 +420,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         )}
       </div>
 
-      {/* ── Mode toggle: Demo / Tutorial ── */}
+      {/* -- Mode toggle: Demo / Tutorial -- */}
       <div
         data-tour="topbar.modeToggle"
         className="hidden items-center rounded-lg border border-line bg-surface-sunken p-0.5 sm:flex"
@@ -454,7 +454,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         ))}
       </div>
 
-      {/* ── Reset Demo ── */}
+      {/* -- Reset Demo -- */}
       <button
         onClick={resetDemo}
         data-tour="topbar.resetDemo"
@@ -465,7 +465,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         <span className="hidden sm:block">Reset Demo</span>
       </button>
 
-      {/* ── Guides launcher ── */}
+      {/* -- Guides launcher -- */}
       <button
         onClick={() => navigate('/guides')}
         data-tour="topbar.guides"
@@ -475,7 +475,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         <BookOpen size={18} />
       </button>
 
-      {/* ── Notifications ── */}
+      {/* -- Notifications -- */}
       <div className="relative" ref={notifRef}>
         <button
           onClick={() => setNotifOpen((v) => !v)}
@@ -582,7 +582,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         )}
       </div>
 
-      {/* ── User avatar / menu ── */}
+      {/* -- User avatar / menu -- */}
       <div className="relative" ref={userRef}>
         <button
           onClick={() => setUserOpen((v) => !v)}
