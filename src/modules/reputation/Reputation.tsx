@@ -224,11 +224,14 @@ export function Reputation() {
             </Card>
           )}
           {filtered.map((r) => (
-            <Card
+            <div
               key={r.id}
               data-tour="reputation.reviewRow"
-              className="cursor-pointer p-4 transition-colors hover:bg-surface-sunken"
+              className="rounded-xl border border-line bg-surface shadow-card cursor-pointer p-4 transition-colors hover:bg-surface-sunken"
               onClick={() => { setDetailReview(r); setReplyText(''); }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter') { setDetailReview(r); setReplyText(''); } }}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -260,7 +263,7 @@ export function Reputation() {
                   <span className="font-semibold text-ink">Your reply: </span>{r.replyText}
                 </div>
               )}
-            </Card>
+            </div>
           ))}
         </div>
       </div>
