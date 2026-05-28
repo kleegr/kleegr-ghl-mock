@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { LayoutTemplate, Globe, FileText, ClipboardList, Plus, MousePointerClick, Eye } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { PageHeader, Button, Badge, Card, Tabs } from '@/components/ui/primitives';
+import { PageHeader, Button, Badge, Tabs } from '@/components/ui/primitives';
 import { MiniStat } from '@/components/tables/SimpleTable';
 import { Modal } from '@/components/ui/Modal';
 
@@ -87,7 +87,7 @@ function BuilderPreview({ item, onClose }: { item: SiteItem|null; onClose: () =>
         )}
         <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-sunken p-3 text-sm text-ink-muted">
           <Eye size={14} className="shrink-0 text-brand"/>
-          <span>Read-only preview. Full editing is available in the live GoHighLevel builder.</span>
+          <span>Read-only preview. Full editing is available in the Kleegr site builder.</span>
         </div>
       </div>
     </Modal>
@@ -95,10 +95,12 @@ function BuilderPreview({ item, onClose }: { item: SiteItem|null; onClose: () =>
 }
 
 function FormsTab() {
+  const pushToast = useStore(s => s.pushToast);
   return (
     <div data-tour="sites.formsSurveys" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {FORMS.map(f => (
-        <Card key={f.id} data-tour="sites.card" className="cursor-pointer p-4 transition-colors hover:border-brand/40">
+        <div key={f.id} data-tour="sites.card" className="rounded-xl border border-line bg-surface shadow-card cursor-pointer p-4 transition-colors hover:border-brand/40"
+          onClick={() => pushToast({ title: `${f.name}`, description: 'Form/survey editing opens here in the live product (demo only).', variant: 'info' })}>
           <div className="flex items-start justify-between">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand">{f.type==='Form'?<FileText size={16}/>:<ClipboardList size={16}/>}</span>
             <Badge tone={f.status==='Active'?'good':'neutral'}>{f.status}</Badge>
@@ -110,7 +112,7 @@ function FormsTab() {
             <div><p className="font-bold text-ink">{f.convRate}</p><p className="text-ink-subtle">Conv. rate</p></div>
             <div><p className="font-bold text-ink">{f.lastSub}</p><p className="text-ink-subtle">Last sub.</p></div>
           </div>
-        </Card>
+        </div>
       ))}
     </div>
   );
