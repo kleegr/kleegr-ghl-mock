@@ -171,7 +171,7 @@ export function Sites() {
     const isFunnel = item.type==='Funnel';
     const sub      = isFunnel ? `${(item as typeof FUNNELS[0]).steps} steps · Funnel` : `${(item as typeof WEBSITES[0]).pages} pages · Website`;
     return (
-      <Card key={item.id} data-tour="sites.card" className="cursor-pointer p-4 transition-colors hover:border-brand/40" onClick={() => setSelectedItem(item)}>
+      <div key={item.id} data-tour="sites.card" className="rounded-xl border border-line bg-surface shadow-card cursor-pointer p-4 transition-colors hover:border-brand/40" onClick={() => setSelectedItem(item)}>
         <div className="flex items-start justify-between">
           <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-soft text-brand">{isFunnel?<LayoutTemplate size={18}/>:<Globe size={18}/>}</span>
           <Badge tone={item.status==='Published'?'good':'neutral'}>{item.status}</Badge>
@@ -183,7 +183,7 @@ export function Sites() {
           <span className="font-bold text-good">{convRate}</span>
         </div>
         <p className="mt-1 text-[10px] text-ink-subtle">Updated {item.lastUpdated}</p>
-      </Card>
+      </div>
     );
   };
 
