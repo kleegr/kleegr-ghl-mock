@@ -29,6 +29,14 @@ export default {
         good: 'rgb(var(--good) / <alpha-value>)',
         warn: 'rgb(var(--warn) / <alpha-value>)',
         bad: 'rgb(var(--bad) / <alpha-value>)',
+        ai: {
+          DEFAULT: 'rgb(var(--ai) / <alpha-value>)',
+          soft: 'rgb(var(--ai-soft) / <alpha-value>)',
+        },
+        banner: {
+          DEFAULT: 'rgb(var(--banner) / <alpha-value>)',
+          accent: 'rgb(var(--banner-accent) / <alpha-value>)',
+        },
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],

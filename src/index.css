@@ -16,12 +16,16 @@
   --surface-raised: 255 255 255;
   --surface-sunken: 247 248 250;
   --line: 228 231 236;
-  --sidebar: 15 23 42;
-  --sidebar-fg: 203 213 225;
+  --sidebar: 255 255 255;
+  --sidebar-fg: 71 84 103;
   --sidebar-active: 31 111 235;
   --good: 18 152 99;
   --warn: 217 145 17;
   --bad: 217 54 62;
+  --ai: 124 58 237;
+  --ai-soft: 237 233 254;
+  --banner: 11 31 64;
+  --banner-accent: 56 189 248;
   --font-sans: 'Plus Jakarta Sans';
   --font-display: 'Plus Jakarta Sans';
 }

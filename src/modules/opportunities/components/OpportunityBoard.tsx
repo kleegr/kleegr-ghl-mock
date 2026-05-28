@@ -54,12 +54,13 @@ export function OpportunityBoard({
         className="flex h-full gap-3 overflow-x-auto p-4"
         data-tour="opportunities.board"
       >
-        {sortedStages.map((stage) => {
+        {sortedStages.map((stage, idx) => {
           const stageOpps = opportunities.filter((o) => o.stageId === stage.id);
           return (
             <StageColumn
               key={stage.id}
               stage={stage}
+              index={idx}
               opportunities={stageOpps}
               contacts={contacts}
               users={users}
