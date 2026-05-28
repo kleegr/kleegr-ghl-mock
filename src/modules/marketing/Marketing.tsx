@@ -33,7 +33,7 @@ function CampaignWizard({ open, onClose, pushToast }: { open: boolean; onClose: 
   const [w, setW] = useState<WizardState>(DEFAULTS);
   const upd = (p: Partial<WizardState>) => setW(s => ({ ...s, ...p }));
   const close = () => { onClose(); setW(DEFAULTS); };
-  const submit = () => { pushToast({ title: 'Demo: campaign queued', description: `\"${w.name||'Untitled'}\" added (demo only — nothing sent).`, variant: 'success' }); close(); };
+  const submit = () => { pushToast({ title: 'Demo: campaign queued', description: `"${w.name||'Untitled'}" added (demo only — nothing sent).`, variant: 'success' }); close(); };
   return (
     <Modal open={open} onClose={close} size="lg" title="New Campaign"
       footer={
