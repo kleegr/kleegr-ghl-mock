@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Menu, Search, Bell, RotateCcw, BookOpen,
   ChevronDown, X, User, LogOut, Settings, ChevronRight,
+  Plus, UserPlus, CalendarPlus, Target, CheckSquare, FileText,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
@@ -48,7 +49,11 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   const markAllRead = useStore((s) => s.markAllNotificationsRead);
   const users = useStore((s) => s.users);
   const contacts = useStore((s) => s.contacts);
+  const conversations = useStore((s) => s.conversations);
   const opportunities = useStore((s) => s.opportunities);
+  const tasks = useStore((s) => s.tasks);
+  const appointments = useStore((s) => s.appointments);
+  const pushToast = useStore((s) => s.pushToast);
   const navigate = useNavigate();
 
   const me = users.find((u) => u.isCurrentUser) ?? users[0];
@@ -59,19 +64,23 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [acctOpen, setAcctOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const acctRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const quickAddRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(notifRef, () => setNotifOpen(false));
   useClickOutside(acctRef, () => setAcctOpen(false));
   useClickOutside(userRef, () => setUserOpen(false));
   useClickOutside(searchRef, () => setSearchOpen(false));
+  useClickOutside(quickAddRef, () => setQuickAddOpen(false));
 
   const closeSearch = () => { setSearchOpen(false); setQuery(''); };
 
+  // ── Enhanced search: contacts + deals + tasks + conversations ──
   const results =
     query.trim().length >= 2
       ? [
@@ -81,7 +90,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
                 .toLowerCase()
                 .includes(query.toLowerCase()),
             )
-            .slice(0, 4)
+            .slice(0, 3)
             .map((c) => ({
               kind: 'Contact',
               label: `${c.firstName} ${c.lastName}`,
@@ -97,8 +106,43 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
               sub: `$${o.monetaryValue.toLocaleString()}`,
               path: '/opportunities',
             })),
-        ].slice(0, 6)
+          ...tasks
+            .filter((t) => t.title.toLowerCase().includes(query.toLowerCase()))
+            .slice(0, 2)
+            .map((t) => ({
+              kind: 'Task',
+              label: t.title,
+              sub: t.status === 'open' ? t.priority + ' priority' : 'completed',
+              path: '/tasks',
+            })),
+          ...(() => {
+            const q = query.toLowerCase();
+            return conversations
+              .filter((conv) => {
+                const contact = contacts.find((c) => c.id === conv.contactId);
+                return contact && `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(q);
+              })
+              .slice(0, 2)
+              .map((conv) => {
+                const contact = contacts.find((c) => c.id === conv.contactId);
+                return {
+                  kind: 'Inbox',
+                  label: contact ? `${contact.firstName} ${contact.lastName}` : 'Conversation',
+                  sub: conv.channel + (conv.unread ? ' · unread' : ''),
+                  path: '/conversations',
+                };
+              });
+          })(),
+        ].slice(0, 7)
       : [];
+
+  const QUICK_ADD_ITEMS = [
+    { icon: UserPlus,    label: 'Add Contact',         path: '/contacts',      toast: 'Opening Contacts…' },
+    { icon: CalendarPlus,label: 'Book Appointment',    path: '/calendars',     toast: 'Opening Calendar…' },
+    { icon: Target,      label: 'Create Opportunity',  path: '/opportunities', toast: 'Opening Pipeline…' },
+    { icon: CheckSquare, label: 'New Task',             path: '/tasks',         toast: 'Opening Tasks…' },
+    { icon: FileText,    label: 'Create Invoice',       path: null,             toast: 'Invoice created (demo only)' },
+  ];
 
   return (
     <header
@@ -110,6 +154,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         className="flex items-center justify-center rounded-lg p-1.5 text-ink-muted hover:bg-surface-sunken hover:text-ink lg:hidden"
         onClick={onOpenMobileNav}
         aria-label="Open navigation"
+        data-tour="topbar.mobileNav"
       >
         <Menu size={20} />
       </button>
@@ -189,7 +234,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
               <input
                 id="tbsearch"
                 type="text"
-                placeholder="Search contacts, deals…"
+                placeholder="Search contacts, deals, tasks…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
@@ -225,7 +270,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
                         {r.kind}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm text-ink">{r.label}</span>
-                      <span className="text-xs text-ink-subtle">{r.sub}</span>
+                      <span className="shrink-0 text-xs text-ink-subtle">{r.sub}</span>
                     </button>
                   </li>
                 ))}
@@ -239,9 +284,53 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
             )}
             {query.trim().length < 2 && (
               <p className="border-t border-line px-4 py-2.5 text-xs text-ink-subtle">
-                Type at least 2 characters…
+                Search contacts, deals, tasks, inbox…
               </p>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Quick Add */}
+      <div className="relative" ref={quickAddRef}>
+        <button
+          onClick={() => setQuickAddOpen((v) => !v)}
+          data-tour="topbar.quickAdd"
+          className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-ink-muted hover:border-brand/40 hover:bg-brand-soft hover:text-brand"
+          aria-label="Quick add"
+          aria-haspopup="menu"
+          aria-expanded={quickAddOpen}
+        >
+          <Plus size={14} />
+          <span className="hidden sm:block">Add</span>
+        </button>
+
+        {quickAddOpen && (
+          <div
+            className="absolute right-0 top-full mt-1 w-52 rounded-xl border border-line bg-surface shadow-pop"
+            role="menu"
+            aria-label="Quick add actions"
+          >
+            <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-ink-subtle">
+              Quick Add
+            </p>
+            {QUICK_ADD_ITEMS.map((item) => (
+              <button
+                key={item.label}
+                role="menuitem"
+                onClick={() => {
+                  setQuickAddOpen(false);
+                  if (item.path) {
+                    navigate(item.path);
+                  }
+                  pushToast({ title: item.toast, variant: 'info' });
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-ink hover:bg-surface-sunken"
+              >
+                <item.icon size={15} className="shrink-0 text-brand" />
+                {item.label}
+              </button>
+            ))}
           </div>
         )}
       </div>
