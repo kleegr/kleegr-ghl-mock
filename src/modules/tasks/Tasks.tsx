@@ -5,13 +5,13 @@
  * seed data). No real backend, no real API calls, no real PII.
  *
  * Sections:
- *  1. Summary stat cards  (Due Today · Overdue · Open · Completed · High Priority)
- *  2. Filter tabs          (All | My Tasks | Due Today | Overdue | Completed)
+ *  1. Summary stat cards (Due Today / Overdue / Open / Completed / High Priority)
+ *  2. Filter tabs         (All | My Tasks | Due Today | Overdue | Completed)
  *  3. Priority filter pills
- *  4. Grouped task list    (Overdue / Due Today / Upcoming / Completed)
- *  5. Flat list            (for non-grouped tabs)
- *  6. Task detail modal    (full fields + toggle)
- *  7. Add Task modal       (mocked — no addTask store action yet)
+ *  4. Grouped task list   (Overdue / Due Today / Upcoming / Completed)
+ *  5. Flat list           (for non-grouped tabs)
+ *  6. Task detail modal   (full fields + toggle complete/incomplete)
+ *  7. Add Task modal      (mocked — no addTask store action yet)
  *
  * data-tour keys (plan §18):
  *  tasks.page · tasks.addButton · tasks.summary · tasks.filters
@@ -56,7 +56,7 @@ import {
 
 const CURRENT_USER_ID = 'u_me';
 
-type TabId         = 'all' | 'mine' | 'today' | 'overdue' | 'completed';
+type TabId          = 'all' | 'mine' | 'today' | 'overdue' | 'completed';
 type PriorityFilter = 'all' | 'high' | 'medium' | 'low';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -80,10 +80,10 @@ interface SummaryCardProps {
 
 function SummaryCard({ label, value, tone = 'neutral', icon, active, onClick }: SummaryCardProps) {
   const iconCls =
-    tone === 'bad'   ? 'bg-bad/10 text-bad'       :
-    tone === 'warn'  ? 'bg-warn/10 text-warn'      :
-    tone === 'good'  ? 'bg-good/10 text-good'      :
-    tone === 'brand' ? 'bg-brand-soft text-brand'  :
+    tone === 'bad'   ? 'bg-bad/10 text-bad'      :
+    tone === 'warn'  ? 'bg-warn/10 text-warn'     :
+    tone === 'good'  ? 'bg-good/10 text-good'     :
+    tone === 'brand' ? 'bg-brand-soft text-brand' :
                        'bg-surface-sunken text-ink-muted';
 
   return (
@@ -156,8 +156,7 @@ function TaskRow({ task, contactName, assigneeName, onToggle, onClick }: TaskRow
         </p>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className={['text-[11px] font-semibold', dueCls].join(' ')}>
-            {overdue && '⚠ '}
-            {dueDateLabel(task.dueDate, task.status)}
+            {overdue && '⚠ '}{dueDateLabel(task.dueDate, task.status)}
           </span>
           {contactName && (
             <span className="text-[11px] text-ink-subtle">· {contactName}</span>
@@ -165,7 +164,7 @@ function TaskRow({ task, contactName, assigneeName, onToggle, onClick }: TaskRow
         </div>
       </div>
 
-      {/* Priority badge + assignee avatar */}
+      {/* Priority + assignee */}
       <div className="flex shrink-0 items-center gap-2">
         <Badge tone={priorityTone(task.priority)}>{task.priority}</Badge>
         {assigneeName && <Avatar name={assigneeName} size="xs" />}
@@ -207,7 +206,9 @@ function GroupSection({
         className={[
           'flex w-full items-center gap-2 border-b border-line/60 px-4 py-2',
           'text-[11px] font-bold uppercase tracking-wide',
-          collapsible ? 'cursor-pointer hover:bg-surface-sunken' : 'cursor-default bg-surface-sunken/50',
+          collapsible
+            ? 'cursor-pointer hover:bg-surface-sunken'
+            : 'cursor-default bg-surface-sunken/50',
           accentCls,
         ].join(' ')}
       >
@@ -286,7 +287,7 @@ function TaskDetailModal({ task, contacts, users, onClose, onToggle }: TaskDetai
     >
       <div data-tour="tasks.detail" className="space-y-4">
 
-        {/* Header — checkbox + title + badges */}
+        {/* Header */}
         <div className="flex items-start gap-3">
           <button
             type="button"
@@ -318,55 +319,37 @@ function TaskDetailModal({ task, contacts, users, onClose, onToggle }: TaskDetai
         {/* Detail grid */}
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-line bg-surface-sunken/40 px-4 py-3">
           <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-              Due date
-            </dt>
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">Due date</dt>
             <dd className={['mt-0.5 text-sm font-medium', overdue ? 'text-bad' : 'text-ink'].join(' ')}>
               {formatDueDate(task.dueDate)}
             </dd>
           </div>
-
           <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-              Status
-            </dt>
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">Status</dt>
             <dd className="mt-0.5">
-              <Badge tone={done ? 'good' : overdue ? 'bad' : 'neutral'}>
-                {task.status}
-              </Badge>
+              <Badge tone={done ? 'good' : overdue ? 'bad' : 'neutral'}>{task.status}</Badge>
             </dd>
           </div>
-
           {assignee && (
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-                Assignee
-              </dt>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">Assignee</dt>
               <dd className="mt-0.5 flex items-center gap-1.5">
                 <Avatar name={assignee.name} size="xs" />
                 <span className="text-sm text-ink">{assignee.name}</span>
               </dd>
             </div>
           )}
-
           {contact && (
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-                Related contact
-              </dt>
-              <dd className="mt-0.5 text-sm font-medium text-brand">
-                {fullName(contact)}
-              </dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">Related contact</dt>
+              <dd className="mt-0.5 text-sm font-medium text-brand">{fullName(contact)}</dd>
             </div>
           )}
         </dl>
 
-        {/* Notes / description */}
         {task.description && (
           <div>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
-              Notes
-            </p>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">Notes</p>
             <p className="rounded-xl border border-line bg-surface-sunken/40 px-4 py-3 text-sm text-ink">
               {task.description}
             </p>
@@ -400,9 +383,7 @@ function AddTaskModal({ onClose, onSubmit }: AddTaskModalProps) {
       size="sm"
       footer={
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
           <Button
             data-tour="tasks.addSubmit"
             size="sm"
@@ -416,12 +397,8 @@ function AddTaskModal({ onClose, onSubmit }: AddTaskModalProps) {
     >
       <div data-tour="tasks.addModal" className="space-y-4">
 
-        {/* Title */}
         <div>
-          <label
-            htmlFor="new-task-title"
-            className="mb-1 block text-xs font-semibold text-ink"
-          >
+          <label htmlFor="new-task-title" className="mb-1 block text-xs font-semibold text-ink">
             Task title <span className="text-bad">*</span>
           </label>
           <input
@@ -435,12 +412,8 @@ function AddTaskModal({ onClose, onSubmit }: AddTaskModalProps) {
           />
         </div>
 
-        {/* Due date */}
         <div>
-          <label
-            htmlFor="new-task-due"
-            className="mb-1 block text-xs font-semibold text-ink"
-          >
+          <label htmlFor="new-task-due" className="mb-1 block text-xs font-semibold text-ink">
             Due date
           </label>
           <input
@@ -453,14 +426,13 @@ function AddTaskModal({ onClose, onSubmit }: AddTaskModalProps) {
           />
         </div>
 
-        {/* Priority */}
         <div>
           <p className="mb-1.5 text-xs font-semibold text-ink">Priority</p>
           <div className="flex gap-2">
             {(['high', 'medium', 'low'] as const).map((p) => {
               const activeCls =
-                p === 'high'   ? 'border-bad bg-bad/10 text-bad'   :
-                p === 'medium' ? 'border-warn bg-warn/10 text-warn' :
+                p === 'high'   ? 'border-bad bg-bad/10 text-bad'    :
+                p === 'medium' ? 'border-warn bg-warn/10 text-warn'  :
                                  'border-line bg-surface-sunken text-ink';
               return (
                 <button
@@ -481,7 +453,6 @@ function AddTaskModal({ onClose, onSubmit }: AddTaskModalProps) {
           </div>
         </div>
 
-        {/* Demo notice */}
         <p className="rounded-lg border border-line/60 bg-surface-sunken px-3 py-2 text-[11px] text-ink-muted">
           <strong className="text-ink">Demo mode:</strong>{' '}
           Task creation is mocked — no data will be saved to the store.
@@ -492,7 +463,7 @@ function AddTaskModal({ onClose, onSubmit }: AddTaskModalProps) {
   );
 }
 
-// ─── Main Tasks component ─────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function Tasks() {
   const tasks      = useStore((s) => s.tasks);
@@ -506,7 +477,7 @@ export function Tasks() {
   const [selectedTask, setSelectedTask]     = useState<Task | null>(null);
   const [showAddModal, setShowAddModal]     = useState(false);
 
-  // ── Summary counts ─────────────────────────────────────────────────────────
+  // ── Summary counts ────────────────────────────────────────────────────────
   const summary = useMemo(() => ({
     dueToday:     tasks.filter((t) => t.status === 'open' && isDueToday(t.dueDate)).length,
     overdue:      tasks.filter((t) => t.status === 'open' && isOverdue(t.dueDate)).length,
@@ -515,7 +486,7 @@ export function Tasks() {
     highPriority: tasks.filter((t) => t.status === 'open' && t.priority === 'high').length,
   }), [tasks]);
 
-  // ── Tab counts ─────────────────────────────────────────────────────────────
+  // ── Tab counts ────────────────────────────────────────────────────────────
   const tabCounts = useMemo(() => ({
     all:       tasks.length,
     mine:      tasks.filter((t) => t.assigneeId === CURRENT_USER_ID).length,
@@ -524,7 +495,7 @@ export function Tasks() {
     completed: tasks.filter((t) => t.status === 'completed').length,
   }), [tasks]);
 
-  // ── Filtered tasks (flat + base for grouped) ───────────────────────────────
+  // ── Filtered tasks ────────────────────────────────────────────────────────
   const filteredTasks = useMemo(() => {
     let base = tasks;
     switch (activeTab) {
@@ -541,15 +512,15 @@ export function Tasks() {
 
   const isGrouped = activeTab === 'all' || activeTab === 'mine';
 
-  // ── Grouped sub-lists ──────────────────────────────────────────────────────
+  // ── Groups ────────────────────────────────────────────────────────────────
   const groups = useMemo(() => {
     if (!isGrouped) return null;
     const byDue = (a: Task, b: Task) =>
       new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     return {
-      overdue:  filteredTasks.filter((t) => t.status === 'open' && isOverdue(t.dueDate)).sort(byDue),
-      today:    filteredTasks.filter((t) => t.status === 'open' && isDueToday(t.dueDate)).sort(byDue),
-      upcoming: filteredTasks
+      overdue:   filteredTasks.filter((t) => t.status === 'open' && isOverdue(t.dueDate)).sort(byDue),
+      today:     filteredTasks.filter((t) => t.status === 'open' && isDueToday(t.dueDate)).sort(byDue),
+      upcoming:  filteredTasks
         .filter((t) => t.status === 'open' && !isOverdue(t.dueDate) && !isDueToday(t.dueDate))
         .sort(byDue),
       completed: filteredTasks
@@ -558,7 +529,7 @@ export function Tasks() {
     };
   }, [filteredTasks, isGrouped]);
 
-  // ── Toggle handler ─────────────────────────────────────────────────────────
+  // ── Toggle handler ────────────────────────────────────────────────────────
   function handleToggle(taskId: string) {
     const task = tasks.find((t) => t.id === taskId);
     toggleTask(taskId);
@@ -571,7 +542,6 @@ export function Tasks() {
     }
   }
 
-  // ── Tab config ─────────────────────────────────────────────────────────────
   const tabDefs = [
     { id: 'all',       label: 'All Tasks',  count: tabCounts.all },
     { id: 'mine',      label: 'My Tasks',   count: tabCounts.mine },
@@ -600,11 +570,8 @@ export function Tasks() {
         }
       />
 
-      {/* ── Summary stat cards ── */}
-      <div
-        data-tour="tasks.summary"
-        className="flex gap-2 overflow-x-auto px-5 py-4 sm:gap-3"
-      >
+      {/* Summary cards */}
+      <div data-tour="tasks.summary" className="flex gap-2 overflow-x-auto px-5 py-4 sm:gap-3">
         <SummaryCard
           label="Due today"
           value={summary.dueToday}
@@ -645,7 +612,7 @@ export function Tasks() {
         />
       </div>
 
-      {/* ── Filter tabs + priority pills ── */}
+      {/* Filters */}
       <div data-tour="tasks.filters">
         <div className="flex items-center justify-between border-b border-line bg-surface px-5">
           <Tabs
@@ -653,8 +620,7 @@ export function Tasks() {
             active={activeTab}
             onChange={(id) => setActiveTab(id as TabId)}
           />
-          {/* Priority filter pills */}
-          <div className="flex shrink-0 items-center gap-0.5 pl-3 pb-1">
+          <div className="flex shrink-0 items-center gap-0.5 pb-1 pl-3">
             {(['all', 'high', 'medium', 'low'] as const).map((p) => (
               <button
                 key={p}
@@ -674,11 +640,11 @@ export function Tasks() {
         </div>
       </div>
 
-      {/* ── Task list ── */}
+      {/* Task list */}
       <div className="px-5 py-4 pb-10">
         <Card data-tour="tasks.list" className="overflow-hidden">
 
-          {/* GROUPED (All / My Tasks tabs) */}
+          {/* Grouped view */}
           {isGrouped && groups && (
             <>
               <GroupSection
@@ -726,28 +692,20 @@ export function Tasks() {
               {allGroupsEmpty && (
                 <EmptyState
                   icon={<CheckSquare size={32} />}
-                  title={
-                    priorityFilter !== 'all'
-                      ? `No ${priorityFilter}-priority tasks`
-                      : 'All caught up!'
-                  }
-                  body={
-                    priorityFilter !== 'all'
-                      ? 'Try removing the priority filter.'
-                      : 'No tasks match the current view.'
-                  }
+                  title={priorityFilter !== 'all' ? `No ${priorityFilter}-priority tasks` : 'All caught up!'}
+                  body={priorityFilter !== 'all' ? 'Try removing the priority filter.' : 'No tasks match the current view.'}
                 />
               )}
             </>
           )}
 
-          {/* FLAT (Due Today / Overdue / Completed tabs) */}
+          {/* Flat view */}
           {!isGrouped && (
             filteredTasks.length === 0 ? (
               <EmptyState
                 icon={<CheckSquare size={32} />}
                 title={
-                  activeTab === 'today'   ? 'No tasks due today'            :
+                  activeTab === 'today'   ? 'No tasks due today'           :
                   activeTab === 'overdue' ? 'No overdue tasks — nice work!' :
                                            'No completed tasks yet'
                 }
@@ -779,7 +737,6 @@ export function Tasks() {
             )
           )}
 
-          {/* Footer count */}
           {filteredTasks.length > 0 && (
             <div className="border-t border-line/60 px-4 py-2.5">
               <p className="text-[11px] text-ink-subtle">
@@ -792,7 +749,6 @@ export function Tasks() {
         </Card>
       </div>
 
-      {/* ── Task detail modal ── */}
       {selectedTask && (
         <TaskDetailModal
           task={selectedTask}
@@ -803,7 +759,6 @@ export function Tasks() {
         />
       )}
 
-      {/* ── Add task modal ── */}
       {showAddModal && (
         <AddTaskModal
           onClose={() => setShowAddModal(false)}

@@ -1,6 +1,6 @@
 /**
  * tasks/utils.ts — date helpers and display formatters for the Tasks module.
- * Self-contained: no imports from @/utils (only what exists in this module).
+ * Self-contained: no external @/utils imports needed.
  */
 
 const DAY = 86_400_000;
@@ -11,10 +11,7 @@ function startOfDay(date: Date): Date {
   return d;
 }
 
-/**
- * True if the given ISO dueDate falls strictly before today (midnight).
- * Only applies to open tasks; completed tasks are never considered overdue.
- */
+/** True if the ISO dueDate falls strictly before today (midnight). */
 export function isOverdue(dueDate: string): boolean {
   const today = startOfDay(new Date());
   const due   = startOfDay(new Date(dueDate));
@@ -29,8 +26,8 @@ export function isDueToday(dueDate: string): boolean {
 }
 
 /**
- * Human-readable due-date label:
- * "Yesterday" / "Today" / "Tomorrow" / "Mon, Jun 2" / "Jun 2, 2025"
+ * Human-readable due-date label.
+ * Returns: "Yesterday" | "Today" | "Tomorrow" | "Mon, Jun 2" | "Jun 2, 2025"
  */
 export function formatDueDate(dueDate: string): string {
   const today     = startOfDay(new Date());
@@ -49,7 +46,8 @@ export function formatDueDate(dueDate: string): string {
 }
 
 /**
- * Full due-date label for a task row: prepends "Overdue · " for open overdue tasks.
+ * Full due-date label for a task row.
+ * Prepends "Overdue · " for open overdue tasks.
  */
 export function dueDateLabel(dueDate: string, status: 'open' | 'completed'): string {
   if (status === 'completed') return formatDueDate(dueDate);
