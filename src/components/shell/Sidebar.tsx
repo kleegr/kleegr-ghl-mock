@@ -68,7 +68,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside
       className={cx(
-        'flex h-full flex-col overflow-hidden border-r border-line bg-sidebar transition-[width] duration-200',
+        'flex h-full flex-col overflow-hidden border-r border-white/10 text-white transition-[width] duration-200',
+        'bg-gradient-to-b from-[#0a1f44] via-[#123070] to-[#1c50bd]',
         collapsed ? 'w-[60px]' : 'w-[248px]',
       )}
       aria-label="Sidebar"
@@ -91,7 +92,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         ) : (
           <span
             aria-label="Kleegr"
-            className="select-none bg-gradient-to-r from-[#7c3aed] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-[24px] font-black lowercase tracking-tight text-transparent"
+            className="select-none bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#7c3aed] bg-clip-text text-[24px] font-black lowercase tracking-tight text-transparent"
           >
             kleegr
           </span>
@@ -105,22 +106,22 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             <button
               onClick={() => setAcctOpen((v) => !v)}
               data-tour="topbar.accountSwitcher"
-              className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface-sunken px-2 py-2 text-left transition-colors hover:bg-line/40"
+              className="flex w-full items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-2 py-2 text-left transition-colors hover:bg-white/15"
               aria-haspopup="listbox"
               aria-expanded={acctOpen}
             >
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-ai-soft text-ai">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white/15 text-white">
                 <Building2 size={15} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-bold leading-tight text-ink">
+                <span className="block truncate text-[13px] font-bold leading-tight text-white">
                   {selectedAcct.name}
                 </span>
-                <span className="block truncate text-[11px] leading-tight text-ink-subtle">
+                <span className="block truncate text-[11px] leading-tight text-white/55">
                   {selectedAcct.region}
                 </span>
               </span>
-              <ChevronsUpDown size={14} className="shrink-0 text-ink-subtle" />
+              <ChevronsUpDown size={14} className="shrink-0 text-white/55" />
             </button>
 
             {acctOpen && (
@@ -172,13 +173,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           <button
             onClick={() => setSearchOpen(true)}
             data-tour="topbar.search"
-            className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface-sunken px-2.5 py-2 text-[13px] text-ink-subtle transition-colors hover:border-brand/40"
+            className="flex w-full items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-2.5 py-2 text-[13px] text-white/60 transition-colors hover:border-white/30 hover:bg-white/15"
             aria-label="Search"
           >
             <Search size={14} className="shrink-0" />
             <span className="flex-1 text-left">Search</span>
-            <kbd className="rounded bg-surface px-1 text-[10px] font-medium text-ink-subtle">ctrlK</kbd>
-            <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-ai-soft text-ai">
+            <kbd className="rounded bg-white/15 px-1 text-[10px] font-medium text-white/70">ctrlK</kbd>
+            <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-white/15 text-white">
               <Zap size={11} />
             </span>
           </button>
@@ -190,7 +191,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           <button
             onClick={() => setSearchOpen(true)}
             data-tour="topbar.search"
-            className="grid h-8 w-8 place-items-center rounded-lg border border-line bg-surface-sunken text-ink-subtle hover:border-brand/40"
+            className="grid h-8 w-8 place-items-center rounded-lg border border-white/15 bg-white/10 text-white/70 hover:border-white/30 hover:bg-white/15"
             aria-label="Search"
           >
             <Search size={15} />
@@ -213,12 +214,12 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               {groupLabel &&
                 (collapsed ? (
                   i > 0 ? (
-                    <div aria-hidden="true" className="mx-auto my-2 h-px w-7 bg-line" />
+                    <div aria-hidden="true" className="mx-auto my-2 h-px w-7 bg-white/15" />
                   ) : null
                 ) : (
                   <p
                     className={cx(
-                      'mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-ink-subtle',
+                      'mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-white/40',
                       i === 0 ? 'mt-1.5' : 'mt-4',
                     )}
                   >
@@ -240,10 +241,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                       ? 'mx-1.5 my-px justify-center rounded-lg px-0 py-2'
                       : 'mx-2 my-px rounded-lg px-3 py-[7px]',
                     isActive
-                      ? 'bg-brand-soft text-brand'
+                      ? 'bg-brand text-white shadow-sm'
                       : cx(
-                          'hover:bg-surface-sunken hover:text-ink',
-                          isCore ? 'text-ink' : 'text-ink-muted',
+                          'hover:bg-white/10 hover:text-white',
+                          isCore ? 'text-white/90' : 'text-white/65',
                         ),
                   )
                 }
@@ -253,13 +254,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                     {isActive && !collapsed && (
                       <span
                         aria-hidden="true"
-                        className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-brand"
+                        className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-[#38bdf8]"
                       />
                     )}
                     <Icon
                       size={18}
                       strokeWidth={isActive ? 2.4 : 2}
-                      className={cx('shrink-0', isActive ? 'text-brand' : 'text-ink-subtle group-hover:text-ink-muted')}
+                      className={cx('shrink-0', isActive ? 'text-white' : 'text-white/60 group-hover:text-white')}
                       aria-hidden="true"
                     />
                     {!collapsed && <span className="truncate">{item.label}</span>}
@@ -276,8 +277,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         onClick={toggleSidebar}
         data-tour="nav.collapseToggle"
         className={cx(
-          'hidden h-9 w-full shrink-0 items-center border-t border-line lg:flex',
-          'text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink-muted',
+          'hidden h-9 w-full shrink-0 items-center border-t border-white/10 lg:flex',
+          'text-white/55 transition-colors hover:bg-white/10 hover:text-white',
           collapsed ? 'justify-center px-0' : 'gap-1.5 px-4',
         )}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
