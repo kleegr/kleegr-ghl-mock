@@ -1,6 +1,7 @@
-import { Building2 } from 'lucide-react';
+import { useState } from 'react';
+import { Building2, Tag, Mail, Trash2, X } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { fullName, dateLabel, userById } from '@/utils';
+import { fullName, dateLabel, userById, cx } from '@/utils';
 import { Avatar, Badge, EmptyState } from '@/components/ui/primitives';
 import type { Contact } from '@/types';
 
@@ -21,16 +22,94 @@ export function ContactsTable({
 }) {
   const users = useStore(s => s.users);
   const companies = useStore(s => s.companies);
+  const pushToast = useStore(s => s.pushToast);
+
+  // Bulk selection (cosmetic — demo only).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   if (contacts.length === 0) {
     return <EmptyState title="No contacts found" body="Try adjusting your search or filters." />;
   }
 
+  const visibleIds = contacts.map(c => c.id);
+  const allSelected = selected.size > 0 && visibleIds.every(id => selected.has(id));
+  const someSelected = selected.size > 0 && !allSelected;
+
+  const toggleAll = () => {
+    setSelected(prev => {
+      if (visibleIds.every(id => prev.has(id))) return new Set();
+      return new Set(visibleIds);
+    });
+  };
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkAction = (label: string) => {
+    pushToast({
+      title: `${label} (demo)`,
+      description: `${selected.size} contact${selected.size !== 1 ? 's' : ''} — bulk actions are cosmetic in demo mode.`,
+      variant: 'info',
+    });
+  };
+
   return (
     <div className="overflow-x-auto">
+      {/* Bulk-action toolbar — appears when rows are selected */}
+      {selected.size > 0 && (
+        <div
+          className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-line bg-brand-soft px-4 py-2"
+          data-tour="contacts.bulkBar"
+        >
+          <span className="text-xs font-semibold text-brand">
+            {selected.size} selected
+          </span>
+          <span className="mx-1 h-4 w-px bg-brand/20" aria-hidden="true" />
+          <button
+            onClick={() => bulkAction('Add tag')}
+            className="flex items-center gap-1.5 rounded-lg border border-brand/30 bg-surface px-2.5 py-1 text-xs font-semibold text-ink hover:bg-surface-sunken"
+          >
+            <Tag size={12} /> Add Tag
+          </button>
+          <button
+            onClick={() => bulkAction('Send email')}
+            className="flex items-center gap-1.5 rounded-lg border border-brand/30 bg-surface px-2.5 py-1 text-xs font-semibold text-ink hover:bg-surface-sunken"
+          >
+            <Mail size={12} /> Send Email
+          </button>
+          <button
+            onClick={() => bulkAction('Delete')}
+            className="flex items-center gap-1.5 rounded-lg border border-bad/30 bg-surface px-2.5 py-1 text-xs font-semibold text-bad hover:bg-bad/5"
+          >
+            <Trash2 size={12} /> Delete
+          </button>
+          <button
+            onClick={() => setSelected(new Set())}
+            className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted hover:text-ink"
+          >
+            <X size={12} /> Clear
+          </button>
+        </div>
+      )}
+
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-line text-left">
+            <th className="w-10 bg-surface px-4 py-2.5">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={el => { if (el) el.indeterminate = someSelected; }}
+                onChange={toggleAll}
+                aria-label="Select all contacts"
+                className="h-3.5 w-3.5 cursor-pointer rounded border-line accent-brand"
+              />
+            </th>
             {['Name', 'Email', 'Phone', 'Company', 'Tags', 'Source', 'Owner', 'Created'].map(h => (
               <th key={h} className="whitespace-nowrap bg-surface px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-subtle">
                 {h}
@@ -42,13 +121,26 @@ export function ContactsTable({
           {contacts.map(contact => {
             const owner = userById(users, contact.ownerId);
             const company = companies.find(co => co.id === contact.companyId);
+            const isSel = selected.has(contact.id);
             return (
               <tr
                 key={contact.id}
                 data-tour="contacts.row"
                 onClick={() => onRowClick(contact)}
-                className="cursor-pointer border-b border-line/70 transition-colors hover:bg-surface-sunken"
+                className={cx(
+                  'cursor-pointer border-b border-line/70 transition-colors hover:bg-surface-sunken',
+                  isSel && 'bg-brand-soft/50',
+                )}
               >
+                <td className="w-10 px-4 py-3 align-middle" onClick={e => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={isSel}
+                    onChange={() => toggleOne(contact.id)}
+                    aria-label={`Select ${fullName(contact)}`}
+                    className="h-3.5 w-3.5 cursor-pointer rounded border-line accent-brand"
+                  />
+                </td>
                 <td className="px-4 py-3 align-middle">
                   <div className="flex items-center gap-2.5">
                     <Avatar name={fullName(contact)} size="sm" />

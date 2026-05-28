@@ -17,7 +17,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Settings2, X, Plus } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import {
   PageHeader,
@@ -59,6 +59,7 @@ export function Calendars() {
   const [showDetail, setShowDetail]             = useState(false);
   const [showBook, setShowBook]                 = useState(false);
   const [bookDefaultDate, setBookDefaultDate]   = useState<string>('');
+  const [showManage, setShowManage]             = useState(false);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const visibleAppts = selectedCalId
@@ -190,6 +191,14 @@ export function Calendars() {
           >
             Today
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowManage(true)}
+            data-tour="calendars.manage"
+          >
+            <Settings2 size={14} /> Manage
+          </Button>
         </div>
 
         {/* View toggle */}
@@ -279,6 +288,81 @@ export function Calendars() {
           calendars={calendars}
           contacts={contacts}
         />
+      )}
+
+      {/* ── Manage calendars drawer (cosmetic) ── */}
+      {showManage && (
+        <div className="fixed inset-0 z-50" data-tour="calendars.manageDrawer">
+          <div
+            className="absolute inset-0 bg-ink/40"
+            onClick={() => setShowManage(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col bg-surface shadow-pop animate-in">
+            <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+              <h2 className="text-base font-bold text-ink">Manage Calendars</h2>
+              <button
+                onClick={() => setShowManage(false)}
+                className="rounded-lg p-1.5 text-ink-subtle hover:bg-surface-sunken hover:text-ink"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-subtle">
+                  Calendar Types
+                </p>
+                <button
+                  onClick={() =>
+                    useStore.getState().pushToast({
+                      title: 'New calendar (demo)',
+                      description: 'Creating calendars is not available in demo mode.',
+                      variant: 'info',
+                    })
+                  }
+                  className="flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-xs font-semibold text-ink hover:bg-surface-sunken"
+                >
+                  <Plus size={12} /> New
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {calendars.map((cal) => (
+                  <div
+                    key={cal.id}
+                    className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5"
+                  >
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-full"
+                      style={{ background: cal.color }}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-ink">{cal.name}</p>
+                      <p className="text-xs text-ink-muted">
+                        {calApptCount(cal.id)} appointment{calApptCount(cal.id) !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    {/* Cosmetic enabled toggle */}
+                    <span
+                      className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-brand"
+                      aria-hidden="true"
+                    >
+                      <span className="ml-auto mr-0.5 h-4 w-4 rounded-full bg-white shadow-sm" />
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-4 rounded-lg border border-line bg-surface-sunken px-3 py-2 text-xs text-ink-muted">
+                Calendar visibility and settings are cosmetic in demo mode.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Book appointment modal ── */}

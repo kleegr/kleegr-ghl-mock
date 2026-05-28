@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Zap, Plus, Play, Pause, Settings2, Users2,
   FileText, GitBranch, Clock, Mail, MessageSquare, CheckSquare,
-  Tag, X, AlertCircle, ChevronRight,
+  Tag, X, AlertCircle, ChevronRight, Search,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import type { Workflow } from '@/types';
@@ -53,6 +53,28 @@ const TEMPLATES = [
   { id: 't5', name: 'Blank Workflow', desc: 'Start from scratch with no nodes.' },
 ];
 
+/* Cosmetic picker catalogs — used by the Add Trigger / Add Action panels.
+   Selecting an item is demo-only (no node is actually added). */
+const TRIGGER_CATALOG: { subtype: string; label: string; group: string }[] = [
+  { subtype: 'form_submitted',     label: 'Form Submitted',      group: 'Contact' },
+  { subtype: 'tag_added',          label: 'Contact Tag',         group: 'Contact' },
+  { subtype: 'birthday',           label: 'Birthday',            group: 'Contact' },
+  { subtype: 'appointment_booked', label: 'Appointment Booked',  group: 'Calendar' },
+  { subtype: 'booking_started',    label: 'Booking Abandoned',   group: 'Calendar' },
+  { subtype: 'missed_call',        label: 'Missed Call',         group: 'Phone' },
+  { subtype: 'opportunity_won',    label: 'Pipeline Stage Changed', group: 'Opportunities' },
+];
+
+const ACTION_CATALOG: { subtype: string; label: string; group: string }[] = [
+  { subtype: 'send_sms',          label: 'Send SMS',          group: 'Communication' },
+  { subtype: 'send_email',        label: 'Send Email',        group: 'Communication' },
+  { subtype: 'create_task',       label: 'Create Task',       group: 'Internal' },
+  { subtype: 'add_tag',           label: 'Add Tag',           group: 'Internal' },
+  { subtype: 'wait_duration',     label: 'Wait / Delay',      group: 'Timing' },
+  { subtype: 'wait_until',        label: 'Wait Until Event',  group: 'Timing' },
+  { subtype: 'check_appointment', label: 'If / Else Branch',  group: 'Logic' },
+];
+
 /* ─── Node Settings Modal ─────────────────────────────────────── */
 
 function NodeSettingsModal({ node, onClose }: { node: WorkflowDisplayNode | null; onClose: () => void }) {
@@ -96,11 +118,112 @@ function NodeSettingsModal({ node, onClose }: { node: WorkflowDisplayNode | null
   );
 }
 
+/* ─── Add Trigger / Add Action picker panel ──────────────────────
+   Cosmetic GHL-style picker. Mirrors the portal's "Add Trigger" and
+   "Actions" side panels. Choosing an item is demo-only. */
+
+function WorkflowPicker({
+  kind,
+  onClose,
+}: {
+  kind: 'trigger' | 'action';
+  onClose: () => void;
+}) {
+  const pushToast = useStore((s) => s.pushToast);
+  const [q, setQ] = useState('');
+  const catalog = kind === 'trigger' ? TRIGGER_CATALOG : ACTION_CATALOG;
+  const items = catalog.filter((i) => i.label.toLowerCase().includes(q.trim().toLowerCase()));
+
+  // Group items by their `group` field, preserving first-seen order.
+  const groups: { name: string; items: typeof catalog }[] = [];
+  items.forEach((i) => {
+    let g = groups.find((x) => x.name === i.group);
+    if (!g) { g = { name: i.group, items: [] }; groups.push(g); }
+    g.items.push(i);
+  });
+
+  return (
+    <div
+      className="mt-3 overflow-hidden rounded-xl border border-line bg-surface"
+      data-tour={kind === 'trigger' ? 'automations.addTriggerPanel' : 'automations.addActionPanel'}
+    >
+      <div className="flex items-center justify-between border-b border-line bg-surface-sunken px-3 py-2.5">
+        <p className="text-sm font-bold text-ink">
+          {kind === 'trigger' ? 'Add Trigger' : 'Add Action / Step'}
+        </p>
+        <button
+          onClick={onClose}
+          className="rounded p-0.5 text-ink-subtle hover:bg-line/40 hover:text-ink"
+          aria-label="Close picker"
+        >
+          <X size={15} />
+        </button>
+      </div>
+
+      <div className="border-b border-line px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-sunken px-2.5 py-1.5">
+          <Search size={13} className="shrink-0 text-ink-subtle" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={kind === 'trigger' ? 'Search triggers…' : 'Search actions…'}
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
+            aria-label="Search"
+          />
+        </div>
+      </div>
+
+      <div className="max-h-72 overflow-y-auto p-2">
+        {groups.length === 0 && (
+          <p className="px-2 py-6 text-center text-xs text-ink-subtle">No matches.</p>
+        )}
+        {groups.map((g) => (
+          <div key={g.name} className="mb-2 last:mb-0">
+            <p className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-ink-subtle">
+              {g.name}
+            </p>
+            <div className="grid grid-cols-1 gap-1.5">
+              {g.items.map((i) => (
+                <button
+                  key={i.subtype}
+                  onClick={() => {
+                    pushToast({
+                      title: `${kind === 'trigger' ? 'Trigger' : 'Action'} selected (demo)`,
+                      description: `"${i.label}" is not added in demo mode.`,
+                      variant: 'info',
+                    });
+                    onClose();
+                  }}
+                  className={cx(
+                    'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                    kind === 'trigger'
+                      ? 'border-brand/30 bg-brand-soft/40 hover:bg-brand-soft'
+                      : 'border-[#12986a]/30 bg-[#12986a]/5 hover:bg-[#12986a]/10',
+                  )}
+                >
+                  <span className={cx('shrink-0', kind === 'trigger' ? 'text-brand' : 'text-[#12986a]')}>
+                    {NODE_ICON[i.subtype] ?? <Zap size={13} />}
+                  </span>
+                  <span className="font-medium text-ink">{i.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="border-t border-line px-3 py-2 text-[10px] text-ink-subtle">
+        Builder is read-only in demo mode — selections are not saved.
+      </p>
+    </div>
+  );
+}
+
 /* ─── Workflow Builder ────────────────────────────────────────── */
 
 function WorkflowBuilder({ wf }: { wf: Workflow }) {
   const [tab, setTab] = useState('builder');
   const [selNode, setSelNode] = useState<WorkflowDisplayNode | null>(null);
+  const [picker, setPicker] = useState<null | 'trigger' | 'action'>(null);
   const nodes = getNodesForWorkflow(wf.id, wf.trigger);
 
   return (
@@ -118,35 +241,78 @@ function WorkflowBuilder({ wf }: { wf: Workflow }) {
       />
 
       {tab === 'builder' && (
-        <div className="flex flex-col items-center py-6">
-          {nodes.map((node, i) => (
-            <React.Fragment key={node.id}>
-              <button
-                onClick={() => setSelNode(node)}
-                data-tour="automations.node"
-                className={cx(
-                  'group flex w-72 items-center gap-3 rounded-xl border-2 px-4 py-3 text-left shadow-card transition-all hover:shadow-pop',
-                  NODE_COLOR[node.type],
-                )}
-              >
-                <span className="shrink-0">{NODE_ICON[node.subtype] ?? <Zap size={13} />}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide opacity-60">{node.type}</p>
-                  <p className="truncate text-sm font-bold">{node.label}</p>
-                  {node.config && <p className="mt-0.5 truncate text-xs opacity-60">{node.config}</p>}
-                </div>
-                <Settings2 size={12} className="shrink-0 opacity-0 transition-opacity group-hover:opacity-50" />
-              </button>
-              {i < nodes.length - 1 && (
-                <div className="flex h-6 flex-col items-center">
+        <div className="p-4">
+          {/* Dotted-grid canvas */}
+          <div
+            className="flex flex-col items-center rounded-xl border border-line bg-surface-sunken py-6"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle, rgb(var(--line)) 1px, transparent 1px)',
+              backgroundSize: '16px 16px',
+            }}
+            data-tour="automations.canvas"
+          >
+            {/* Add Trigger affordance at the top of the chain */}
+            <button
+              onClick={() => setPicker('trigger')}
+              data-tour="automations.addTrigger"
+              className="mb-1 flex items-center gap-1.5 rounded-full border border-dashed border-brand/50 bg-surface px-3 py-1 text-xs font-semibold text-brand transition-colors hover:bg-brand-soft"
+            >
+              <Plus size={12} /> Add Trigger
+            </button>
+            <div className="h-4 w-px bg-line" />
+
+            {nodes.map((node, i) => (
+              <React.Fragment key={node.id}>
+                <button
+                  onClick={() => setSelNode(node)}
+                  data-tour="automations.node"
+                  className={cx(
+                    'group flex w-64 items-center gap-3 rounded-xl border-2 bg-surface px-4 py-3 text-left shadow-card transition-all hover:shadow-pop',
+                    NODE_COLOR[node.type],
+                  )}
+                >
+                  <span className="shrink-0">{NODE_ICON[node.subtype] ?? <Zap size={13} />}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide opacity-60">{node.type}</p>
+                    <p className="truncate text-sm font-bold">{node.label}</p>
+                    {node.config && <p className="mt-0.5 truncate text-xs opacity-60">{node.config}</p>}
+                  </div>
+                  <Settings2 size={12} className="shrink-0 opacity-0 transition-opacity group-hover:opacity-50" />
+                </button>
+
+                {/* Connector + add-step affordance */}
+                <div className="flex h-9 flex-col items-center">
                   <div className="w-px flex-1 bg-line" />
-                  <ChevronRight size={11} className="rotate-90 text-ink-subtle" />
+                  <button
+                    onClick={() => setPicker('action')}
+                    data-tour="automations.addStep"
+                    aria-label="Add step"
+                    title="Add step"
+                    className="grid h-5 w-5 place-items-center rounded-full border border-line bg-surface text-ink-subtle transition-colors hover:border-brand hover:text-brand"
+                  >
+                    <Plus size={11} />
+                  </button>
                   <div className="w-px flex-1 bg-line" />
+                  {i < nodes.length - 1 && (
+                    <ChevronRight size={11} className="rotate-90 text-ink-subtle" />
+                  )}
                 </div>
-              )}
-            </React.Fragment>
-          ))}
-          <p className="mt-5 text-xs text-ink-subtle">Builder is read-only in demo mode.</p>
+              </React.Fragment>
+            ))}
+
+            {/* End-of-chain add */}
+            <button
+              onClick={() => setPicker('action')}
+              className="flex items-center gap-1.5 rounded-full border border-dashed border-line bg-surface px-3 py-1 text-xs font-medium text-ink-muted transition-colors hover:border-brand/50 hover:text-brand"
+            >
+              <Plus size={12} /> Add Action
+            </button>
+          </div>
+
+          {picker && <WorkflowPicker kind={picker} onClose={() => setPicker(null)} />}
+
+          <p className="mt-3 text-center text-xs text-ink-subtle">Builder is read-only in demo mode.</p>
         </div>
       )}
 
@@ -317,30 +483,42 @@ export function Automations() {
               />
             </div>
 
+            {/* Column header row — reads as a table */}
+            {filtered.length > 0 && (
+              <div className="flex items-center gap-3 border-b border-line bg-surface-sunken px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">
+                <span className="w-7 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 flex-1">Workflow</span>
+                <span className="w-24 shrink-0">Status</span>
+                <span className="hidden w-28 shrink-0 sm:block">Total Enrolled</span>
+              </div>
+            )}
+
             {filtered.map((wf) => (
               <button
                 key={wf.id}
                 onClick={() => setSelWf(selWf?.id === wf.id ? null : wf)}
                 data-tour="automations.workflowRow"
                 className={cx(
-                  'flex w-full items-start gap-3 border-b border-line/60 px-4 py-4 text-left transition-colors last:border-0 hover:bg-surface-sunken',
+                  'flex w-full items-center gap-3 border-b border-line/60 px-4 py-3.5 text-left transition-colors last:border-0 hover:bg-surface-sunken',
                   selWf?.id === wf.id && 'bg-brand-soft/50',
                 )}
               >
-                <div className={cx('mt-0.5 rounded-lg p-1.5 shrink-0', wf.status === 'published' ? 'bg-good/10 text-good' : 'bg-surface-sunken text-ink-muted')}>
+                <div className={cx('rounded-lg p-1.5 shrink-0', wf.status === 'published' ? 'bg-good/10 text-good' : 'bg-surface-sunken text-ink-muted')}>
                   {wf.status === 'published' ? <Play size={13} /> : <Pause size={13} />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-semibold text-ink">{wf.name}</p>
-                    <Badge tone={statusTone(wf.status)}>{wf.status}</Badge>
-                  </div>
-                  <p className="mt-0.5 text-xs text-ink-muted">Trigger: {wf.trigger}</p>
-                  {wf.explanation && <p className="mt-1 truncate text-xs text-ink-subtle">{wf.explanation}</p>}
+                  <p className="truncate text-sm font-semibold text-ink">{wf.name}</p>
+                  <p className="mt-0.5 truncate text-xs text-ink-muted">Trigger: {wf.trigger}</p>
                 </div>
-                <div className="shrink-0 flex items-center gap-1 text-xs text-ink-muted pt-0.5">
+                <span className="w-24 shrink-0">
+                  <Badge tone={statusTone(wf.status)}>{wf.status}</Badge>
+                </span>
+                <span className="hidden w-28 shrink-0 items-center gap-1 text-xs text-ink-muted sm:flex">
                   <Users2 size={12} /> {wf.enrolled.toLocaleString()}
-                </div>
+                </span>
+                <span className="flex w-auto shrink-0 items-center gap-1 text-xs text-ink-muted sm:hidden">
+                  <Users2 size={12} /> {wf.enrolled.toLocaleString()}
+                </span>
               </button>
             ))}
 
