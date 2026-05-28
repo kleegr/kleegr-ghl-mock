@@ -446,6 +446,7 @@ export function Conversations() {
   const allMessages = useStore((s) => s.messages);
   const contacts = useStore((s) => s.contacts);
   const markRead = useStore((s) => s.markConversationRead);
+  const pushToast = useStore((s) => s.pushToast);
 
   const [activeFilter, setActiveFilter] = useState<ConvFilter>('all');
   const [selectedConvId, setSelectedConvId] = useState<string | null>(
@@ -527,7 +528,17 @@ export function Conversations() {
               Unified inbox — SMS, Email, Chat, Social, Calls
             </p>
           </div>
-          <Button size="sm" variant="secondary">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              pushToast({
+                title: 'New message is demo-only',
+                body: 'Select an existing conversation and use the reply composer to send a fake in-memory reply.',
+                variant: 'info',
+              })
+            }
+          >
             <MessageSquare size={13} aria-hidden />
             New Message
           </Button>

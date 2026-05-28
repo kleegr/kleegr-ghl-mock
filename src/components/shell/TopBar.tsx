@@ -164,7 +164,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
             month: 'short',
             day: 'numeric',
           }),
-          path: '/appointments',
+          path: '/calendars',
         }))
     : [];
 
@@ -181,7 +181,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   // ── Quick-add menu items ──
   const quickAddItems = [
     { label: 'Add Contact',        Icon: UserPlus,    path: '/contacts'     },
-    { label: 'Book Appointment',   Icon: Calendar,    path: '/appointments' },
+    { label: 'Book Appointment',   Icon: Calendar,    path: '/calendars'    },
     { label: 'Create Opportunity', Icon: Briefcase,   path: '/opportunities'},
     { label: 'Create Invoice',     Icon: FileText,    path: '/payments'     },
     { label: 'New Task',           Icon: CheckSquare, path: '/tasks'        },
