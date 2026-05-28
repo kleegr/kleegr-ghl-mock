@@ -168,12 +168,12 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         }))
     : [];
 
-  interface ResultGroup { kind: ResultKind; items: SearchResult[] }
-  const grouped: ResultGroup[] = [
-    { kind: 'Contact',     items: contactResults },
-    { kind: 'Deal',        items: dealResults    },
-    { kind: 'Task',        items: taskResults    },
-    { kind: 'Appointment', items: apptResults    },
+  // Use `as const` on `kind` so TypeScript keeps the literal type through .filter()
+  const grouped = [
+    { kind: 'Contact'     as const, items: contactResults },
+    { kind: 'Deal'        as const, items: dealResults    },
+    { kind: 'Task'        as const, items: taskResults    },
+    { kind: 'Appointment' as const, items: apptResults    },
   ].filter((g) => g.items.length > 0);
 
   const totalResults = grouped.reduce((acc, g) => acc + g.items.length, 0);
