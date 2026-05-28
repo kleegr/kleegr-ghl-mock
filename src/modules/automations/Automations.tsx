@@ -7,7 +7,7 @@ import { WorkflowsList } from './WorkflowsList';
 import { AutomationOverview } from './AutomationOverview';
 import { WorkflowBuilder } from './WorkflowBuilder';
 
-/* ── module sub-nav ──────────────────────────────────────────── */
+/* ── module sub-nav ────────────────────────────────────────────────────── */
 
 type ModuleView = 'workflows' | 'overview';
 type ListTab = 'all' | 'review' | 'deleted';
@@ -61,7 +61,7 @@ function SubNav({
   );
 }
 
-/* ── main entry ────────────────────────────────────────────── */
+/* ── main entry ────────────────────────────────────────────────────────── */
 
 export function Automations() {
   const pushToast = useStore((s) => s.pushToast);
