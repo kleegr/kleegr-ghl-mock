@@ -1,10 +1,12 @@
 import { useDroppable } from '@dnd-kit/core';
+import { ChevronLeft } from 'lucide-react';
 import type { Stage, Opportunity, Contact, User } from '@/types';
 import { money, cx } from '@/utils';
 import { OpportunityCard } from './OpportunityCard';
 
 interface Props {
   stage: Stage;
+  index?: number;
   opportunities: Opportunity[];
   contacts: Contact[];
   users: User[];
@@ -12,8 +14,18 @@ interface Props {
   onCardClick: (id: string) => void;
 }
 
+/** Pastel header tints — first stage green ("New Lead"), the rest warm tan. */
+const HEADER_TINTS = [
+  'bg-[#e7f6ee] border-[#cdeede]', // green
+  'bg-[#fbf3e3] border-[#f0e2c2]', // tan
+  'bg-[#fbf0e3] border-[#f1ddc2]', // amber
+  'bg-[#f3eefb] border-[#e3d6f4]', // violet
+  'bg-[#e9f1fb] border-[#cfe0f6]', // blue
+];
+
 export function StageColumn({
   stage,
+  index = 1,
   opportunities,
   contacts,
   users,
@@ -26,23 +38,32 @@ export function StageColumn({
   const openOpps = opportunities.filter((o) => o.status === 'open');
   const total = openOpps.reduce((sum, o) => sum + o.monetaryValue, 0);
   const openCount = openOpps.length;
+  const tint = HEADER_TINTS[index % HEADER_TINTS.length];
 
   return (
     <div
-      className="flex w-60 shrink-0 flex-col rounded-xl border border-line bg-surface-sunken"
+      className="flex w-[270px] shrink-0 flex-col rounded-xl border border-line bg-surface-sunken"
       data-tour="opportunities.stageColumn"
     >
-      {/* Stage header */}
-      <div className="flex items-center justify-between rounded-t-xl border-b border-line bg-surface px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-ink">{stage.name}</span>
-          <span className="rounded-full bg-surface-sunken px-1.5 py-0.5 text-[10px] font-bold text-ink-subtle">
-            {opportunities.length}
-          </span>
+      {/* Stage header — pastel tinted */}
+      <div className={cx('flex items-start justify-between rounded-t-xl border-b px-3 py-2.5', tint)}>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-bold text-ink">{stage.name}</span>
+          </div>
+          <p className="mt-0.5 text-[11px] font-medium text-ink-muted">
+            {opportunities.length} Opportunit{opportunities.length === 1 ? 'y' : 'ies'}
+            <span className="mx-1 text-ink-subtle">·</span>
+            <span className="text-ink">{money(total)}</span>
+          </p>
         </div>
-        {total > 0 && (
-          <span className="text-xs font-semibold text-good">{money(total)}</span>
-        )}
+        <button
+          className="shrink-0 rounded p-0.5 text-ink-subtle transition-colors hover:bg-black/5 hover:text-ink-muted"
+          aria-label={`Collapse ${stage.name}`}
+          title="Collapse"
+        >
+          <ChevronLeft size={15} />
+        </button>
       </div>
 
       {/* Drop zone */}

@@ -43,14 +43,20 @@ export const kleegrTheme: ThemeTokens = {
     'surface-raised': '255 255 255',
     'surface-sunken': '247 248 250',
     line: '228 231 236',
-    // Sidebar (GHL uses a dark rail)
-    sidebar: '15 23 42',
-    'sidebar-fg': '203 213 225',
+    // Sidebar — Kleegr uses a LIGHT rail (white) with dark text
+    sidebar: '255 255 255',
+    'sidebar-fg': '71 84 103',
     'sidebar-active': '31 111 235',
     // Status
     good: '18 152 99',
     warn: '217 145 17',
     bad: '217 54 62',
+    // AI / wordmark accent — Kleegr's violet (logo + "Ask AI")
+    ai: '124 58 237',
+    'ai-soft': '237 233 254',
+    // Top banner (dark navy strip with a cyan diagonal accent)
+    banner: '11 31 64',
+    'banner-accent': '56 189 248',
   },
   fonts: {
     // Placeholder. GHL itself leans on a neutral sans; swap for Kleegr's.

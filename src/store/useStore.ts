@@ -22,11 +22,13 @@ type Mode = 'demo' | 'tutorial';
 interface StoreState extends DemoData {
   mode: Mode;
   sidebarCollapsed: boolean;
+  searchOpen: boolean;
   toasts: Toast[];
 
   // ui
   setMode: (m: Mode) => void;
   toggleSidebar: () => void;
+  setSearchOpen: (v: boolean) => void;
   pushToast: (t: Omit<Toast, 'id'>) => void;
   dismissToast: (id: number) => void;
 
@@ -47,10 +49,12 @@ export const useStore = create<StoreState>((set, get) => ({
   ...fresh(),
   mode: 'demo',
   sidebarCollapsed: false,
+  searchOpen: false,
   toasts: [],
 
   setMode: (mode) => set({ mode }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+  setSearchOpen: (searchOpen) => set({ searchOpen }),
   pushToast: (t) => {
     const id = ++toastSeq;
     set((s) => ({ toasts: [...s.toasts, { ...t, id }] }));

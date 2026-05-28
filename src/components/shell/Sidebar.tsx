@@ -1,14 +1,14 @@
+import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, ChevronsUpDown, Building2, Search, Zap, Check,
+} from 'lucide-react';
 import { NAV } from './nav';
 import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
-import { kleegrTheme } from '@/theme/tokens';
 
 /**
- * Core CRM paths — visual emphasis only.
- * These items are styled brighter + get "Core" group treatment.
- * No edits to nav.ts required.
+ * Core CRM paths — visual emphasis only (rendered slightly darker).
  */
 const CORE_CRM_PATHS = new Set([
   '/',
@@ -16,86 +16,191 @@ const CORE_CRM_PATHS = new Set([
   '/contacts',
   '/opportunities',
   '/calendars',
+  '/payments',
   '/tasks',
 ]);
+
+/** Cosmetic demo sub-accounts (account switching is visual-only in demo mode). */
+const DEMO_ACCOUNTS = [
+  { id: 'a1', name: 'Kleegr Inc', region: 'Monsey, New York' },
+  { id: 'a2', name: 'Acme Home Services', region: 'Austin, Texas' },
+  { id: 'a3', name: 'Sunset Dental', region: 'San Diego, California' },
+  { id: 'a4', name: 'Peak Fitness Studio', region: 'Denver, Colorado' },
+];
 
 interface SidebarProps {
   /** Called after a nav item is clicked — used by the mobile drawer to close itself. */
   onNavigate?: () => void;
 }
 
+function useClickOutside(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) cb();
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [ref, cb]);
+}
+
 export function Sidebar({ onNavigate }: SidebarProps) {
   const collapsed = useStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
+  const setSearchOpen = useStore((s) => s.setSearchOpen);
+  const pushToast = useStore((s) => s.pushToast);
 
-  // Build group-start map.
-  // Items 0-4 in nav.ts have no group — we inject a synthetic "Core" label
-  // purely as a visual treatment inside Sidebar (nav.ts untouched).
+  const [acctOpen, setAcctOpen] = useState(false);
+  const [selectedAcct, setSelectedAcct] = useState(DEMO_ACCOUNTS[0]);
+  const acctRef = useRef<HTMLDivElement>(null);
+  useClickOutside(acctRef, () => setAcctOpen(false));
+
+  // Build group-start map (synthetic "Core" label for leading ungrouped items).
   const groupStarts = new Map<number, string>();
   const seenGroups = new Set<string>();
-
   NAV.forEach((item, i) => {
     if (item.group && !seenGroups.has(item.group)) {
       seenGroups.add(item.group);
       groupStarts.set(i, item.group);
     }
   });
-
-  // Synthetic group for leading ungrouped items
-  if (!NAV[0]?.group) {
-    groupStarts.set(0, 'Core');
-  }
-
-  const initials = kleegrTheme.wordmark.slice(0, 2).toUpperCase();
+  if (!NAV[0]?.group) groupStarts.set(0, 'Core');
 
   return (
     <aside
       className={cx(
-        'flex h-full flex-col overflow-hidden bg-sidebar transition-[width] duration-200',
-        collapsed ? 'w-[52px]' : 'w-[224px]',
+        'flex h-full flex-col overflow-hidden border-r border-line bg-sidebar transition-[width] duration-200',
+        collapsed ? 'w-[60px]' : 'w-[248px]',
       )}
       aria-label="Sidebar"
       data-tour="sidebar.nav"
     >
-      {/* ── Account identity ─────────────────────────────────────────── */}
+      {/* Wordmark */}
       <div
         className={cx(
-          'flex h-14 shrink-0 items-center border-b border-white/10',
-          collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
+          'flex h-14 shrink-0 items-center',
+          collapsed ? 'justify-center px-0' : 'px-4',
         )}
       >
-        {/* Avatar / logo mark */}
-        <div
-          aria-hidden="true"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-brand text-[11px] font-black tracking-tight text-white"
-        >
-          {initials}
-        </div>
-
-        {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 leading-tight">
-              <span className="truncate text-[13px] font-semibold text-white">
-                {kleegrTheme.wordmark}
-              </span>
-              {/* Demo environment badge — purely visual */}
-              <span
-                aria-hidden="true"
-                className="shrink-0 rounded-[3px] bg-brand/30 px-[5px] py-px text-[9px] font-bold uppercase tracking-wider text-white/70"
-              >
-                Demo
-              </span>
-            </div>
-            <p className="mt-px truncate text-[10px] leading-tight text-white/35">
-              Sub-Account
-            </p>
-          </div>
+        {collapsed ? (
+          <span
+            aria-label="Kleegr"
+            className="bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] bg-clip-text text-[20px] font-black leading-none text-transparent"
+          >
+            k
+          </span>
+        ) : (
+          <span
+            aria-label="Kleegr"
+            className="select-none bg-gradient-to-r from-[#7c3aed] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-[24px] font-black lowercase tracking-tight text-transparent"
+          >
+            kleegr
+          </span>
         )}
       </div>
 
-      {/* ── Main nav ─────────────────────────────────────────────────── */}
+      {/* Account switcher + search (expanded only) */}
+      {!collapsed && (
+        <div className="space-y-2 px-3 pb-2">
+          <div className="relative" ref={acctRef}>
+            <button
+              onClick={() => setAcctOpen((v) => !v)}
+              data-tour="topbar.accountSwitcher"
+              className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface-sunken px-2 py-2 text-left transition-colors hover:bg-line/40"
+              aria-haspopup="listbox"
+              aria-expanded={acctOpen}
+            >
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-ai-soft text-ai">
+                <Building2 size={15} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-bold leading-tight text-ink">
+                  {selectedAcct.name}
+                </span>
+                <span className="block truncate text-[11px] leading-tight text-ink-subtle">
+                  {selectedAcct.region}
+                </span>
+              </span>
+              <ChevronsUpDown size={14} className="shrink-0 text-ink-subtle" />
+            </button>
+
+            {acctOpen && (
+              <div
+                className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-line bg-surface shadow-pop"
+                role="listbox"
+              >
+                <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-ink-subtle">
+                  Demo Sub-Accounts
+                </p>
+                {DEMO_ACCOUNTS.map((a) => {
+                  const isActive = a.id === selectedAcct.id;
+                  return (
+                    <button
+                      key={a.id}
+                      role="option"
+                      aria-selected={isActive}
+                      onClick={() => {
+                        if (!isActive) {
+                          setSelectedAcct(a);
+                          pushToast({
+                            title: 'Account switched',
+                            description: `Now viewing: ${a.name}`,
+                            variant: 'info',
+                          });
+                        }
+                        setAcctOpen(false);
+                      }}
+                      className={cx(
+                        'flex w-full items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-surface-sunken',
+                        isActive ? 'font-semibold text-brand' : 'text-ink',
+                      )}
+                    >
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-ai-soft text-ai">
+                        <Building2 size={13} />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-left">{a.name}</span>
+                      {isActive && <Check size={14} className="shrink-0 text-brand" />}
+                    </button>
+                  );
+                })}
+                <p className="border-t border-line px-3 py-2 text-[10px] text-ink-subtle">
+                  Account switching is cosmetic in demo mode.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setSearchOpen(true)}
+            data-tour="topbar.search"
+            className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface-sunken px-2.5 py-2 text-[13px] text-ink-subtle transition-colors hover:border-brand/40"
+            aria-label="Search"
+          >
+            <Search size={14} className="shrink-0" />
+            <span className="flex-1 text-left">Search</span>
+            <kbd className="rounded bg-surface px-1 text-[10px] font-medium text-ink-subtle">ctrlK</kbd>
+            <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-ai-soft text-ai">
+              <Zap size={11} />
+            </span>
+          </button>
+        </div>
+      )}
+
+      {collapsed && (
+        <div className="flex justify-center pb-2">
+          <button
+            onClick={() => setSearchOpen(true)}
+            data-tour="topbar.search"
+            className="grid h-8 w-8 place-items-center rounded-lg border border-line bg-surface-sunken text-ink-subtle hover:border-brand/40"
+            aria-label="Search"
+          >
+            <Search size={15} />
+          </button>
+        </div>
+      )}
+
+      {/* Main nav */}
       <nav
-        className="flex-1 overflow-y-auto overflow-x-hidden py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex-1 overflow-y-auto overflow-x-hidden py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="Main navigation"
       >
         {NAV.map((item, i) => {
@@ -105,30 +210,21 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
           return (
             <div key={item.path}>
-              {/* Group label / collapsed divider */}
-              {groupLabel && (
-                collapsed ? (
-                  // Collapsed: thin divider between sections (skip very first)
+              {groupLabel &&
+                (collapsed ? (
                   i > 0 ? (
-                    <div
-                      aria-hidden="true"
-                      className="mx-auto my-2 h-px w-7 bg-white/10"
-                    />
+                    <div aria-hidden="true" className="mx-auto my-2 h-px w-7 bg-line" />
                   ) : null
                 ) : (
                   <p
                     className={cx(
-                      'mb-0.5 px-3 text-[10px] font-semibold uppercase tracking-widest',
-                      i === 0 ? 'mt-2' : 'mt-4',
-                      groupLabel === 'Core'
-                        ? 'text-white/45'
-                        : 'text-white/22',
+                      'mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-ink-subtle',
+                      i === 0 ? 'mt-1.5' : 'mt-4',
                     )}
                   >
                     {groupLabel}
                   </p>
-                )
-              )}
+                ))}
 
               <NavLink
                 to={item.path}
@@ -139,49 +235,34 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 aria-label={item.label}
                 className={({ isActive }) =>
                   cx(
-                    'group relative flex items-center gap-2.5 text-[13px] font-medium transition-colors duration-100',
+                    'group relative flex items-center gap-3 text-[13.5px] font-medium transition-colors duration-100',
                     collapsed
-                      ? 'mx-1 my-px justify-center rounded-md px-0 py-[7px]'
-                      : 'mx-1.5 my-px rounded-md px-2.5 py-[6px]',
+                      ? 'mx-1.5 my-px justify-center rounded-lg px-0 py-2'
+                      : 'mx-2 my-px rounded-lg px-3 py-[7px]',
                     isActive
-                      ? 'bg-brand text-white'
+                      ? 'bg-brand-soft text-brand'
                       : cx(
-                          'hover:bg-white/10 hover:text-white',
-                          isCore ? 'text-white/75' : 'text-white/40',
+                          'hover:bg-surface-sunken hover:text-ink',
+                          isCore ? 'text-ink' : 'text-ink-muted',
                         ),
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
-                    {/* Left-edge indicator for active item (expanded only) */}
                     {isActive && !collapsed && (
                       <span
                         aria-hidden="true"
-                        className="absolute inset-y-[3px] left-0 w-[3px] rounded-r-full bg-white/60"
+                        className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-brand"
                       />
                     )}
-
                     <Icon
-                      size={16}
-                      className="shrink-0"
+                      size={18}
+                      strokeWidth={isActive ? 2.4 : 2}
+                      className={cx('shrink-0', isActive ? 'text-brand' : 'text-ink-subtle group-hover:text-ink-muted')}
                       aria-hidden="true"
                     />
-
-                    {!collapsed && (
-                      <span className="truncate">{item.label}</span>
-                    )}
-
-                    {/* "Daily" badge on Tasks — it lives in Operate but is a
-                        core daily CRM item. Badge is purely visual, no logic. */}
-                    {!collapsed && item.path === '/tasks' && !isActive && (
-                      <span
-                        aria-hidden="true"
-                        className="ml-auto shrink-0 rounded-[3px] bg-white/10 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-white/35"
-                      >
-                        Daily
-                      </span>
-                    )}
+                    {!collapsed && <span className="truncate">{item.label}</span>}
                   </>
                 )}
               </NavLink>
@@ -190,14 +271,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      {/* ── Collapse toggle (desktop only) ───────────────────────────── */}
+      {/* Collapse toggle (desktop only) */}
       <button
         onClick={toggleSidebar}
         data-tour="nav.collapseToggle"
         className={cx(
-          'hidden h-9 w-full shrink-0 items-center border-t border-white/10 lg:flex',
-          'text-white/30 transition-colors hover:bg-white/5 hover:text-white/60',
-          collapsed ? 'justify-center px-0' : 'gap-1.5 px-3',
+          'hidden h-9 w-full shrink-0 items-center border-t border-line lg:flex',
+          'text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink-muted',
+          collapsed ? 'justify-center px-0' : 'gap-1.5 px-4',
         )}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
