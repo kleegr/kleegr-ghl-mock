@@ -210,7 +210,7 @@ export function Calendars() {
             <EmptyState
               icon={<CalendarDays size={32} />}
               title="No appointments"
-              body="No appointments match the current filter. Try selecting \"All\" or book one."
+              body='No appointments match the current filter. Try selecting "All" or book one.'
               action={
                 <Button size="sm" onClick={() => openBook()}>
                   Book Appointment
