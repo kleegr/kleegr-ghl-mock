@@ -25,6 +25,11 @@ export interface PageHeaderProps {
   className?: string;
 }
 
+/**
+ * Standard page header used at the top of every module view.
+ * Matches GHL's sub-account top-of-page pattern: title + optional subtitle on
+ * the left, optional action buttons on the right.
+ */
 export function PageHeader({ title, subtitle, actions, className }: PageHeaderProps) {
   return (
     <div
@@ -78,6 +83,10 @@ const BTN_SIZE: Record<NonNullable<ButtonProps['size']>, string> = {
   lg: 'h-11 px-5   text-sm',
 };
 
+/**
+ * Primary interactive control. Defaults to `variant="primary"` and
+ * `size="md"`. All native button attributes are forwarded.
+ */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   function Button(
     {
@@ -113,6 +122,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 
+/** Tiny inline spinner used by Button when loading=true. Not exported standalone. */
 function Spinner({ size }: { size: ButtonProps['size'] }) {
   const dim = size === 'xs' || size === 'sm' ? 12 : 14;
   return (
@@ -151,6 +161,10 @@ const BADGE_TONE: Record<NonNullable<BadgeProps['tone']>, string> = {
   neutral: 'bg-surface-sunken text-ink-muted border border-line',
 };
 
+/**
+ * Compact status/label chip. Tone maps to semantic color pairs from the
+ * Kleegr token set (green=good, red=bad, amber=warn, blue=brand, grey=neutral).
+ */
 export function Badge({ tone = 'neutral', size = 'sm', children, className }: BadgeProps) {
   return (
     <span
@@ -173,9 +187,15 @@ export function Badge({ tone = 'neutral', size = 'sm', children, className }: Ba
 export interface CardProps {
   children: React.ReactNode;
   className?: string;
+  /** Forward a data-tour attribute or other HTML div attributes. */
   [key: `data-${string}`]: string | undefined;
 }
 
+/**
+ * Content surface — a white rounded card with a subtle shadow.
+ * Matches the GHL "tile" visual language used across dashboards, pipelines,
+ * and module detail views.
+ */
 export function Card({ children, className, ...rest }: CardProps) {
   return (
     <div
@@ -201,6 +221,10 @@ export interface CardHeaderProps {
   className?: string;
 }
 
+/**
+ * Standard header row inside a Card — title + optional subtitle + optional
+ * right-side actions. Used by Reporting and other chart cards.
+ */
 export function CardHeader({ title, subtitle, actions, className }: CardHeaderProps) {
   return (
     <div
@@ -225,7 +249,9 @@ export function CardHeader({ title, subtitle, actions, className }: CardHeaderPr
    ───────────────────────────────────────────── */
 
 export interface AvatarProps {
+  /** Display name — used to derive initials when src is absent. */
   name?: string;
+  /** Optional image URL. Falls back to initials on error. */
   src?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
@@ -239,14 +265,15 @@ const AVATAR_SIZE: Record<NonNullable<AvatarProps['size']>, string> = {
   xl: 'h-14 w-14 text-lg',
 };
 
+/** Palette of soft background colors for initial avatars — cycles by char code. */
 const AVATAR_PALETTE = [
-  'bg-[#dbeafe] text-[#1e40af]',
-  'bg-[#dcfce7] text-[#166534]',
-  'bg-[#fef9c3] text-[#854d0e]',
-  'bg-[#fce7f3] text-[#9d174d]',
-  'bg-[#ede9fe] text-[#5b21b6]',
-  'bg-[#ffedd5] text-[#9a3412]',
-  'bg-[#e0f2fe] text-[#075985]',
+  'bg-[#dbeafe] text-[#1e40af]', // blue
+  'bg-[#dcfce7] text-[#166534]', // green
+  'bg-[#fef9c3] text-[#854d0e]', // yellow
+  'bg-[#fce7f3] text-[#9d174d]', // pink
+  'bg-[#ede9fe] text-[#5b21b6]', // violet
+  'bg-[#ffedd5] text-[#9a3412]', // orange
+  'bg-[#e0f2fe] text-[#075985]', // sky
 ];
 
 function avatarInitials(name?: string): string {
@@ -262,6 +289,10 @@ function avatarColor(name?: string): string {
   return AVATAR_PALETTE[code % AVATAR_PALETTE.length];
 }
 
+/**
+ * Circular avatar — shows a photo when `src` is provided, otherwise renders
+ * colored initials derived from `name`. Never shows broken img icons.
+ */
 export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
   const [imgFailed, setImgFailed] = React.useState(false);
   const showInitials = !src || imgFailed;
@@ -295,13 +326,19 @@ export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
    ───────────────────────────────────────────── */
 
 export interface EmptyStateProps {
+  /** Optional icon element (e.g. a lucide icon at size 32). */
   icon?: React.ReactNode;
   title: string;
   body?: string;
+  /** Optional CTA — usually a <Button>. */
   action?: React.ReactNode;
   className?: string;
 }
 
+/**
+ * Centered empty-state block for tables, lists, and modules with no data.
+ * Renders an optional icon, title, explanatory body, and a call-to-action.
+ */
 export function EmptyState({ icon, title, body, action, className }: EmptyStateProps) {
   return (
     <div
@@ -331,6 +368,7 @@ export function EmptyState({ icon, title, body, action, className }: EmptyStateP
 export interface TabItem {
   id: string;
   label: string;
+  /** Optional badge count displayed next to the label. */
   count?: number;
   disabled?: boolean;
 }
@@ -339,10 +377,19 @@ export interface TabsProps {
   tabs: TabItem[];
   active: string;
   onChange: (id: string) => void;
+  /** 'underline' (default) matches GHL's module-level tab style.
+   *  'pill' is useful for filter chips inside a module. */
   variant?: 'underline' | 'pill';
   className?: string;
 }
 
+/**
+ * Horizontal tab bar. Two visual variants:
+ * - `underline` — GHL-style nav tabs with an active underline (default).
+ * - `pill` — compact filter pills, useful inside cards.
+ *
+ * The active state is fully controlled — supply `active` + `onChange`.
+ */
 export function Tabs({ tabs, active, onChange, variant = 'underline', className }: TabsProps) {
   if (variant === 'pill') {
     return (
@@ -383,6 +430,7 @@ export function Tabs({ tabs, active, onChange, variant = 'underline', className 
     );
   }
 
+  // underline (default)
   return (
     <div
       role="tablist"
