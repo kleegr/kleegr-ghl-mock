@@ -65,11 +65,7 @@ export function AddContactModal({
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button
-            data-tour="contacts.addSubmit"
-            onClick={handleSubmit}
-            disabled={!isValid}
-          >
+          <Button data-tour="contacts.addSubmit" onClick={handleSubmit} disabled={!isValid}>
             Add Contact
           </Button>
         </>
@@ -78,40 +74,17 @@ export function AddContactModal({
       <div data-tour="contacts.addModal" className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="First Name *">
-            <input
-              value={form.firstName}
-              onChange={update('firstName')}
-              placeholder="First"
-              className={INPUT_CLS}
-              autoFocus
-            />
+            <input value={form.firstName} onChange={update('firstName')} placeholder="First" className={INPUT_CLS} autoFocus />
           </Field>
           <Field label="Last Name *">
-            <input
-              value={form.lastName}
-              onChange={update('lastName')}
-              placeholder="Last"
-              className={INPUT_CLS}
-            />
+            <input value={form.lastName} onChange={update('lastName')} placeholder="Last" className={INPUT_CLS} />
           </Field>
         </div>
         <Field label="Email *">
-          <input
-            type="email"
-            value={form.email}
-            onChange={update('email')}
-            placeholder="contact@example.com"
-            className={INPUT_CLS}
-          />
+          <input type="email" value={form.email} onChange={update('email')} placeholder="contact@example.com" className={INPUT_CLS} />
         </Field>
         <Field label="Phone">
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={update('phone')}
-            placeholder="+1 (555) 000-0000"
-            className={INPUT_CLS}
-          />
+          <input type="tel" value={form.phone} onChange={update('phone')} placeholder="+1 (555) 000-0000" className={INPUT_CLS} />
         </Field>
         <Field label="Source">
           <select value={form.source} onChange={update('source')} className={INPUT_CLS}>
@@ -119,27 +92,14 @@ export function AddContactModal({
           </select>
         </Field>
         <Field label="Tags" hint="Comma-separated, e.g. lead, hot">
-          <input
-            value={form.tags}
-            onChange={update('tags')}
-            placeholder="lead, hot"
-            className={INPUT_CLS}
-          />
+          <input value={form.tags} onChange={update('tags')} placeholder="lead, hot" className={INPUT_CLS} />
         </Field>
       </div>
     </Modal>
   );
 }
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-ink">{label}</label>

@@ -74,24 +74,18 @@ export function ContactDetailDrawer({
       aria-modal="true"
       aria-label={`Contact detail: ${fullName(contact)}`}
     >
-      <div
-        className="absolute inset-0 bg-ink/25 backdrop-blur-[1px]"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-ink/25 backdrop-blur-[1px]" onClick={onClose} />
       <div className="relative z-10 flex h-full w-full max-w-[520px] flex-col overflow-hidden bg-surface shadow-pop">
+
         {/* Header */}
         <div className="flex shrink-0 items-start gap-3 border-b border-line px-5 py-4">
           <Avatar name={fullName(contact)} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-lg font-bold leading-tight text-ink">
-              {fullName(contact)}
-            </h2>
+            <h2 className="font-display text-lg font-bold leading-tight text-ink">{fullName(contact)}</h2>
             <p className="text-xs text-ink-muted">{contact.email}</p>
             <p className="text-xs text-ink-muted">{contact.phone}</p>
             <div className="mt-1.5 flex flex-wrap gap-1">
-              {contact.tags.map(tag => (
-                <Badge key={tag} tone="brand" size="sm">{tag}</Badge>
-              ))}
+              {contact.tags.map(tag => <Badge key={tag} tone="brand" size="sm">{tag}</Badge>)}
               {contact.dnd && <Badge tone="bad" size="sm">DND</Badge>}
             </div>
           </div>
@@ -121,12 +115,7 @@ export function ContactDetailDrawer({
         {/* Tab body */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {activeTab === 'activity' && (
-            <ActivityTab
-              contact={contact}
-              conversations={conversations}
-              tasks={tasks}
-              appointments={appointments}
-            />
+            <ActivityTab contact={contact} conversations={conversations} tasks={tasks} appointments={appointments} />
           )}
           {activeTab === 'conversations' && (
             <ConversationsTab conversations={conversations} messages={allMessages} />
@@ -139,9 +128,7 @@ export function ContactDetailDrawer({
             <OpportunitiesTab opportunities={opportunities} pipelines={pipelines} />
           )}
           {activeTab === 'notes' && (
-            <p className="text-sm italic text-ink-muted">
-              No notes yet \u2014 notes can be added in the full platform.
-            </p>
+            <p className="text-sm italic text-ink-muted">No notes yet. Notes can be added in the full platform.</p>
           )}
           {activeTab === 'fields' && <CustomFieldsTab contact={contact} />}
         </div>
@@ -149,8 +136,6 @@ export function ContactDetailDrawer({
     </div>
   );
 }
-
-/* ─── Helpers ─────────────────────────────── */
 
 function MetaItem({ icon, text }: { icon: ReactNode; text: string }) {
   return (
@@ -165,13 +150,8 @@ function SectionEmpty({ text }: { text: string }) {
   return <p className="text-sm italic text-ink-muted">{text}</p>;
 }
 
-/* ─── Activity ────────────────────────────── */
-
 function ActivityTab({
-  contact,
-  conversations,
-  tasks,
-  appointments,
+  contact, conversations, tasks, appointments,
 }: {
   contact: Contact;
   conversations: Conversation[];
@@ -179,31 +159,20 @@ function ActivityTab({
   appointments: Appointment[];
 }) {
   const events = [
-    { time: contact.createdAt, label: 'Contact created', icon: '\u2728' },
-    ...conversations.map(c => ({
-      time: c.lastMessageAt,
-      label: `${CHANNEL_LABEL[c.channel] ?? c.channel} conversation`,
-      icon: '\ud83d\udcac',
-    })),
-    ...tasks.map(t => ({
-      time: t.dueDate,
-      label: t.title,
-      icon: t.status === 'completed' ? '\u2705' : '\ud83d\udccb',
-    })),
-    ...appointments.map(a => ({
-      time: a.startTime,
-      label: a.title,
-      icon: '\ud83d\udcc5',
-    })),
+    { time: contact.createdAt, label: 'Contact created', icon: '...' },
+    ...conversations.map(c => ({ time: c.lastMessageAt, label: `${CHANNEL_LABEL[c.channel] ?? c.channel} conversation`, icon: 'msg' })),
+    ...tasks.map(t => ({ time: t.dueDate, label: t.title, icon: t.status === 'completed' ? 'done' : 'task' })),
+    ...appointments.map(a => ({ time: a.startTime, label: a.title, icon: 'cal' })),
   ].sort((a, b) => +new Date(b.time) - +new Date(a.time));
 
-  if (events.length === 0) return <SectionEmpty text="No activity recorded." />;
+  const iconMap: Record<string, string> = { '...': '✨', msg: '💬', done: '✅', task: '📋', cal: '📅' };
 
+  if (events.length === 0) return <SectionEmpty text="No activity recorded." />;
   return (
     <ul className="flex flex-col gap-3">
       {events.map((ev, i) => (
         <li key={i} className="flex items-start gap-2.5">
-          <span className="mt-0.5 text-base leading-none">{ev.icon}</span>
+          <span className="mt-0.5 text-base leading-none">{iconMap[ev.icon] ?? ev.icon}</span>
           <div className="min-w-0">
             <p className="text-sm text-ink">{ev.label}</p>
             <p className="text-xs text-ink-subtle">{relativeTime(ev.time)}</p>
@@ -214,15 +183,7 @@ function ActivityTab({
   );
 }
 
-/* ─── Conversations ───────────────────────── */
-
-function ConversationsTab({
-  conversations,
-  messages,
-}: {
-  conversations: Conversation[];
-  messages: Message[];
-}) {
+function ConversationsTab({ conversations, messages }: { conversations: Conversation[]; messages: Message[] }) {
   if (conversations.length === 0) return <SectionEmpty text="No conversations yet." />;
   return (
     <ul className="flex flex-col gap-3">
@@ -233,22 +194,16 @@ function ConversationsTab({
         return (
           <li key={conv.id} className="rounded-lg border border-line p-3">
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <Badge tone="neutral" size="sm">
-                {CHANNEL_LABEL[conv.channel] ?? conv.channel}
-              </Badge>
+              <Badge tone="neutral" size="sm">{CHANNEL_LABEL[conv.channel] ?? conv.channel}</Badge>
               <span className="text-[11px] text-ink-subtle">{relativeTime(conv.lastMessageAt)}</span>
             </div>
-            {lastMsg && (
-              <p className="line-clamp-2 text-xs text-ink-muted">{lastMsg.body}</p>
-            )}
+            {lastMsg && <p className="line-clamp-2 text-xs text-ink-muted">{lastMsg.body}</p>}
           </li>
         );
       })}
     </ul>
   );
 }
-
-/* ─── Tasks ───────────────────────────────── */
 
 function TasksTab({ tasks }: { tasks: Task[] }) {
   if (tasks.length === 0) return <SectionEmpty text="No tasks assigned to this contact." />;
@@ -257,27 +212,14 @@ function TasksTab({ tasks }: { tasks: Task[] }) {
       {tasks.map(task => (
         <li
           key={task.id}
-          className={cx(
-            'flex items-start gap-2.5 rounded-lg border border-line p-3',
-            task.status === 'completed' && 'opacity-60',
-          )}
+          className={cx('flex items-start gap-2.5 rounded-lg border border-line p-3', task.status === 'completed' && 'opacity-60')}
         >
-          <CheckSquare
-            size={14}
-            className={cx('mt-0.5 shrink-0', task.status === 'completed' ? 'text-good' : 'text-ink-subtle')}
-          />
+          <CheckSquare size={14} className={cx('mt-0.5 shrink-0', task.status === 'completed' ? 'text-good' : 'text-ink-subtle')} />
           <div className="min-w-0 flex-1">
-            <p className={cx('text-sm font-medium text-ink', task.status === 'completed' && 'line-through')}>
-              {task.title}
-            </p>
+            <p className={cx('text-sm font-medium text-ink', task.status === 'completed' && 'line-through')}>{task.title}</p>
             <div className="mt-1 flex items-center gap-2">
               <span className="text-[11px] text-ink-subtle">Due {dateLabel(task.dueDate)}</span>
-              <Badge
-                tone={task.priority === 'high' ? 'bad' : task.priority === 'medium' ? 'warn' : 'neutral'}
-                size="sm"
-              >
-                {task.priority}
-              </Badge>
+              <Badge tone={task.priority === 'high' ? 'bad' : task.priority === 'medium' ? 'warn' : 'neutral'} size="sm">{task.priority}</Badge>
             </div>
           </div>
         </li>
@@ -286,15 +228,7 @@ function TasksTab({ tasks }: { tasks: Task[] }) {
   );
 }
 
-/* ─── Appointments ────────────────────────── */
-
-function AppointmentsTab({
-  appointments,
-  calendars,
-}: {
-  appointments: Appointment[];
-  calendars: Calendar[];
-}) {
+function AppointmentsTab({ appointments, calendars }: { appointments: Appointment[]; calendars: Calendar[] }) {
   if (appointments.length === 0) return <SectionEmpty text="No appointments scheduled." />;
   const sorted = [...appointments].sort((a, b) => +new Date(b.startTime) - +new Date(a.startTime));
   return (
@@ -313,9 +247,7 @@ function AppointmentsTab({
                 {cal && <p className="text-[11px] text-ink-subtle">{cal.name}</p>}
                 <p className="text-xs text-ink-muted">{dateLabel(appt.startTime)}</p>
               </div>
-              <Badge tone={tone} size="sm">
-                {appt.status.replace('_', ' ')}
-              </Badge>
+              <Badge tone={tone} size="sm">{appt.status.replace('_', ' ')}</Badge>
             </div>
           </li>
         );
@@ -324,15 +256,7 @@ function AppointmentsTab({
   );
 }
 
-/* ─── Opportunities ───────────────────────── */
-
-function OpportunitiesTab({
-  opportunities,
-  pipelines,
-}: {
-  opportunities: Opportunity[];
-  pipelines: Pipeline[];
-}) {
+function OpportunitiesTab({ opportunities, pipelines }: { opportunities: Opportunity[]; pipelines: Pipeline[] }) {
   if (opportunities.length === 0) return <SectionEmpty text="No opportunities for this contact." />;
   return (
     <ul className="flex flex-col gap-2">
@@ -348,9 +272,7 @@ function OpportunitiesTab({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-ink">{opp.name}</p>
-                <p className="text-[11px] text-ink-subtle">
-                  {pipeline?.name} \u203a {stage?.name}
-                </p>
+                <p className="text-[11px] text-ink-subtle">{pipeline?.name} / {stage?.name}</p>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <p className="text-sm font-bold text-ink">{money(opp.monetaryValue)}</p>
@@ -364,21 +286,14 @@ function OpportunitiesTab({
   );
 }
 
-/* ─── Custom Fields ───────────────────────── */
-
 function CustomFieldsTab({ contact }: { contact: Contact }) {
   const entries = Object.entries(contact.customFields);
   if (entries.length === 0) return <SectionEmpty text="No custom fields defined." />;
   return (
     <dl className="flex flex-col gap-2">
       {entries.map(([key, value]) => (
-        <div
-          key={key}
-          className="flex items-center justify-between gap-4 rounded-lg border border-line px-3 py-2"
-        >
-          <dt className="text-xs font-semibold capitalize text-ink-muted">
-            {key.replace(/([A-Z])/g, ' $1').trim()}
-          </dt>
+        <div key={key} className="flex items-center justify-between gap-4 rounded-lg border border-line px-3 py-2">
+          <dt className="text-xs font-semibold capitalize text-ink-muted">{key.replace(/([A-Z])/g, ' $1').trim()}</dt>
           <dd className="text-sm text-ink">{String(value)}</dd>
         </div>
       ))}

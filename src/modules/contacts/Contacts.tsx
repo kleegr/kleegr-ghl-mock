@@ -96,7 +96,7 @@ export function Contacts() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search contacts\u2026"
+            placeholder="Search contacts..."
             className="w-full rounded-lg border border-line bg-surface-sunken py-1.5 pl-7 pr-6 text-sm text-ink placeholder:text-ink-subtle focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30"
           />
           {search && (
@@ -158,7 +158,6 @@ export function Contacts() {
         <ContactsTable contacts={filtered} onRowClick={setSelectedContact} />
       </div>
 
-      {/* Contact detail drawer */}
       {selectedContact && (
         <ContactDetailDrawer
           contact={selectedContact}
@@ -166,7 +165,6 @@ export function Contacts() {
         />
       )}
 
-      {/* Add contact modal */}
       <AddContactModal open={showAdd} onClose={() => setShowAdd(false)} />
     </div>
   );

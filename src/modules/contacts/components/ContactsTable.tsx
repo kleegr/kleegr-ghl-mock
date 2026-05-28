@@ -23,12 +23,7 @@ export function ContactsTable({
   const companies = useStore(s => s.companies);
 
   if (contacts.length === 0) {
-    return (
-      <EmptyState
-        title="No contacts found"
-        body="Try adjusting your search or filters."
-      />
-    );
+    return <EmptyState title="No contacts found" body="Try adjusting your search or filters." />;
   }
 
   return (
@@ -37,10 +32,7 @@ export function ContactsTable({
         <thead>
           <tr className="border-b border-line text-left">
             {['Name', 'Email', 'Phone', 'Company', 'Tags', 'Source', 'Owner', 'Created'].map(h => (
-              <th
-                key={h}
-                className="whitespace-nowrap bg-surface px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-subtle"
-              >
+              <th key={h} className="whitespace-nowrap bg-surface px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-subtle">
                 {h}
               </th>
             ))}
@@ -57,29 +49,21 @@ export function ContactsTable({
                 onClick={() => onRowClick(contact)}
                 className="cursor-pointer border-b border-line/70 transition-colors hover:bg-surface-sunken"
               >
-                {/* Name */}
                 <td className="px-4 py-3 align-middle">
                   <div className="flex items-center gap-2.5">
                     <Avatar name={fullName(contact)} size="sm" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-ink">{fullName(contact)}</p>
-                      {contact.dnd && (
-                        <span className="text-[10px] font-bold text-bad">DND</span>
-                      )}
+                      {contact.dnd && <span className="text-[10px] font-bold text-bad">DND</span>}
                     </div>
                   </div>
                 </td>
-                {/* Email */}
                 <td className="px-4 py-3 align-middle">
-                  <span className="block max-w-[180px] truncate text-xs text-ink-muted">
-                    {contact.email}
-                  </span>
+                  <span className="block max-w-[180px] truncate text-xs text-ink-muted">{contact.email}</span>
                 </td>
-                {/* Phone */}
                 <td className="px-4 py-3 align-middle">
                   <span className="whitespace-nowrap text-xs text-ink-muted">{contact.phone}</span>
                 </td>
-                {/* Company */}
                 <td className="px-4 py-3 align-middle">
                   {company ? (
                     <div className="flex max-w-[140px] items-center gap-1 text-xs text-ink-muted">
@@ -87,10 +71,9 @@ export function ContactsTable({
                       <span className="truncate">{company.name}</span>
                     </div>
                   ) : (
-                    <span className="text-xs text-ink-subtle">&mdash;</span>
+                    <span className="text-xs text-ink-subtle">-</span>
                   )}
                 </td>
-                {/* Tags */}
                 <td className="px-4 py-3 align-middle">
                   <div className="flex flex-wrap gap-1">
                     {contact.tags.slice(0, 2).map(tag => (
@@ -101,30 +84,21 @@ export function ContactsTable({
                     )}
                   </div>
                 </td>
-                {/* Source */}
                 <td className="px-4 py-3 align-middle">
-                  <Badge tone={sourceTone(contact.source)} size="sm">
-                    {contact.source}
-                  </Badge>
+                  <Badge tone={sourceTone(contact.source)} size="sm">{contact.source}</Badge>
                 </td>
-                {/* Owner */}
                 <td className="px-4 py-3 align-middle">
                   {owner ? (
                     <div className="flex items-center gap-1.5">
                       <Avatar name={owner.name} size="xs" />
-                      <span className="whitespace-nowrap text-xs text-ink-muted">
-                        {owner.name.split(' ')[0]}
-                      </span>
+                      <span className="whitespace-nowrap text-xs text-ink-muted">{owner.name.split(' ')[0]}</span>
                     </div>
                   ) : (
-                    <span className="text-xs text-ink-subtle">&mdash;</span>
+                    <span className="text-xs text-ink-subtle">-</span>
                   )}
                 </td>
-                {/* Created */}
                 <td className="px-4 py-3 align-middle">
-                  <span className="whitespace-nowrap text-xs text-ink-subtle">
-                    {dateLabel(contact.createdAt)}
-                  </span>
+                  <span className="whitespace-nowrap text-xs text-ink-subtle">{dateLabel(contact.createdAt)}</span>
                 </td>
               </tr>
             );
