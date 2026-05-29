@@ -66,7 +66,7 @@ export function Conversations() {
   const agentName =
     (selectedConv && users.find((u) => u.id === selectedConv.assignedTo)?.name) ||
     users.find((u) => u.isCurrentUser)?.name ||
-    'Naftuli Horowitz';
+    'Jordan Avery';
 
   const filteredConvs = useMemo(() => {
     if (activeFilter === 'unread') return conversations.filter((c) => c.unread);
