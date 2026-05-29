@@ -7,7 +7,7 @@
  * All behaviour is in-memory and demo-safe:
  *   • selecting a conversation marks it read (markConversationRead)
  *   • the composer sends a fake reply via the store (sendMessage)
- *   • "New Message" is wired to a demo-safe toast (no real inbox integration)
+ *   • "New Message" opens a demo-safe compose modal (no real inbox integration)
  *   • Reset Demo restores the original seed and removes sent replies
  */
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -18,6 +18,7 @@ import { ConversationList } from './components/ConversationList';
 import { MessageThread } from './components/MessageThread';
 import { Composer } from './components/Composer';
 import { ContactPanel } from './components/ContactPanel';
+import { NewMessageModal } from './components/NewMessageModal';
 import { SUBNAV_TABS, type ConvFilter, type SubNavTab } from './utils';
 
 export function Conversations() {
@@ -32,6 +33,7 @@ export function Conversations() {
   const [subTab, setSubTab] = useState<SubNavTab>('Conversations');
   const [selectedConvId, setSelectedConvId] = useState<string | null>(conversations[0]?.id ?? null);
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
+  const [newMsgOpen, setNewMsgOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // last message + a trailing-inbound "unread count" per conversation
@@ -83,15 +85,8 @@ export function Conversations() {
     markRead(id);
   };
 
-  // Required demo-safe behaviour for the "New Message" button.
-  const handleNewMessage = () => {
-    pushToast({
-      title: 'New message is demo-only',
-      description:
-        'Select an existing conversation and use the reply composer to send a fake in-memory reply.',
-      variant: 'info',
-    });
-  };
+  // The "New Message" button opens a demo-safe compose modal (no real send).
+  const handleNewMessage = () => setNewMsgOpen(true);
 
   const handleSubTab = (t: SubNavTab) => {
     if (t === 'Conversations') {
@@ -180,6 +175,8 @@ export function Conversations() {
           </div>
         )}
       </div>
+
+      <NewMessageModal open={newMsgOpen} onClose={() => setNewMsgOpen(false)} contacts={contacts} />
     </div>
   );
 }
