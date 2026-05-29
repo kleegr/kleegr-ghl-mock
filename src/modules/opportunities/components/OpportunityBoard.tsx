@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { Pipeline, Opportunity, Contact, User, Company } from '@/types';
 import { StageColumn } from './StageColumn';
 import { OpportunityCardOverlay } from './OpportunityCard';
@@ -35,8 +35,14 @@ export function OpportunityBoard({
   const [activeOppId, setActiveOppId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  // Distance constraint => a plain click (no movement) opens the card; a drag moves it.
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // Mouse: a 6px move starts a drag (a plain click still opens the card).
+  // Touch: a 200ms press-hold starts a drag, so a quick swipe scrolls the board
+  // instead of fighting the drag — the touch fallback for moving a card between
+  // stages (the detail drawer's stage dropdown is the secondary, all-viewport path).
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
 
   const activeOpp = activeOppId
     ? (opportunities.find((o) => o.id === activeOppId) ?? null)

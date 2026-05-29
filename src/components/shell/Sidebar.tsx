@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, ChevronsUpDown, Building2, Search, Zap, Check,
 } from 'lucide-react';
-import { NAV } from './nav';
+import { NAV, SETTINGS_NAV } from './nav';
 import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
 
@@ -53,17 +53,6 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const [selectedAcct, setSelectedAcct] = useState(DEMO_ACCOUNTS[0]);
   const acctRef = useRef<HTMLDivElement>(null);
   useClickOutside(acctRef, () => setAcctOpen(false));
-
-  // Build group-start map (synthetic "Core" label for leading ungrouped items).
-  const groupStarts = new Map<number, string>();
-  const seenGroups = new Set<string>();
-  NAV.forEach((item, i) => {
-    if (item.group && !seenGroups.has(item.group)) {
-      seenGroups.add(item.group);
-      groupStarts.set(i, item.group);
-    }
-  });
-  if (!NAV[0]?.group) groupStarts.set(0, 'Core');
 
   return (
     <aside
@@ -204,28 +193,18 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         className="flex-1 overflow-y-auto overflow-x-hidden py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="Main navigation"
       >
-        {NAV.map((item, i) => {
+        {NAV.map((item) => {
           const Icon = item.icon;
-          const groupLabel = groupStarts.get(i);
           const isCore = CORE_CRM_PATHS.has(item.path);
 
           return (
             <div key={item.path}>
-              {groupLabel &&
-                (collapsed ? (
-                  i > 0 ? (
-                    <div aria-hidden="true" className="mx-auto my-2 h-px w-7 bg-white/15" />
-                  ) : null
-                ) : (
-                  <p
-                    className={cx(
-                      'mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-white/40',
-                      i === 0 ? 'mt-1.5' : 'mt-4',
-                    )}
-                  >
-                    {groupLabel}
-                  </p>
-                ))}
+              {item.dividerBefore && (
+                <div
+                  aria-hidden="true"
+                  className={cx('bg-white/10', collapsed ? 'mx-auto my-2 h-px w-7' : 'mx-3 my-2 h-px')}
+                />
+              )}
 
               <NavLink
                 to={item.path}
@@ -271,6 +250,46 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* Pinned: Settings — docked at the bottom like the real GHL portal */}
+      <div className="shrink-0 border-t border-white/10 py-1.5">
+        <NavLink
+          to={SETTINGS_NAV.path}
+          onClick={onNavigate}
+          data-tour={SETTINGS_NAV.tour}
+          title={SETTINGS_NAV.label}
+          aria-label={SETTINGS_NAV.label}
+          className={({ isActive }) =>
+            cx(
+              'group relative flex items-center gap-3 text-[13.5px] font-medium transition-colors duration-100',
+              collapsed
+                ? 'mx-1.5 my-px justify-center rounded-lg px-0 py-2'
+                : 'mx-2 my-px rounded-lg px-3 py-[7px]',
+              isActive
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-white/75 hover:bg-white/10 hover:text-white',
+            )
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && !collapsed && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-[#38bdf8]"
+                />
+              )}
+              <SETTINGS_NAV.icon
+                size={18}
+                strokeWidth={isActive ? 2.4 : 2}
+                className={cx('shrink-0', isActive ? 'text-white' : 'text-white/60 group-hover:text-white')}
+                aria-hidden="true"
+              />
+              {!collapsed && <span className="truncate">{SETTINGS_NAV.label}</span>}
+            </>
+          )}
+        </NavLink>
+      </div>
 
       {/* Collapse toggle (desktop only) */}
       <button

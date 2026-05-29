@@ -207,30 +207,67 @@ export function generateDemoData(): DemoData {
   conversations.sort((a, b) => +new Date(b.lastMessageAt) - +new Date(a.lastMessageAt));
 
   const pipelines: Pipeline[] = [
-    { id: 'pipe_sales', name: 'Sales Pipeline', stages: ['New Lead','Contacted','Consult Booked','Proposal Sent','Won'].map((name, o) => ({ id: `st_s_${o}`, name, order: o })) },
-    { id: 'pipe_onboard', name: 'Client Onboarding', stages: ['Welcome','Kickoff Call','Setup','Live'].map((name, o) => ({ id: `st_o_${o}`, name, order: o })) },
-    { id: 'pipe_react', name: 'Reactivation', stages: ['Identified','Outreach','Re-engaged'].map((name, o) => ({ id: `st_r_${o}`, name, order: o })) },
-    { id: 'pipe_nurture', name: 'Follow-up Nurture', stages: ['Cold','Warming Up','Hot','Converted'].map((name, o) => ({ id: `st_n_${o}`, name, order: o })) },
+    {
+      id: 'pipe_sales',
+      name: 'Kleegr Sales',
+      stages: ['New Lead', 'Called 1', 'Called 2', 'Called 3', 'Called 4', 'Nurturing', 'Won']
+        .map((name, o) => ({ id: `st_s_${o}`, name, order: o })),
+    },
+    {
+      id: 'pipe_onboard',
+      name: 'Onboarding Process',
+      stages: ['New Client', 'Welcome Call', 'Account Setup', 'Training', 'Live']
+        .map((name, o) => ({ id: `st_o_${o}`, name, order: o })),
+    },
+    {
+      id: 'pipe_react',
+      name: 'Phone System',
+      stages: ['New Call', 'Voicemail', 'Callback Scheduled', 'Resolved']
+        .map((name, o) => ({ id: `st_r_${o}`, name, order: o })),
+    },
+    {
+      id: 'pipe_nurture',
+      name: 'Archive',
+      stages: ['Archived', 'Closed Lost', 'Do Not Contact']
+        .map((name, o) => ({ id: `st_n_${o}`, name, order: o })),
+    },
   ];
+
+  // The Phone System pipeline tracks call handling, not deal value, so it reads
+  // $0.00 in the real portal (the cards/stage totals already format with cents).
+  // Kleegr Sales keeps realistic values so the Dashboard pipeline charts stay alive.
+  const ZERO_VALUE_PIPELINES = new Set(['pipe_react']);
+
   const opportunities: Opportunity[] = [];
   let oppN = 1;
   const pipelineCounts: Record<string, number> = { pipe_sales: 38, pipe_onboard: 22, pipe_react: 18, pipe_nurture: 18 };
   pipelines.forEach((p) => {
     const count = pipelineCounts[p.id] ?? 20;
+    const zeroValue = ZERO_VALUE_PIPELINES.has(p.id);
+    const isArchive = p.id === 'pipe_nurture';
     for (let i = 0; i < count; i++) {
       const contact = pick(contacts);
       const weighted = Math.floor(Math.pow(r(), 1.6) * p.stages.length);
       const stage = p.stages[Math.min(weighted, p.stages.length - 1)];
       const isLastStage = stage.order === p.stages.length - 1;
       const created = now() - int(2, 90) * DAY;
+      const status: Opportunity['status'] = isArchive
+        ? (chance(0.5) ? 'lost' : 'abandoned')
+        : isLastStage && chance(0.6)
+          ? 'won'
+          : chance(0.08)
+            ? 'lost'
+            : 'open';
       opportunities.push({
         id: `opp_${oppN++}`,
-        name: `${contact.firstName} ${contact.lastName} - ${pick(['Package','Retainer','Setup','Plan','Project','Service','Campaign'])}`,
+        name: zeroValue
+          ? `${contact.firstName} ${contact.lastName}`
+          : `${contact.firstName} ${contact.lastName} - ${pick(['Package','Retainer','Setup','Plan','Project','Service','Campaign'])}`,
         contactId: contact.id,
         pipelineId: p.id,
         stageId: stage.id,
-        monetaryValue: int(5, 90) * 100,
-        status: isLastStage && chance(0.6) ? 'won' : chance(0.08) ? 'lost' : 'open',
+        monetaryValue: zeroValue ? 0 : int(5, 90) * 100,
+        status,
         ownerId: pick(ownerIds),
         source: pick(SOURCES),
         createdAt: iso(created),

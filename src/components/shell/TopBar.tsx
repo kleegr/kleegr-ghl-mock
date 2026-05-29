@@ -154,7 +154,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
         <div className="flex items-center gap-2">
           <div
             data-tour="topbar.modeToggle"
-            className="hidden items-center rounded-lg border border-line bg-surface-sunken p-0.5 sm:flex"
+            className="hidden items-center rounded-lg bg-surface-sunken p-0.5 sm:flex"
             role="group"
             aria-label="App mode"
           >
@@ -172,7 +172,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
                 }}
                 className={cx(
                   'rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors',
-                  mode === m ? 'bg-brand text-white shadow-sm' : 'text-ink-muted hover:text-ink',
+                  mode === m ? 'bg-surface text-ink shadow-sm ring-1 ring-line' : 'text-ink-subtle hover:text-ink-muted',
                 )}
                 aria-pressed={mode === m}
               >
@@ -184,7 +184,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
           <button
             onClick={resetDemo}
             data-tour="topbar.resetDemo"
-            className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-ink-muted hover:border-brand/30 hover:bg-brand-soft hover:text-brand"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink-muted"
             aria-label="Reset demo data"
           >
             <RotateCcw size={13} />
@@ -196,7 +196,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
             <button
               onClick={() => setQuickAddOpen((v) => !v)}
               data-tour="topbar.quickAdd"
-              className="flex items-center justify-center rounded-lg border border-line p-1.5 text-ink-muted hover:border-brand/30 hover:bg-brand-soft hover:text-brand"
+              className="flex items-center justify-center rounded-lg p-1.5 text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink-muted"
               aria-label="Quick add"
               aria-haspopup="true"
               aria-expanded={quickAddOpen}
@@ -258,13 +258,17 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
               <span className="hidden sm:block">Ask AI</span>
             </button>
 
-            {/* Megaphone (cosmetic) */}
+            {/* What's new (cosmetic) */}
             <button
               onClick={() => cosmetic("What's new", 'Product updates are not available in demo mode.')}
-              className="grid h-8 w-8 place-items-center rounded-full bg-[#0ea5a3] text-white transition-transform hover:scale-105"
+              className="relative grid h-8 w-8 place-items-center rounded-full bg-[#0ea5a3] text-white transition-transform hover:scale-105"
               aria-label="What's new"
             >
               <Megaphone size={15} />
+              <span
+                aria-hidden="true"
+                className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-amber-300 ring-2 ring-banner"
+              />
             </button>
 
             {/* Notifications (functional) */}
