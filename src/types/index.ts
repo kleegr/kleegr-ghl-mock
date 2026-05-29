@@ -114,9 +114,22 @@ export interface Workflow {
   id: ID;
   name: string;
   status: 'published' | 'draft';
+  /** Lifetime "Total Enrolled" count shown in the list/overview. */
   enrolled: number;
   trigger: string;
+  /** Plain-language "what this workflow does" note shown in the list + builder. */
   explanation?: string;
+  /** Optional demo display metadata (all cosmetic, never persisted). */
+  category?: string;
+  /** Contacts currently moving through the workflow ("Active Enrolled" column). */
+  activeEnrolled?: number;
+  /** Pre-formatted display timestamps; fall back to derived values when absent. */
+  lastUpdatedAt?: string;
+  createdAt?: string;
+  /** Flags a published workflow that has a recent execution error to review. */
+  needsReview?: boolean;
+  /** Short last-error string surfaced in the Needs Review tab + Overview. */
+  lastError?: string;
 }
 
 export interface Campaign {
