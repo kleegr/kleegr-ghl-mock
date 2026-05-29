@@ -7,7 +7,8 @@
  * All behaviour is in-memory and demo-safe:
  *   • selecting a conversation marks it read (markConversationRead)
  *   • the composer sends a fake reply via the store (sendMessage)
- *   • "New Message" opens a demo-safe compose modal (no real inbox integration)
+ *   • "New Message" opens a compose modal that starts a new in-memory thread
+ *     (startConversation) and selects it
  *   • Reset Demo restores the original seed and removes sent replies
  */
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -85,7 +86,7 @@ export function Conversations() {
     markRead(id);
   };
 
-  // The "New Message" button opens a demo-safe compose modal (no real send).
+  // The "New Message" button opens a compose modal that starts a new in-memory thread.
   const handleNewMessage = () => setNewMsgOpen(true);
 
   const handleSubTab = (t: SubNavTab) => {
@@ -176,7 +177,16 @@ export function Conversations() {
         )}
       </div>
 
-      <NewMessageModal open={newMsgOpen} onClose={() => setNewMsgOpen(false)} contacts={contacts} />
+      <NewMessageModal
+        open={newMsgOpen}
+        onClose={() => setNewMsgOpen(false)}
+        contacts={contacts}
+        onSent={(id) => {
+          setSelectedConvId(id);
+          setMobileView('thread');
+          setNewMsgOpen(false);
+        }}
+      />
     </div>
   );
 }
