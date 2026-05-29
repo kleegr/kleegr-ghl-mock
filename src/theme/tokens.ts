@@ -1,16 +1,20 @@
 /**
  * Kleegr theme tokens — SINGLE SOURCE OF TRUTH for branding.
  *
- * ⚠️ PLACEHOLDER VALUES. These are NOT Kleegr's verified brand tokens.
- * Per the product plan (§13), the real palette/logo/fonts must be extracted
- * directly from https://kleegr.com and https://crm.kleegr.com (DevTools →
- * computed styles / CSS variables) and confirmed with Kleegr marketing.
+ * STRUCTURE reference: real GoHighLevel sub-account portal (dark navy left
+ * rail + light content + dark "banner" strip behind the top-right action
+ * cluster). BRAND layer: Kleegr's blue/violet identity.
+ *
+ * ⚠️ BRAND COLORS ARE STILL UNVERIFIED. Public Kleegr brand assets
+ * (kleegr.com / crm.kleegr.com) were not retrievable during research, so the
+ * palette below is the established demo identity — the documented fallback.
+ * When real assets are available, extract the palette (DevTools → computed
+ * styles) and replace the values flagged `placeholder: true`.
  *
  * To re-theme the entire app, change values here. They are injected as CSS
  * variables at runtime (see applyTheme) and consumed by Tailwind (see
- * tailwind.config.js) so every component re-themes from one place.
- *
- * TODO(branding): replace all values flagged `placeholder: true`.
+ * tailwind.config.js) AND by the gradient utilities in Sidebar.tsx, so every
+ * surface re-themes from one place. Keep index.css :root fallbacks in sync.
  */
 
 export type ThemeTokens = {
@@ -43,10 +47,15 @@ export const kleegrTheme: ThemeTokens = {
     'surface-raised': '255 255 255',
     'surface-sunken': '247 248 250',
     line: '228 231 236',
-    // Sidebar — Kleegr uses a LIGHT rail (white) with dark text
-    sidebar: '255 255 255',
-    'sidebar-fg': '71 84 103',
-    'sidebar-active': '31 111 235',
+    // Sidebar — real GHL uses a flat DARK navy/slate rail with light text.
+    // The rail is rendered as a subtle top→bottom navy gradient driven by the
+    // three stop tokens below (consumed via arbitrary utilities in Sidebar.tsx).
+    sidebar: '12 31 58', // #0c1f3a — solid fallback (matches the gradient mid-tone)
+    'sidebar-fg': '226 232 240', // #e2e8f0 — light slate text
+    'sidebar-active': '31 111 235', // brand blue — active nav pill
+    'sidebar-from': '8 23 45', // #08172d — deep navy (top)
+    'sidebar-via': '12 31 58', // #0c1f3a
+    'sidebar-to': '16 40 72', // #102848 — only marginally lighter (flat, GHL-like)
     // Status
     good: '18 152 99',
     warn: '217 145 17',

@@ -58,7 +58,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     <aside
       className={cx(
         'flex h-full flex-col overflow-hidden border-r border-white/10 text-white transition-[width] duration-200',
-        'bg-gradient-to-b from-[#0a1f44] via-[#123070] to-[#1c50bd]',
+        'bg-sidebar bg-gradient-to-b from-[rgb(var(--sidebar-from))] via-[rgb(var(--sidebar-via))] to-[rgb(var(--sidebar-to))]',
         collapsed ? 'w-[60px]' : 'w-[248px]',
       )}
       aria-label="Sidebar"
@@ -233,7 +233,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                     {isActive && !collapsed && (
                       <span
                         aria-hidden="true"
-                        className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-[#38bdf8]"
+                        className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-banner-accent"
                       />
                     )}
                     <Icon
@@ -276,7 +276,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               {isActive && !collapsed && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-[#38bdf8]"
+                  className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-banner-accent"
                 />
               )}
               <SETTINGS_NAV.icon

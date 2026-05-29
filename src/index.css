@@ -16,9 +16,12 @@
   --surface-raised: 255 255 255;
   --surface-sunken: 247 248 250;
   --line: 228 231 236;
-  --sidebar: 255 255 255;
-  --sidebar-fg: 71 84 103;
+  --sidebar: 12 31 58;
+  --sidebar-fg: 226 232 240;
   --sidebar-active: 31 111 235;
+  --sidebar-from: 8 23 45;
+  --sidebar-via: 12 31 58;
+  --sidebar-to: 16 40 72;
   --good: 18 152 99;
   --warn: 217 145 17;
   --bad: 217 54 62;
