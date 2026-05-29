@@ -28,7 +28,7 @@ import type {
  * V1 TARGETS:
  *   Contacts 200 | Companies 48 | Conversations 35 | Messages 8-15/thread
  *   Pipelines 4 | Opportunities ~96 | Calendars 3 | Appointments 55
- *   Workflows 12 | Email campaigns 10 | SMS campaigns 8 | Calls 70
+ *   Workflows 5 | Email campaigns 10 | SMS campaigns 8 | Calls 70
  *   Tasks 45 | Reviews 26 | Invoices 32 | Products 15 | Notifications 15
  */
 
@@ -303,19 +303,78 @@ export function generateDemoData(): DemoData {
   }
   appointments.sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime));
 
+  /*
+   * Five flagship demo workflows — deliberately small so the Automations
+   * module reads like a real, well-run account rather than dozens of shallow
+   * fakes. Enrollment numbers are fixed (not PRNG-drawn) so the totals stay
+   * coherent with the Overview dashboard: 5 workflows, 4 published, and a
+   * combined ~312 lifetime enrollments (matching the trigger-match funnel).
+   * Drafts carry 0 enrollments because they are not live yet. wf_3 carries a
+   * needsReview flag whose lastError matches OVERVIEW_ERRORS in automationData.
+   */
   const workflows: Workflow[] = [
-    { id: 'wf_1', name: 'New Lead Follow-up', status: 'published', enrolled: int(120, 480), trigger: 'Form submitted', explanation: 'When a new lead submits a form, send an instant text and a follow-up email, then create a task for the owner.' },
-    { id: 'wf_2', name: 'Missed Call Text-Back', status: 'published', enrolled: int(60, 220), trigger: 'Missed call', explanation: 'If a call is missed, automatically text the caller back so no lead goes cold.' },
-    { id: 'wf_3', name: 'Appointment Reminder', status: 'published', enrolled: int(200, 600), trigger: 'Appointment booked', explanation: 'Sends SMS + email reminders 24 hours and 1 hour before an appointment.' },
-    { id: 'wf_4', name: 'Review Request', status: 'published', enrolled: int(80, 260), trigger: 'Opportunity won', explanation: 'After a deal is won, waits 1 day then asks the client for a Google review.' },
-    { id: 'wf_5', name: 'Reactivation Drip', status: 'draft', enrolled: 0, trigger: 'Tag added: past-client', explanation: 'A 3-message drip to win back past clients who have gone quiet.' },
-    { id: 'wf_6', name: 'Birthday Greeting', status: 'published', enrolled: int(40, 120), trigger: 'Birthday', explanation: 'Sends a friendly birthday message with a small offer.' },
-    { id: 'wf_7', name: 'Abandoned Booking', status: 'draft', enrolled: 0, trigger: 'Booking started', explanation: 'Nudges contacts who started but did not finish booking.' },
-    { id: 'wf_8', name: 'Welcome Sequence', status: 'published', enrolled: int(90, 300), trigger: 'Tag added: new-client', explanation: 'Onboards new clients with a welcome series over the first week.' },
-    { id: 'wf_9', name: 'No-Show Follow-up', status: 'published', enrolled: int(30, 90), trigger: 'Appointment no-show', explanation: 'Sends a re-booking prompt to contacts who missed their appointment.' },
-    { id: 'wf_10', name: 'Invoice Overdue Reminder', status: 'published', enrolled: int(20, 80), trigger: 'Invoice overdue', explanation: 'Sends a payment reminder when an invoice passes its due date.' },
-    { id: 'wf_11', name: 'New Client Onboarding Checklist', status: 'draft', enrolled: 0, trigger: 'Opportunity moved to Onboarding', explanation: 'Triggers a checklist and welcome email series for newly closed clients.' },
-    { id: 'wf_12', name: 'Referral Thank-you', status: 'published', enrolled: int(15, 60), trigger: 'Tag added: referred-by', explanation: 'Sends a thank-you note whenever a new client is tagged as a referral.' },
+    {
+      id: 'wf_1',
+      name: 'New Lead Speed-to-Lead',
+      status: 'published',
+      enrolled: 96,
+      activeEnrolled: 4,
+      trigger: 'Form Submitted / New Lead Created',
+      category: 'Lead Follow-Up',
+      explanation: 'Instantly follows up with a new lead by SMS and email, assigns a rep, and creates a sales task so the team responds within minutes.',
+      createdAt: 'Feb 03 2026, 9:24 AM',
+      lastUpdatedAt: 'May 21 2026, 2:11 PM',
+    },
+    {
+      id: 'wf_2',
+      name: 'Missed Call Text Back',
+      status: 'published',
+      enrolled: 58,
+      activeEnrolled: 3,
+      trigger: 'Missed Call',
+      category: 'Speed to Lead',
+      explanation: 'Catches missed inbound calls and sends an instant callback text, notifies the assigned rep, and tags the contact so fewer leads fall through the cracks.',
+      createdAt: 'Jan 14 2026, 4:02 PM',
+      lastUpdatedAt: 'May 24 2026, 10:48 AM',
+    },
+    {
+      id: 'wf_3',
+      name: 'Appointment Reminder + No-Show Recovery',
+      status: 'published',
+      enrolled: 88,
+      activeEnrolled: 6,
+      trigger: 'Appointment Booked / Status Changed',
+      category: 'Appointments',
+      explanation: 'Reminds contacts by SMS and email before their appointment, then automatically follows up and re-engages anyone who does not show.',
+      needsReview: true,
+      lastError: 'SMS step failed — invalid phone number · 2 days ago',
+      createdAt: 'Dec 09 2025, 11:30 AM',
+      lastUpdatedAt: 'May 26 2026, 8:15 AM',
+    },
+    {
+      id: 'wf_4',
+      name: 'Review Request After Completed Appointment',
+      status: 'published',
+      enrolled: 70,
+      activeEnrolled: 2,
+      trigger: 'Appointment Status = Showed / Completed',
+      category: 'Reputation',
+      explanation: 'One hour after a completed appointment, asks happy clients for a Google review by SMS and email, then tags them as a review request sent.',
+      createdAt: 'Mar 18 2026, 1:45 PM',
+      lastUpdatedAt: 'May 19 2026, 5:33 PM',
+    },
+    {
+      id: 'wf_5',
+      name: 'Pipeline Stage Follow-Up',
+      status: 'draft',
+      enrolled: 0,
+      activeEnrolled: 0,
+      trigger: 'Opportunity Stage Changed',
+      category: 'Sales Pipeline',
+      explanation: 'Keeps deals moving when they enter the Follow-Up stage: sends a follow-up message, notifies the owner, and adds a second touch two days later.',
+      createdAt: 'Apr 27 2026, 3:08 PM',
+      lastUpdatedAt: 'May 28 2026, 9:52 AM',
+    },
   ];
 
   const campaigns: Campaign[] = [

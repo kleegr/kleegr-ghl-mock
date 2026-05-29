@@ -15,7 +15,7 @@ import { getNodesForWorkflow, type WorkflowDisplayNode, type WorkflowNodeKind } 
 import { BuilderPicker } from './BuilderPickers';
 import { AI_CHIPS, AI_PROMPTS, type CatalogItem } from './automationData';
 
-/* ── node visual maps ─────────────────────────────────────────────── */
+/* ── node visual maps ── */
 
 const KIND_CHIP: Record<WorkflowNodeKind, string> = {
   trigger: 'bg-brand text-white',
@@ -51,7 +51,7 @@ function iconFor(subtype: string): LucideIcon {
   return SUBTYPE_ICON[subtype] ?? Zap;
 }
 
-/* ── connector with inline add button ──────────────────────────────── */
+/* ── connector with inline add button ── */
 
 function Connector({ onAdd }: { onAdd: () => void }) {
   return (
@@ -70,7 +70,7 @@ function Connector({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-/* ── node card ─────────────────────────────────────────────────── */
+/* ── node card ── */
 
 function NodeCard({
   node,
@@ -107,7 +107,7 @@ function NodeCard({
   );
 }
 
-/* ── node settings modal (demo-safe) ───────────────────────────────── */
+/* ── node settings modal (demo-safe) ── */
 
 function NodeSettings({ node, onClose }: { node: WorkflowDisplayNode | null; onClose: () => void }) {
   const pushToast = useStore((s) => s.pushToast);
@@ -140,6 +140,18 @@ function NodeSettings({ node, onClose }: { node: WorkflowDisplayNode | null; onC
               <p className="mt-1 rounded-lg border border-line bg-surface-sunken px-3 py-2 text-xs text-ink">{node.config}</p>
             </div>
           )}
+          {node.note && (
+            <div>
+              <p className="text-xs font-semibold text-ink-subtle">What this step does</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-muted">{node.note}</p>
+            </div>
+          )}
+          {node.example && (
+            <div>
+              <p className="text-xs font-semibold text-ink-subtle">Example</p>
+              <p className="mt-1 rounded-lg border border-line bg-surface px-3 py-2 text-xs italic leading-relaxed text-ink-subtle">{node.example}</p>
+            </div>
+          )}
           <p className="rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-xs text-warn">Demo view — edits are cosmetic only.</p>
         </div>
       )}
@@ -147,7 +159,7 @@ function NodeSettings({ node, onClose }: { node: WorkflowDisplayNode | null; onC
   );
 }
 
-/* ── left vertical canvas toolbar (cosmetic) ────────────────────────── */
+/* ── left vertical canvas toolbar (cosmetic) ── */
 
 const LEFT_TOOLS: { id: string; icon: LucideIcon; label: string }[] = [
   { id: 'notes', icon: MessageSquare, label: 'Notes' },
@@ -160,7 +172,7 @@ const LEFT_TOOLS: { id: string; icon: LucideIcon; label: string }[] = [
   { id: 'ai', icon: Sparkles, label: 'AI' },
 ];
 
-/* ── AI composer panel (blank-state, cosmetic) ────────────────────── */
+/* ── AI composer panel (blank-state, cosmetic) ── */
 
 function AiPanel({ promptIndex }: { promptIndex: number }) {
   const TONE: Record<string, string> = {
@@ -198,7 +210,7 @@ function AiPanel({ promptIndex }: { promptIndex: number }) {
   );
 }
 
-/* ── main builder ────────────────────────────────────────────── */
+/* ── main builder ── */
 
 type BuilderTab = 'builder' | 'settings' | 'enrollment' | 'logs';
 

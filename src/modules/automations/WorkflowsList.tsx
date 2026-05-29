@@ -14,7 +14,7 @@ import {
 
 type ListTab = 'all' | 'review' | 'deleted';
 
-/* ── status pill (outline green / flat gray) ────────────────────────── */
+/* ── status pill (outline green / flat gray) ── */
 function StatusPill({ status }: { status: Workflow['status'] }) {
   if (status === 'published') {
     return <span className="inline-flex items-center rounded-full border border-good/40 bg-good/5 px-2.5 py-0.5 text-xs font-semibold text-good">Published</span>;
@@ -22,7 +22,7 @@ function StatusPill({ status }: { status: Workflow['status'] }) {
   return <span className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-semibold text-ink-muted">Draft</span>;
 }
 
-/* ── row action menu ─────────────────────────────────────────── */
+/* ── row action menu ── */
 function RowMenu({ open, onOpen, onClose, onAction }: { open: boolean; onOpen: () => void; onClose: () => void; onAction: (a: string) => void }) {
   return (
     <div className="relative">
@@ -53,7 +53,7 @@ function RowMenu({ open, onOpen, onClose, onAction }: { open: boolean; onOpen: (
   );
 }
 
-/* ── New Workflow modal (template chooser, demo-safe) ──────────────────── */
+/* ── New Workflow modal (template chooser, demo-safe) ── */
 function NewWorkflowModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [selected, setSelected] = useState<string | null>(null);
   const pushToast = useStore((s) => s.pushToast);
@@ -92,7 +92,7 @@ function NewWorkflowModal({ open, onClose }: { open: boolean; onClose: () => voi
   );
 }
 
-/* ── main list ──────────────────────────────────────────────── */
+/* ── main list ── */
 export function WorkflowsList({
   tab,
   onTabChange,
@@ -115,7 +115,7 @@ export function WorkflowsList({
 
   const q = query.trim().toLowerCase();
   const matched = q ? workflows.filter((w) => w.name.toLowerCase().includes(q)) : workflows;
-  const reviewIds = new Set(workflows.slice(0, 1).map((w) => w.id));
+  const reviewIds = new Set(workflows.filter((w) => w.needsReview).map((w) => w.id));
   const rows = tab === 'review' ? matched.filter((w) => reviewIds.has(w.id)) : tab === 'deleted' ? [] : matched;
   const showFolders = tab === 'all' && !q;
 
@@ -251,7 +251,9 @@ export function WorkflowsList({
             {/* workflows */}
             {rows.map((wf) => {
               const ts = demoTimestamps(wf.id);
-              const active = demoActiveEnrolled(wf.id, wf.enrolled);
+              const active = wf.activeEnrolled ?? demoActiveEnrolled(wf.id, wf.enrolled);
+              const updated = wf.lastUpdatedAt ?? ts.updated;
+              const created = wf.createdAt ?? ts.created;
               return (
                 <tr key={wf.id} data-tour="automations.row" className="group border-b border-line/70 hover:bg-surface-sunken">
                   <td className="px-4 py-4"><input type="checkbox" className="h-4 w-4 rounded border-line" aria-label={`Select ${wf.name}`} onChange={() => cosmetic('Selected', 'Demo only.')} /></td>
@@ -266,8 +268,8 @@ export function WorkflowsList({
                     <button onClick={() => cosmetic('Enrollment History', 'Opening enrollment is cosmetic here.')} className="font-semibold text-brand hover:underline">{wf.enrolled.toLocaleString()}</button>
                   </td>
                   <td className="px-4 py-4 text-ink-muted">{active}</td>
-                  <td className="whitespace-nowrap px-4 py-4 text-ink-muted">{ts.updated}</td>
-                  <td className="whitespace-nowrap px-4 py-4 text-ink-muted">{ts.created}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-ink-muted">{updated}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-ink-muted">{created}</td>
                   <td className="px-4 py-4" />
                   <td className="px-4 py-4">
                     <div className="flex items-center justify-end gap-1">
