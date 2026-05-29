@@ -27,7 +27,7 @@ import type {
  *
  * V1 TARGETS:
  *   Contacts 200 | Companies 48 | Conversations 35 | Messages 8-15/thread
- *   Pipelines 4 | Opportunities ~96 | Calendars 3 | Appointments 55
+ *   Pipelines 4 | Opportunities ~102 | Calendars 3 | Appointments 55
  *   Workflows 12 | Email campaigns 10 | SMS campaigns 8 | Calls 70
  *   Tasks 45 | Reviews 26 | Invoices 32 | Products 15 | Notifications 15
  */
@@ -81,6 +81,10 @@ const INDUSTRIES = [
 ];
 const SOURCES = ['Facebook Ads','Google Ads','Website Form','Referral','Instagram','Cold Outreach','Walk-in','Webinar'];
 const TAGS = ['lead','hot','vip','nurture','newsletter','past-client','no-show','consult-booked','follow-up'];
+// Tags that read like deal labels (separate vocabulary from contact tags).
+const OPP_TAGS = ['hot','warm','cold','priority','referral','inbound','repeat-client','quote-sent','needs-follow-up','price-sensitive'];
+// Used to synthesize a believable business name when a contact has no linked company.
+const BIZ_SUFFIX = ['Group','LLC','& Co','Services','Studio','Partners','Solutions','Co'];
 
 const now = () => Date.now();
 const DAY = 86400000;
@@ -210,68 +214,178 @@ export function generateDemoData(): DemoData {
     {
       id: 'pipe_sales',
       name: 'Kleegr Sales',
-      stages: ['New Lead', 'Called 1', 'Called 2', 'Called 3', 'Called 4', 'Nurturing', 'Won']
-        .map((name, o) => ({ id: `st_s_${o}`, name, order: o })),
+      stages: [
+        'New Lead', 'Called 1', 'Called 2', 'Called 3', 'Called 4',
+        'Contacted', 'Booked Appointment', 'No Show',
+        'Follow Up Today', 'Follow Up Tomorrow', 'Follow Up This Week',
+        'Waiting on Client', 'Proposal Sent', 'Won', 'Lost',
+      ].map((name, o) => ({ id: `st_s_${o}`, name, order: o })),
     },
     {
       id: 'pipe_onboard',
       name: 'Onboarding Process',
-      stages: ['New Client', 'Welcome Call', 'Account Setup', 'Training', 'Live']
+      stages: ['New Client', 'Intake Form Sent', 'Kickoff Scheduled', 'Setup In Progress', 'Review / QA', 'Live']
         .map((name, o) => ({ id: `st_o_${o}`, name, order: o })),
     },
     {
       id: 'pipe_react',
       name: 'Phone System',
-      stages: ['New Call', 'Voicemail', 'Callback Scheduled', 'Resolved']
+      stages: ['Request Received', 'Number Selected', 'IVR Setup', 'Test Calls', 'Live']
         .map((name, o) => ({ id: `st_r_${o}`, name, order: o })),
     },
     {
       id: 'pipe_nurture',
       name: 'Archive',
-      stages: ['Archived', 'Closed Lost', 'Do Not Contact']
+      stages: ['Won', 'Lost', 'Not Qualified', 'Duplicate']
         .map((name, o) => ({ id: `st_n_${o}`, name, order: o })),
     },
   ];
 
   // The Phone System pipeline tracks call handling, not deal value, so it reads
-  // $0.00 in the real portal (the cards/stage totals already format with cents).
-  // Kleegr Sales keeps realistic values so the Dashboard pipeline charts stay alive.
+  // $0.00 in the real portal (cards/stage totals format with cents). Kleegr Sales
+  // keeps real values from "Proposal Sent" onward so the Dashboard pipeline charts
+  // stay alive, while early call/follow-up stages are mostly $0 like the reference.
   const ZERO_VALUE_PIPELINES = new Set(['pipe_react']);
+  const companyById = new Map(companies.map((co) => [co.id, co]));
+
+  // Relative stage weights per pipeline so the important stages stay populated and
+  // Won/Lost keep a believable (smaller) share. Index order matches the stage order.
+  const STAGE_WEIGHTS: Record<string, number[]> = {
+    //          New Lead C1 C2 C3 C4 Contacted Booked NoShow FU-Today FU-Tmrw FU-Week Waiting Proposal Won Lost
+    pipe_sales:   [14, 10, 8, 5, 3, 7, 6, 4, 8, 6, 6, 5, 5, 5, 4],
+    //            New Intake Kickoff Setup QA Live
+    pipe_onboard: [5, 4, 3, 4, 2, 4],
+    //          Request Number IVR Test Live
+    pipe_react:   [4, 3, 3, 2, 3],
+    //            Won Lost NotQ Dup
+    pipe_nurture: [4, 4, 2, 1],
+  };
+  const weightedStageIndex = (pipelineId: string, stageCount: number): number => {
+    const weights = STAGE_WEIGHTS[pipelineId] ?? Array<number>(stageCount).fill(1);
+    const total = weights.reduce((s, w) => s + w, 0);
+    let roll = r() * total;
+    for (let i = 0; i < weights.length; i++) {
+      roll -= weights[i];
+      if (roll < 0) return i;
+    }
+    return weights.length - 1;
+  };
+
+  const TODAY0 = (() => { const x = new Date(); x.setHours(0, 0, 0, 0); return x.getTime(); })();
 
   const opportunities: Opportunity[] = [];
   let oppN = 1;
-  const pipelineCounts: Record<string, number> = { pipe_sales: 38, pipe_onboard: 22, pipe_react: 18, pipe_nurture: 18 };
+  // Kleegr Sales is the hero pipeline (50–80); the rest stay smaller. Total ≈ 102.
+  const pipelineCounts: Record<string, number> = { pipe_sales: 64, pipe_onboard: 16, pipe_react: 12, pipe_nurture: 10 };
   pipelines.forEach((p) => {
     const count = pipelineCounts[p.id] ?? 20;
     const zeroValue = ZERO_VALUE_PIPELINES.has(p.id);
     const isArchive = p.id === 'pipe_nurture';
     for (let i = 0; i < count; i++) {
       const contact = pick(contacts);
-      const weighted = Math.floor(Math.pow(r(), 1.6) * p.stages.length);
-      const stage = p.stages[Math.min(weighted, p.stages.length - 1)];
-      const isLastStage = stage.order === p.stages.length - 1;
+      const stageIdx = weightedStageIndex(p.id, p.stages.length);
+      const stage = p.stages[stageIdx];
+      const stageName = stage.name;
+      const company = contact.companyId ? companyById.get(contact.companyId) : undefined;
+
+      // ── Status ──────────────────────────────────────────────────────────
+      let status: Opportunity['status'];
+      if (isArchive) {
+        status = stageName === 'Won' ? 'won' : stageName === 'Lost' ? 'lost' : 'abandoned';
+      } else if (stageName === 'Won') {
+        status = 'won';
+      } else if (stageName === 'Lost') {
+        status = 'lost';
+      } else if (stageName === 'No Show') {
+        status = chance(0.15) ? 'abandoned' : 'open';
+      } else if (p.id === 'pipe_onboard' && stageName === 'Live') {
+        status = chance(0.5) ? 'won' : 'open';
+      } else {
+        status = 'open';
+      }
+
+      // ── Value ───────────────────────────────────────────────────────────
+      // Phone System is always $0. Elsewhere value attaches as the deal matures:
+      // early call stages are mostly $0; proposals/closed deals always carry value.
+      let monetaryValue: number;
+      if (zeroValue) {
+        monetaryValue = 0;
+      } else if (isArchive) {
+        monetaryValue = int(3, 80) * 100;
+      } else if (p.id === 'pipe_onboard') {
+        monetaryValue = int(7, 60) * 100; // signed clients
+      } else {
+        const early = stageIdx <= 4 || stageName === 'No Show';
+        const closing = stageName === 'Proposal Sent' || stageName === 'Won' || stageName === 'Lost';
+        if (closing) monetaryValue = int(10, 120) * 100;
+        else if (early) monetaryValue = chance(0.65) ? 0 : int(2, 18) * 100;
+        else monetaryValue = chance(0.35) ? 0 : int(5, 40) * 100;
+      }
+
+      // ── Dates ───────────────────────────────────────────────────────────
       const created = now() - int(2, 90) * DAY;
-      const status: Opportunity['status'] = isArchive
-        ? (chance(0.5) ? 'lost' : 'abandoned')
-        : isLastStage && chance(0.6)
-          ? 'won'
-          : chance(0.08)
-            ? 'lost'
-            : 'open';
+      const updated = Math.min(now(), created + int(0, 20) * DAY);
+      const lastActivityAt = Math.min(now(), Math.max(updated, now() - int(0, 21) * DAY - int(0, 23) * HOUR));
+
+      // Next follow-up only makes sense on the forward-looking stages.
+      let nextFollowUpAt: string | undefined;
+      if (stageName === 'Follow Up Today') nextFollowUpAt = iso(TODAY0 + int(9, 17) * HOUR);
+      else if (stageName === 'Follow Up Tomorrow') nextFollowUpAt = iso(TODAY0 + DAY + int(9, 17) * HOUR);
+      else if (stageName === 'Follow Up This Week') nextFollowUpAt = iso(TODAY0 + int(2, 6) * DAY + int(9, 17) * HOUR);
+      else if (stageName === 'Booked Appointment') nextFollowUpAt = iso(TODAY0 + int(1, 5) * DAY + int(9, 17) * HOUR);
+      else if (stageName === 'Waiting on Client') nextFollowUpAt = iso(TODAY0 + int(2, 9) * DAY + int(9, 17) * HOUR);
+      else if (status === 'open' && chance(0.2)) nextFollowUpAt = iso(TODAY0 + int(1, 10) * DAY + int(9, 17) * HOUR);
+
+      // ── Activity counts ─────────────────────────────────────────────────
+      const calledMatch = /^Called (\d)$/.exec(stageName);
+      const calls = calledMatch
+        ? Number(calledMatch[1]) + int(0, 1)
+        : stageName === 'New Lead'
+          ? int(0, 1)
+          : stageIdx >= 5
+            ? int(2, 7)
+            : int(0, 3);
+      const appointments = (stageName === 'Booked Appointment' || stageName === 'No Show')
+        ? int(1, 2)
+        : chance(0.25) ? 1 : 0;
+      const activity = {
+        calls,
+        sms: int(0, 5),
+        emails: int(0, 4),
+        notes: int(0, 3),
+        tasks: int(0, 2),
+        appointments,
+      };
+
+      // ── Followers / tags / business name ──────────────────────────────────
+      const followers = chance(0.45)
+        ? Array.from(new Set([pick(ownerIds), ...(chance(0.3) ? [pick(ownerIds)] : [])]))
+        : [];
+      const tags = Array.from(new Set(Array.from({ length: int(0, 3) }, () => pick(OPP_TAGS))));
+      const businessName = company?.name
+        ?? (chance(0.45) ? `${contact.lastName} ${pick(BIZ_SUFFIX)}` : undefined);
+
       opportunities.push({
         id: `opp_${oppN++}`,
-        name: zeroValue
+        name: zeroValue || isArchive
           ? `${contact.firstName} ${contact.lastName}`
           : `${contact.firstName} ${contact.lastName} - ${pick(['Package','Retainer','Setup','Plan','Project','Service','Campaign'])}`,
         contactId: contact.id,
+        businessName,
         pipelineId: p.id,
         stageId: stage.id,
-        monetaryValue: zeroValue ? 0 : int(5, 90) * 100,
+        monetaryValue,
         status,
         ownerId: pick(ownerIds),
+        followers,
         source: pick(SOURCES),
+        tags,
+        activity,
+        lastActivityAt: iso(lastActivityAt),
+        nextFollowUpAt,
+        createdBy: chance(0.5) ? 'Workflow' : pick(users).name,
         createdAt: iso(created),
-        updatedAt: iso(created + int(0, 20) * DAY),
+        updatedAt: iso(updated),
       });
     }
   });
