@@ -39,6 +39,8 @@ export function Opportunities() {
   const companies = useStore((s) => s.companies);
   const users = useStore((s) => s.users);
   const moveOpportunity = useStore((s) => s.moveOpportunity);
+  const removeOpportunities = useStore((s) => s.removeOpportunities);
+  const bulkUpdateOpportunities = useStore((s) => s.bulkUpdateOpportunities);
   const pushToast = useStore((s) => s.pushToast);
 
   const [tab, setTab] = useState<Tab>('opportunities');
@@ -50,6 +52,10 @@ export function Opportunities() {
   const [addOppOpen, setAddOppOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkStage, setBulkStage] = useState('');
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkOwner, setBulkOwner] = useState('');
 
   const selectedPipeline = useMemo(
     () => pipelines.find((p) => p.id === selectedPipelineId) ?? pipelines[0],
@@ -113,9 +119,33 @@ export function Opportunities() {
     });
   const clearSelection = () => setSelectedIds(new Set());
 
+  const applyBulkEdit = () => {
+    const patch: Partial<Pick<Opportunity, 'stageId' | 'status' | 'ownerId'>> = {};
+    if (bulkStage) patch.stageId = bulkStage;
+    if (bulkStatus) patch.status = bulkStatus as Opportunity['status'];
+    if (bulkOwner) patch.ownerId = bulkOwner;
+    if (Object.keys(patch).length === 0) {
+      pushToast({ title: 'Nothing to update', description: 'Pick a field to change first.', variant: 'info' });
+      return;
+    }
+    bulkUpdateOpportunities([...selectedIds], patch);
+    setBulkEditOpen(false);
+    setBulkStage(''); setBulkStatus(''); setBulkOwner('');
+    clearSelection();
+  };
+
+  const handleBulkDelete = () => {
+    if (!selectedIds.size) return;
+    removeOpportunities([...selectedIds]);
+    clearSelection();
+  };
+
   const switchTab = (t: Tab) => {
     setTab(t);
-    if (t !== 'bulk') clearSelection();
+    if (t !== 'bulk') {
+      clearSelection();
+      setBulkEditOpen(false);
+    }
   };
 
   const listColumns: Column<Opportunity>[] = [
@@ -255,13 +285,55 @@ export function Opportunities() {
                 <span className="rounded-full bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand">
                   {selectedIds.size} opportunit{selectedIds.size === 1 ? 'y' : 'ies'} selected
                 </span>
+                <div className="relative">
+                  <button
+                    onClick={() => selectedIds.size && setBulkEditOpen((v) => !v)}
+                    disabled={selectedIds.size === 0}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted hover:text-ink disabled:opacity-40"
+                  ><Pencil size={14} /> Edit</button>
+                  {bulkEditOpen && selectedIds.size > 0 && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setBulkEditOpen(false)} />
+                      <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-line bg-surface p-3 shadow-pop">
+                        <p className="mb-2 text-xs font-semibold text-ink-subtle">Edit {selectedIds.size} selected</p>
+                        <div className="space-y-2.5">
+                          <label className="block">
+                            <span className="mb-1 block text-[12px] font-semibold text-ink">Stage</span>
+                            <select value={bulkStage} onChange={(e) => setBulkStage(e.target.value)} className="h-9 w-full appearance-none rounded-lg border border-line bg-surface px-2 text-sm text-ink outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20">
+                              <option value="">Keep current</option>
+                              {selectedPipeline.stages.slice().sort((a, b) => a.order - b.order).map((s) => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-[12px] font-semibold text-ink">Status</span>
+                            <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} className="h-9 w-full appearance-none rounded-lg border border-line bg-surface px-2 text-sm text-ink outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20">
+                              <option value="">Keep current</option>
+                              <option value="open">Open</option>
+                              <option value="won">Won</option>
+                              <option value="lost">Lost</option>
+                              <option value="abandoned">Abandoned</option>
+                            </select>
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-[12px] font-semibold text-ink">Owner</span>
+                            <select value={bulkOwner} onChange={(e) => setBulkOwner(e.target.value)} className="h-9 w-full appearance-none rounded-lg border border-line bg-surface px-2 text-sm text-ink outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20">
+                              <option value="">Keep current</option>
+                              {users.map((u) => (<option key={u.id} value={u.id}>{u.name}</option>))}
+                            </select>
+                          </label>
+                        </div>
+                        <div className="mt-3 flex justify-end gap-2">
+                          <button onClick={() => setBulkEditOpen(false)} className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-ink-muted hover:bg-surface-sunken">Cancel</button>
+                          <button onClick={applyBulkEdit} className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brand-fg hover:bg-brand/90">Apply</button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
                 <button
-                  onClick={() => (selectedIds.size ? cosmetic('Bulk edit') : undefined)}
-                  disabled={selectedIds.size === 0}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted hover:text-ink disabled:opacity-40"
-                ><Pencil size={14} /> Edit</button>
-                <button
-                  onClick={() => { if (selectedIds.size) { pushToast({ title: 'Demo: Bulk delete', description: `${selectedIds.size} opportunities would be deleted. (Demo only.)`, variant: 'info' }); clearSelection(); } }}
+                  onClick={handleBulkDelete}
                   disabled={selectedIds.size === 0}
                   className="flex items-center gap-1.5 text-sm font-semibold text-bad hover:text-bad/80 disabled:opacity-40"
                 ><Trash2 size={14} /> Delete</button>
@@ -331,13 +403,19 @@ export function Opportunities() {
           onClose={() => setDetailOppId(null)}
         />
       )}
-      {createPipelineOpen && <CreatePipelineModal onClose={() => setCreatePipelineOpen(false)} />}
+      {createPipelineOpen && (
+        <CreatePipelineModal
+          onClose={() => setCreatePipelineOpen(false)}
+          onCreated={(pid) => { setSelectedPipelineId(pid); setTab('opportunities'); }}
+        />
+      )}
       {addOppOpen && (
         <AddOpportunityModal
           pipelines={pipelines}
           contacts={contacts}
           users={users}
           initialPipelineId={selectedPipelineId}
+          onCreated={(pid) => setSelectedPipelineId(pid)}
           onClose={() => setAddOppOpen(false)}
         />
       )}
