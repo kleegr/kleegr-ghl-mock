@@ -1,31 +1,43 @@
-import { Clock, CheckCircle2, BookOpen } from 'lucide-react';
-import { Badge } from '@/components/ui/primitives';
+import { Clock, CheckCircle2, Sparkles, PlayCircle } from 'lucide-react';
+import { Badge, Button } from '@/components/ui/primitives';
 import { Modal } from '@/components/ui/Modal';
 import type { TutorialDef } from '../tutorialDefs';
 
 interface TutorialPreviewModalProps {
   tutorial: TutorialDef | undefined;
   onClose: () => void;
+  /** Launch the interactive walkthrough for this tutorial. */
+  onStart: (id: string) => void;
 }
 
 /**
- * Read-only preview modal showing the planned step outline for a tutorial.
- * Does NOT implement any Tutorial engine behaviour — that is Wave 3.
+ * Read-only preview modal showing the step outline for a tutorial, plus a
+ * "Start tutorial" action that launches the interactive Tutorial engine.
  */
-export function TutorialPreviewModal({ tutorial, onClose }: TutorialPreviewModalProps) {
+export function TutorialPreviewModal({ tutorial, onClose, onStart }: TutorialPreviewModalProps) {
   return (
     <Modal
       open={!!tutorial}
       onClose={onClose}
       title={tutorial?.title ?? ''}
       size="md"
+      footer={
+        tutorial && (
+          <>
+            <Button variant="secondary" onClick={onClose}>Close</Button>
+            <Button onClick={() => { const id = tutorial.id; onClose(); onStart(id); }} className="gap-1.5">
+              <PlayCircle size={15} /> Start tutorial
+            </Button>
+          </>
+        )
+      }
     >
       {tutorial && (
         <div className="space-y-4">
           {/* Meta row */}
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="neutral">{tutorial.area}</Badge>
-            <Badge tone="neutral">Wave 3</Badge>
+            <Badge tone="brand">Interactive</Badge>
             <span className="flex items-center gap-1 text-xs text-ink-muted">
               <Clock size={11} />
               ~{tutorial.estMinutes} min
@@ -38,7 +50,7 @@ export function TutorialPreviewModal({ tutorial, onClose }: TutorialPreviewModal
           {/* Step list */}
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-ink">
-              Planned Steps
+              What you'll do
             </p>
             <ol className="space-y-2.5">
               {tutorial.plannedSteps.map((step, i) => (
@@ -61,12 +73,13 @@ export function TutorialPreviewModal({ tutorial, onClose }: TutorialPreviewModal
             </div>
           </div>
 
-          {/* Wave 3 notice */}
+          {/* Engine notice */}
           <div className="flex gap-2.5 rounded-lg border border-line bg-surface-sunken p-3">
-            <BookOpen size={15} className="mt-0.5 shrink-0 text-ink-muted" />
+            <Sparkles size={15} className="mt-0.5 shrink-0 text-brand" />
             <p className="text-xs text-ink-muted">
-              <strong className="text-ink">Tutorial Mode</strong> — interactive spotlight overlays,
-              coachmarks, step gating, and completion tracking — launches in Wave 3.
+              <strong className="text-ink">Tutorial Mode</strong> dims the screen and spotlights each
+              control with step-by-step coachmarks — modeled on Arcade. Click{' '}
+              <strong className="text-ink">Start tutorial</strong> to begin.
             </p>
           </div>
         </div>

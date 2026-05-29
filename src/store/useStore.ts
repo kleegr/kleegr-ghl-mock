@@ -25,12 +25,26 @@ interface StoreState extends DemoData {
   searchOpen: boolean;
   toasts: Toast[];
 
+  // tutorial engine (Tutorial Mode — in-memory only)
+  activeTutorialId: string | null;
+  tutorialStep: number;
+  completedTutorials: string[];
+  completionCardId: string | null;
+
   // ui
   setMode: (m: Mode) => void;
   toggleSidebar: () => void;
   setSearchOpen: (v: boolean) => void;
   pushToast: (t: Omit<Toast, 'id'>) => void;
   dismissToast: (id: number) => void;
+
+  // tutorial actions
+  startTutorial: (id: string) => void;
+  tutorialNext: () => void;
+  tutorialBack: () => void;
+  exitTutorial: () => void;
+  completeTutorial: (id: string) => void;
+  dismissCompletion: () => void;
 
   // mutations (all in-memory, session only)
   resetDemo: () => void;
@@ -51,6 +65,10 @@ export const useStore = create<StoreState>((set, get) => ({
   sidebarCollapsed: false,
   searchOpen: false,
   toasts: [],
+  activeTutorialId: null,
+  tutorialStep: 0,
+  completedTutorials: [],
+  completionCardId: null,
 
   setMode: (mode) => set({ mode }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -62,8 +80,32 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
 
+  // ── Tutorial Mode (Arcade-style guided walkthroughs) ──────────────────────
+  // All state is in-memory; resetDemo() clears it along with the seeded data.
+  startTutorial: (id) =>
+    set({ activeTutorialId: id, tutorialStep: 0, completionCardId: null, mode: 'tutorial' }),
+  tutorialNext: () => set((s) => ({ tutorialStep: s.tutorialStep + 1 })),
+  tutorialBack: () => set((s) => ({ tutorialStep: Math.max(0, s.tutorialStep - 1) })),
+  exitTutorial: () => set({ activeTutorialId: null, tutorialStep: 0 }),
+  completeTutorial: (id) =>
+    set((s) => ({
+      activeTutorialId: null,
+      tutorialStep: 0,
+      completionCardId: id,
+      completedTutorials: s.completedTutorials.includes(id)
+        ? s.completedTutorials
+        : [...s.completedTutorials, id],
+    })),
+  dismissCompletion: () => set({ completionCardId: null }),
+
   resetDemo: () => {
-    set({ ...fresh() });
+    set({
+      ...fresh(),
+      activeTutorialId: null,
+      tutorialStep: 0,
+      completedTutorials: [],
+      completionCardId: null,
+    });
     get().pushToast({ title: 'Demo reset', description: 'All data restored to the original seed.', variant: 'success' });
   },
 

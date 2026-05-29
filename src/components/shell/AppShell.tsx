@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Toaster } from '@/components/ui/Modal';
+import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
 import { cx } from '@/utils';
 
 export function AppShell() {
@@ -29,6 +30,7 @@ export function AppShell() {
         </main>
       </div>
       <Toaster />
+      <TutorialOverlay />
     </div>
   );
 }

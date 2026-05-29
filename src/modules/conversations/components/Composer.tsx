@@ -38,8 +38,8 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, cb: () => voi
   }, [ref, cb]);
 }
 
-const BUSINESS_NUMBER = '+18453353343';
-const BUSINESS_EMAIL = 'chaim@kleegr.com';
+const BUSINESS_NUMBER = '+1 (555) 010-0100';
+const BUSINESS_EMAIL = 'team@kleegr-demo.example.com';
 const BUSINESS_FROM_NAME = 'Kleegr Team';
 
 interface ComposerProps {

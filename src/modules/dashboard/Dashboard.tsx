@@ -11,7 +11,7 @@
  *  4. Recent activity feed
  *  5. Tasks due card
  *  6. Upcoming appointments card
- *  7. Onboarding checklist placeholder
+ *  7. Onboarding checklist (launches Tutorial Mode)
  */
 
 import { Link } from 'react-router-dom';
@@ -28,7 +28,7 @@ import { useStore } from '@/store/useStore';
 import { Card, CardHeader, PageHeader, Badge, Avatar } from '@/components/ui/primitives';
 import { money, relativeTime, dateLabel, clockTime, fullName } from '@/utils';
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ─── helpers ──────────────────────────────────────────────────
 
 function pct(n: number) {
   return `${Math.round(n * 100)}%`;
@@ -43,7 +43,7 @@ function makeSparkline(base: number, variance: number, points = 8) {
   }));
 }
 
-// ─── KPI card ───────────────────────────────────────────────────────────────
+// ─── KPI card ─────────────────────────────────────────────────
 
 interface KpiProps {
   label: string;
@@ -109,7 +109,7 @@ function KpiCard({ label, value, delta, sub, to, sparkData, icon, accent = 'bg-b
   return inner;
 }
 
-// ─── Activity item ───────────────────────────────────────────────────────────
+// ─── Activity item ───────────────────────────────────────────────
 
 interface ActivityItem {
   id: string;
@@ -139,7 +139,7 @@ const ACTIVITY_LABELS: Record<ActivityItem['type'], string> = {
   call: 'Missed call',
 };
 
-// ─── Tooltip styles ──────────────────────────────────────────────────────────
+// ─── Tooltip styles ─────────────────────────────────────────────
 
 function ChartTip({ active, payload, label }: { active?: boolean; payload?: { value: number; name?: string; fill?: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
@@ -156,11 +156,11 @@ function ChartTip({ active, payload, label }: { active?: boolean; payload?: { va
   );
 }
 
-// ─── Lead source donut colors ────────────────────────────────────────────────
+// ─── Lead source donut colors ───────────────────────────────────────
 
 const PIE_COLORS = ['#1f6feb', '#12986a', '#d99111', '#7c3aed', '#d9363e', '#0891b2', '#db2777', '#65a30d'];
 
-// ─── Main component ──────────────────────────────────────────────────────────
+// ─── Main component ────────────────────────────────────────────
 
 export function Dashboard() {
   const contacts       = useStore((s) => s.contacts);
@@ -175,8 +175,10 @@ export function Dashboard() {
   const pipelines      = useStore((s) => s.pipelines);
   const calendars      = useStore((s) => s.calendars);
   const users          = useStore((s) => s.users);
+  const startTutorial  = useStore((s) => s.startTutorial);
+  const completedTutorials = useStore((s) => s.completedTutorials);
 
-  // ── Derived KPIs ──────────────────────────────────────────────────────────
+  // ── Derived KPIs ───────────────────────────────────────────────
   const openOpps = opportunities.filter((o) => o.status === 'open');
   const pipelineValue = openOpps.reduce((s, o) => s + o.monetaryValue, 0);
   const unreadConvs = conversations.filter((c) => c.unread).length;
@@ -205,7 +207,7 @@ export function Dashboard() {
 
   const missedCalls = calls.filter((c) => c.direction === 'missed').length;
 
-  // ── Charts: pipeline trend (sparkline across 7 days) ──────────────────────
+  // ── Charts: pipeline trend (sparkline across 7 days) ─────────────────────
   const salesPipe = pipelines.find((p) => p.id === 'pipe_sales');
   const pipelineByStage = (salesPipe?.stages ?? []).map((st) => ({
     name: st.name,
@@ -238,7 +240,7 @@ export function Dashboard() {
     .slice(-6)
     .map(([month, revenue]) => ({ month, revenue }));
 
-  // ── Activity feed (derived from multiple entities) ─────────────────────────
+  // ── Activity feed (derived from multiple entities) ──────────────────────
   const activityItems: ActivityItem[] = [
     ...contacts.slice(0, 4).map((c) => ({
       id: `act_c_${c.id}`,
@@ -299,25 +301,26 @@ export function Dashboard() {
     .sort((a, b) => +new Date(b.time) - +new Date(a.time))
     .slice(0, 12);
 
-  // ── Upcoming appointments (next 5 confirmed) ─────────────────────────────
+  // ── Upcoming appointments (next 5 confirmed) ────────────────────────
   const nextAppts = appointments
     .filter((a) => new Date(a.startTime) >= new Date() && a.status === 'confirmed')
     .slice(0, 5);
 
-  // ── Tasks due (open, sorted by dueDate) ───────────────────────────────────
+  // ── Tasks due (open, sorted by dueDate) ──────────────────────────────
   const dueTasks = [...openTasks]
     .sort((a, b) => +new Date(a.dueDate) - +new Date(b.dueDate))
     .slice(0, 6);
 
-  // ── Onboarding items (static for placeholder) ─────────────────────────────
+  // ── Onboarding items — launch the matching Tutorial Mode walkthrough and
+  //    reflect real completion (resets with Reset Demo) ─────────────────────
   const onboardingItems = [
-    { id: 'ob1', label: 'Add a new contact',              done: contacts.length > 0,         to: '/contacts' },
-    { id: 'ob2', label: 'Reply to a conversation',        done: conversations.some((c) => !c.unread), to: '/conversations' },
-    { id: 'ob3', label: 'Move a lead through a pipeline', done: opportunities.some((o) => o.status === 'won'), to: '/opportunities' },
-    { id: 'ob4', label: 'Book an appointment',            done: appointments.length > 0,      to: '/calendars' },
-    { id: 'ob5', label: 'Create an invoice',              done: invoices.length > 0,          to: '/payments' },
+    { id: 'add-contact',          label: 'Add a new contact' },
+    { id: 'reply-conversation',   label: 'Reply to a conversation' },
+    { id: 'move-pipeline',        label: 'Move a lead through a pipeline' },
+    { id: 'book-appointment',     label: 'Book an appointment' },
+    { id: 'create-invoice',       label: 'Create an invoice' },
   ];
-  const doneCount = onboardingItems.filter((i) => i.done).length;
+  const doneCount = onboardingItems.filter((i) => completedTutorials.includes(i.id)).length;
 
   return (
     <div data-tour="dashboard.page">
@@ -629,11 +632,11 @@ export function Dashboard() {
           </Card>
         </div>
 
-        {/* ── Onboarding checklist placeholder ── */}
+        {/* ── Onboarding checklist ── */}
         <Card data-tour="dashboard.onboardingChecklist">
           <CardHeader
             title="Getting started"
-            subtitle={`${doneCount} of ${onboardingItems.length} completed — connect Tutorial Mode to unlock guided walkthroughs`}
+            subtitle={`${doneCount} of ${onboardingItems.length} completed — launch a guided walkthrough for any task`}
             actions={
               <Link
                 to="/guides"
@@ -654,37 +657,38 @@ export function Dashboard() {
             </div>
           </div>
           <ul className="divide-y divide-line/60 px-2 py-2">
-            {onboardingItems.map((item) => (
-              <li key={item.id}>
-                <Link
-                  to={item.to}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-sunken"
-                >
-                  {item.done ? (
-                    <CheckCircle2 size={16} className="shrink-0 text-good" />
-                  ) : (
-                    <Circle size={16} className="shrink-0 text-ink-subtle" />
-                  )}
-                  <span
-                    className={`text-sm ${
-                      item.done ? 'text-ink-subtle line-through' : 'font-medium text-ink'
-                    }`}
+            {onboardingItems.map((item) => {
+              const done = completedTutorials.includes(item.id);
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => startTutorial(item.id)}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-surface-sunken"
                   >
-                    {item.label}
-                  </span>
-                  {!item.done && (
-                    <Badge tone="brand" className="ml-auto">
-                      Start
+                    {done ? (
+                      <CheckCircle2 size={16} className="shrink-0 text-good" />
+                    ) : (
+                      <Circle size={16} className="shrink-0 text-ink-subtle" />
+                    )}
+                    <span
+                      className={`text-sm ${
+                        done ? 'text-ink-subtle line-through' : 'font-medium text-ink'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                    <Badge tone={done ? 'good' : 'brand'} className="ml-auto">
+                      {done ? 'Replay' : 'Start'}
                     </Badge>
-                  )}
-                </Link>
-              </li>
-            ))}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           <div className="border-t border-line px-4 py-3">
             <p className="text-[11px] text-ink-subtle">
-              <span className="font-semibold text-ink">Tutorial Mode</span> will overlay step-by-step guides on each task.
-              Switch to Tutorial in the top bar to begin guided walkthroughs (coming in Wave 3).
+              <span className="font-semibold text-ink">Tutorial Mode</span> overlays step-by-step guides on each task —
+              click any item above (or switch to Tutorial in the top bar) to begin a guided walkthrough.
             </p>
           </div>
         </Card>
