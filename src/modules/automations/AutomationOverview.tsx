@@ -1,10 +1,10 @@
-import { Workflow as WorkflowIcon, CheckCircle2, UserCheck, ExternalLink, ChevronRight, SlidersHorizontal, Activity, AlertTriangle } from 'lucide-react';
+import { Workflow as WorkflowIcon, CheckCircle2, UserCheck, ExternalLink, ChevronRight, SlidersHorizontal, Activity, AlertTriangle, Zap } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Card } from '@/components/ui/primitives';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
-import { ENROLLMENT_TREND, TRIGGER_ANALYSIS, OVERVIEW_ERRORS } from './automationData';
+import { ENROLLMENT_TREND, TRIGGER_ANALYSIS, OVERVIEW_ERRORS, ACTIONS_THIS_WEEK } from './automationData';
 
 const TT = { borderRadius: 10, border: '1px solid #e4e7ec', fontSize: 12 };
 const TICK = { fontSize: 11, fill: '#98a2b3' };
@@ -32,12 +32,13 @@ export function AutomationOverview({ onNeedsReview }: { onNeedsReview: () => voi
 
   return (
     <div className="space-y-4 px-6 py-5">
-      {/* top row: 3 stat cards + error summary */}
+      {/* top row: 4 stat cards + error summary */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 xl:col-span-2">
+        <div className="grid grid-cols-2 gap-4 xl:col-span-2">
           <StatCard icon={<WorkflowIcon size={22} className="text-brand" />} tint="bg-brand-soft" label="Total Workflows" value={`${workflows.length}`} />
           <StatCard icon={<CheckCircle2 size={22} className="text-good" />} tint="bg-good/10" label="Published Workflows" value={`${published.length}`} />
-          <StatCard icon={<UserCheck size={22} className="text-ai" />} tint="bg-ai-soft" label="Total Enrollments" value={fmtK(totalEnrolled)} />
+          <StatCard icon={<UserCheck size={22} className="text-ai" />} tint="bg-ai-soft" label="Enrolled Contacts" value={fmtK(totalEnrolled)} />
+          <StatCard icon={<Zap size={22} className="text-warn" />} tint="bg-warn/10" label="Actions This Week" value={`${ACTIONS_THIS_WEEK}`} />
         </div>
 
         <Card className="p-5">
@@ -50,18 +51,18 @@ export function AutomationOverview({ onNeedsReview }: { onNeedsReview: () => voi
               <ExternalLink size={13} /> Needs Review
             </button>
           </div>
-          <p className="mt-1 text-xs text-ink-muted">Workflows currently have errors that need attention</p>
+          <p className="mt-1 text-xs text-ink-muted">Published workflows with a recent error that needs attention</p>
           <div className="mt-3 space-y-1.5">
             {OVERVIEW_ERRORS.map((e) => (
               <button key={e.id} onClick={onNeedsReview} className="flex w-full items-center justify-between rounded-xl border border-line px-3 py-2.5 text-left hover:bg-surface-sunken">
                 <span className="flex items-center gap-2.5">
-                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-warn/10 text-warn"><AlertTriangle size={15} /></span>
-                  <span>
-                    <span className="block text-sm font-semibold text-ink">{e.name}</span>
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-warn/10 text-warn"><AlertTriangle size={15} /></span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-ink">{e.name}</span>
                     <span className="block text-xs text-ink-subtle">{e.lastError}</span>
                   </span>
                 </span>
-                <ChevronRight size={16} className="text-ink-subtle" />
+                <ChevronRight size={16} className="shrink-0 text-ink-subtle" />
               </button>
             ))}
           </div>

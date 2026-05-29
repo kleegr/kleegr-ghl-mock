@@ -7,18 +7,19 @@ all data is fake. Keep it that way.
 Run the local gate before every release:
 
 ```bash
-npm ci
+npm install
 npm run build
-npm run smoke
+npm run verify   # = lint + smoke (routes/SPA) + check:tutorials
 ```
 
-All three must succeed.
+All must succeed. (`npm run verify` runs the tutorial registry check in addition
+to the route smoke test.)
 
 ---
 
 ## Build checklist
 
-- [ ] `npm ci` completes against the committed `package-lock.json` (no `package.json` / lock drift).
+- [ ] `npm install` completes cleanly (CI uses `npm install`; no committed lockfile required).
 - [ ] `npm run build` succeeds (`tsc -b` typecheck + `vite build`).
 - [ ] No new runtime dependencies were added without justification.
 - [ ] `dist/` is produced and is not committed (it is gitignored).
@@ -33,7 +34,7 @@ All three must succeed.
 
 ## Route smoke checklist
 
-- [ ] `npm run smoke` passes (run automatically in CI after build).
+- [ ] `npm run smoke` and `npm run check:tutorials` pass (run automatically in CI after build).
 - [ ] All expected routes are declared in `src/App.tsx`:
       `/`, `/contacts`, `/conversations`, `/opportunities`, `/calendars`,
       `/tasks`, `/guides`, `/payments`, `/phone`, `/reputation`,
@@ -41,6 +42,15 @@ All three must succeed.
       `/automations`, `/integrations`, `/settings`, `/media`.
 - [ ] No forbidden / dangling route (e.g. `/appointments`) is linked from `TopBar.tsx`.
 - [ ] Manually click through the sidebar; no link lands on the catch-all redirect unexpectedly.
+
+## Tutorial checklist
+
+- [ ] `npm run check:tutorials` passes (runs in CI after smoke).
+- [ ] Exactly 10 executable flows (`TUTORIAL_FLOWS`) and 10 guide defs (`TUTORIALS`).
+- [ ] Flow IDs, guide def IDs, and `REQUIRED_TUTORIAL_IDS` are all in sync.
+- [ ] Every flow step `target` has a rendered `data-tour` attribute in the DOM.
+- [ ] Every flow step `route` and every guide def `module` hint is a real `App.tsx` route.
+- [ ] Each flow has completion title + body copy.
 
 ## Demo safety checklist
 
@@ -59,7 +69,7 @@ All three must succeed.
 
 ## PR merge checklist
 
-- [ ] CI is green (`install` · `build` · `smoke`).
+- [ ] CI is green (`install` · `build` · `smoke` · `check:tutorials`).
 - [ ] Diff touches only the files in scope for the PR.
 - [ ] No changes to `src/**` in infra/release-only PRs.
 - [ ] PR has been reviewed; no direct merge of unverified PRs.

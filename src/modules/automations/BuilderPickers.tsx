@@ -26,7 +26,12 @@ export function BuilderPicker({ kind, onClose, onSelect }: PickerProps) {
   const filtered: CatalogGroup[] = useMemo(() => {
     if (!q) return groups;
     return groups
-      .map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(q)) }))
+      .map((g) => ({
+        ...g,
+        items: g.items.filter((i) =>
+          [i.label, i.desc, i.category].some((t) => t?.toLowerCase().includes(q)),
+        ),
+      }))
       .filter((g) => g.items.length > 0);
   }, [q, groups]);
 
@@ -97,7 +102,13 @@ export function BuilderPicker({ kind, onClose, onSelect }: PickerProps) {
         ) : filtered.length === 0 ? (
           <div className="px-2 py-10 text-center text-sm text-ink-subtle">No matches for &ldquo;{query.trim()}&rdquo;.</div>
         ) : (
-          filtered.map((group) => {
+          <>
+            <p className="mb-2 px-2 text-xs text-ink-muted">
+              {isTrigger
+                ? 'A trigger is the event that starts your workflow. Pick one to begin.'
+                : 'An action is a step the workflow runs. Pick one to add it to the flow.'}
+            </p>
+            {filtered.map((group) => {
             const open = openGroups[group.id] ?? true;
             return (
               <div key={group.id} className="mb-1">
@@ -116,13 +127,24 @@ export function BuilderPicker({ kind, onClose, onSelect }: PickerProps) {
                         <button
                           key={item.id}
                           onClick={() => onSelect(item)}
-                          className="group flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-surface-sunken"
+                          className="group flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-surface-sunken"
                         >
-                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand">
+                          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand">
                             <Icon size={16} />
                           </span>
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{item.label}</span>
-                          <ChevronRight size={16} className="shrink-0 text-ink-subtle opacity-0 transition-opacity group-hover:opacity-100" />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-2">
+                              <span className="truncate text-sm font-semibold text-ink">{item.label}</span>
+                              {item.category && (
+                                <span className="shrink-0 rounded bg-surface-sunken px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">
+                                  {item.category}
+                                </span>
+                              )}
+                            </span>
+                            {item.desc && <span className="mt-0.5 block text-xs text-ink-muted">{item.desc}</span>}
+                            {item.example && <span className="mt-0.5 block text-[11px] italic text-ink-subtle">{item.example}</span>}
+                          </span>
+                          <ChevronRight size={16} className="mt-1 shrink-0 text-ink-subtle opacity-0 transition-opacity group-hover:opacity-100" />
                         </button>
                       );
                     })}
@@ -130,7 +152,8 @@ export function BuilderPicker({ kind, onClose, onSelect }: PickerProps) {
                 )}
               </div>
             );
-          })
+          })}
+          </>
         )}
       </div>
     </aside>
