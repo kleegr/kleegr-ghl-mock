@@ -1,0 +1,3 @@
+LINE1
+LINE2 with unicode: · — “quote” ×
+const t = `template ${x}`;
