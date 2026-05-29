@@ -168,7 +168,7 @@ export const TUTORIALS: TutorialDef[] = [
     id: 'create-invoice',
     title: 'Create an invoice',
     area: 'Payments',
-    module: '/payments/invoices',
+    module: '/payments',
     description: 'Build a new invoice for a contact, add line items from your product catalog, and send it.',
     estMinutes: 5,
     plannedSteps: [
@@ -185,7 +185,7 @@ export const TUTORIALS: TutorialDef[] = [
     id: 'outlook-inbox',
     title: 'Connect / view an Outlook-style inbox',
     area: 'Integrations',
-    module: '/integrations/outlook',
+    module: '/integrations',
     description: 'Simulate connecting an email account and browsing the mock inbox inside the platform.',
     estMinutes: 3,
     plannedSteps: [
