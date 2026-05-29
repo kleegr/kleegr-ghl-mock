@@ -9,7 +9,7 @@ import { PageHeader, Button, Badge, Card, Avatar } from '@/components/ui/primiti
 import { Modal } from '@/components/ui/Modal';
 import { cx } from '@/utils';
 
-/* ─── local fake data (phone, custom fields, etc.) ────────────── */
+/* ─── local fake data (phone, custom fields, etc.) ───────────── */
 
 const FAKE_PHONES = [
   { id: 'ph_1', number: '+1 (555) 400-1100', label: 'Main Line', type: 'local', status: 'active' },
@@ -37,7 +37,7 @@ const ALL_TAGS = [
   'no-show', 'consult-booked', 'follow-up', 'new-client',
 ];
 
-/* ─── Reusable toggle ─────────────────────────────────────────── */
+/* ─── Reusable toggle ────────────────────────────── */
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -55,7 +55,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   );
 }
 
-/* ─── Section: Business Profile ───────────────────────────────── */
+/* ─── Section: Business Profile ──────────────────── */
 
 function BusinessProfile() {
   const pushToast = useStore((s) => s.pushToast);
@@ -102,7 +102,7 @@ function BusinessProfile() {
   );
 }
 
-/* ─── Section: Staff ──────────────────────────────────────────── */
+/* ─── Section: Staff ───────────────────────────── */
 
 function StaffSection() {
   const users = useStore((s) => s.users);
@@ -134,7 +134,13 @@ function StaffSection() {
                 {u.phone && <p className="text-xs text-ink-subtle">{u.phone}</p>}
               </div>
             </div>
-            <Button variant="ghost" size="xs">Edit</Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => pushToast({ title: `Edit ${u.name}`, description: 'Editing staff members is demo-only.', variant: 'info' })}
+            >
+              Edit
+            </Button>
           </div>
         ))}
       </Card>
@@ -142,7 +148,7 @@ function StaffSection() {
   );
 }
 
-/* ─── Section: Calendars ──────────────────────────────────────── */
+/* ─── Section: Calendars ──────────────────────── */
 
 function CalendarsSection() {
   const calendars = useStore((s) => s.calendars);
@@ -162,7 +168,7 @@ function CalendarsSection() {
               <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: cal.color }} />
               <p className="text-sm font-medium text-ink">{cal.name}</p>
             </div>
-            <Button variant="ghost" size="xs">Edit</Button>
+            <Button variant="ghost" size="xs" onClick={() => pushToast({ title: `Edit ${cal.name}`, description: 'Calendar settings are demo-only.', variant: 'info' })}>Edit</Button>
           </div>
         ))}
       </Card>
@@ -170,7 +176,7 @@ function CalendarsSection() {
   );
 }
 
-/* ─── Section: Phone Numbers ──────────────────────────────────── */
+/* ─── Section: Phone Numbers ───────────────────── */
 
 function PhoneSection() {
   const pushToast = useStore((s) => s.pushToast);
@@ -191,7 +197,7 @@ function PhoneSection() {
             </div>
             <div className="flex items-center gap-2">
               <Badge tone="good">{ph.status}</Badge>
-              <Button variant="ghost" size="xs">Edit</Button>
+              <Button variant="ghost" size="xs" onClick={() => pushToast({ title: `Edit ${ph.label}`, description: `${ph.number} — number settings are demo-only.`, variant: 'info' })}>Edit</Button>
             </div>
           </div>
         ))}
@@ -200,31 +206,71 @@ function PhoneSection() {
   );
 }
 
-/* ─── Section: Tags ───────────────────────────────────────────── */
+/* ─── Section: Tags ────────────────────────────── */
 
 function TagsSection() {
   const pushToast = useStore((s) => s.pushToast);
+  const [tags, setTags] = useState<string[]>(ALL_TAGS);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  function addTag() {
+    const t = draft.trim().toLowerCase();
+    if (!t) return;
+    if (tags.includes(t)) {
+      pushToast({ title: 'Tag already exists', variant: 'info' });
+    } else {
+      setTags((prev) => [...prev, t]);
+      pushToast({ title: `Tag "${t}" added`, description: 'Session only.', variant: 'success' });
+    }
+    setDraft('');
+    setAdding(false);
+  }
+
+  function removeTag(t: string) {
+    setTags((prev) => prev.filter((x) => x !== t));
+    pushToast({ title: `Tag "${t}" removed`, description: 'Session only.', variant: 'info' });
+  }
+
   return (
     <div data-tour="settings.configSection">
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm font-bold text-ink">Tags</p>
-        <Button size="sm" data-tour="settings.addConfig" onClick={() => pushToast({ title: 'Add Tag — demo only', variant: 'info' })}>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-bold text-ink">Tags</p>
+          <Badge tone="neutral">{tags.length}</Badge>
+        </div>
+        <Button size="sm" data-tour="settings.addConfig" onClick={() => setAdding((v) => !v)}>
           <Plus size={13} /> Add Tag
         </Button>
       </div>
+      {adding && (
+        <div className="mb-3 flex items-center gap-2">
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') addTag(); if (e.key === 'Escape') { setAdding(false); setDraft(''); } }}
+            placeholder="New tag name"
+            className="h-8 flex-1 rounded-lg border border-line bg-surface-sunken px-3 text-sm text-ink placeholder:text-ink-subtle focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30"
+          />
+          <Button size="sm" onClick={addTag}>Add</Button>
+          <Button size="sm" variant="secondary" onClick={() => { setAdding(false); setDraft(''); }}>Cancel</Button>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
-        {ALL_TAGS.map((tag) => (
+        {tags.map((tag) => (
           <span key={tag} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink">
             {tag}
-            <button className="text-ink-subtle hover:text-bad">×</button>
+            <button onClick={() => removeTag(tag)} className="text-ink-subtle hover:text-bad" aria-label={`Remove ${tag}`}>×</button>
           </span>
         ))}
+        {tags.length === 0 && <p className="text-xs text-ink-muted">No tags yet. Use “Add Tag” to create one.</p>}
       </div>
     </div>
   );
 }
 
-/* ─── Section: Pipelines ──────────────────────────────────────── */
+/* ─── Section: Pipelines ─────────────────────── */
 
 function PipelinesSection() {
   const pipelines = useStore((s) => s.pipelines);
@@ -242,7 +288,7 @@ function PipelinesSection() {
           <Card key={pipe.id} className="p-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-bold text-ink">{pipe.name}</p>
-              <Button variant="ghost" size="xs">Edit</Button>
+              <Button variant="ghost" size="xs" onClick={() => pushToast({ title: `Edit ${pipe.name}`, description: `${pipe.stages.length} stages — pipeline editing is demo-only.`, variant: 'info' })}>Edit</Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {pipe.stages.map((st) => (
@@ -258,7 +304,7 @@ function PipelinesSection() {
   );
 }
 
-/* ─── Section: Custom Fields ──────────────────────────────────── */
+/* ─── Section: Custom Fields ───────────────────── */
 
 function CustomFieldsSection() {
   const pushToast = useStore((s) => s.pushToast);
@@ -277,7 +323,7 @@ function CustomFieldsSection() {
               <p className="text-sm font-semibold text-ink">{cf.name}</p>
               <p className="text-xs text-ink-muted">{cf.type} · {cf.scope}</p>
             </div>
-            <Button variant="ghost" size="xs">Edit</Button>
+            <Button variant="ghost" size="xs" onClick={() => pushToast({ title: `Edit ${cf.name}`, description: 'Custom field editing is demo-only.', variant: 'info' })}>Edit</Button>
           </div>
         ))}
       </Card>
@@ -285,7 +331,7 @@ function CustomFieldsSection() {
   );
 }
 
-/* ─── Section: Custom Values ──────────────────────────────────── */
+/* ─── Section: Custom Values ───────────────────── */
 
 function CustomValuesSection() {
   const pushToast = useStore((s) => s.pushToast);
@@ -304,7 +350,7 @@ function CustomValuesSection() {
               <p className="font-mono text-xs text-brand">{`{{${cv.key}}}`}</p>
               <p className="text-sm text-ink">{cv.value}</p>
             </div>
-            <Button variant="ghost" size="xs">Edit</Button>
+            <Button variant="ghost" size="xs" onClick={() => pushToast({ title: `Edit ${cv.key}`, description: 'Custom value editing is demo-only.', variant: 'info' })}>Edit</Button>
           </div>
         ))}
       </Card>
@@ -312,7 +358,7 @@ function CustomValuesSection() {
   );
 }
 
-/* ─── Section: Notifications ──────────────────────────────────── */
+/* ─── Section: Notifications ───────────────────── */
 
 function NotificationsSection() {
   const pushToast = useStore((s) => s.pushToast);
@@ -358,7 +404,7 @@ function NotificationsSection() {
   );
 }
 
-/* ─── Section: Integrations ───────────────────────────────────── */
+/* ─── Section: Integrations ───────────────────── */
 
 function IntegrationsSection() {
   const pushToast = useStore((s) => s.pushToast);
@@ -394,7 +440,7 @@ function IntegrationsSection() {
   );
 }
 
-/* ─── Nav items ───────────────────────────────────────────────── */
+/* ─── Nav items ──────────────────────────────── */
 
 interface NavItem {
   id: string;
@@ -431,7 +477,7 @@ function SectionContent({ section }: { section: string }) {
   }
 }
 
-/* ─── Main Settings Page ──────────────────────────────────────── */
+/* ─── Main Settings Page ─────────────────────── */
 
 export function Settings() {
   const params = useParams<{ section?: string }>();
