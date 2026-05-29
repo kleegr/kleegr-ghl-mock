@@ -163,7 +163,12 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
                 key={m}
                 onClick={() => {
                   setMode(m);
-                  cosmetic(`${m === 'demo' ? 'Demo' : 'Tutorial'} mode`, m === 'tutorial' ? 'Follow the on-screen guides.' : 'Explore the demo freely.');
+                  if (m === 'tutorial') {
+                    navigate('/guides');
+                    cosmetic('Tutorial mode', 'Pick a guide below to start a walkthrough.');
+                  } else {
+                    cosmetic('Demo mode', 'Explore the demo freely.');
+                  }
                 }}
                 className={cx(
                   'rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors',
