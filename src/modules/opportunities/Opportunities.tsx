@@ -39,6 +39,8 @@ export function Opportunities() {
   const companies = useStore((s) => s.companies);
   const users = useStore((s) => s.users);
   const moveOpportunity = useStore((s) => s.moveOpportunity);
+  const removeOpportunities = useStore((s) => s.removeOpportunities);
+  const bulkUpdateOpportunities = useStore((s) => s.bulkUpdateOpportunities);
   const pushToast = useStore((s) => s.pushToast);
 
   const [tab, setTab] = useState<Tab>('opportunities');
@@ -49,6 +51,7 @@ export function Opportunities() {
   const [createPipelineOpen, setCreatePipelineOpen] = useState(false);
   const [addOppOpen, setAddOppOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   const selectedPipeline = useMemo(
@@ -99,6 +102,21 @@ export function Opportunities() {
     moveOpportunity(oppId, stageId);
     pushToast({ title: 'Opportunity moved', description: 'Stage updated.', variant: 'success' });
   };
+  const bulkDelete = () => {
+    if (!selectedIds.size) return;
+    const n = selectedIds.size;
+    removeOpportunities([...selectedIds]);
+    pushToast({ title: 'Opportunities deleted', description: `${n} opportunit${n === 1 ? 'y' : 'ies'} removed (demo session).`, variant: 'success' });
+    clearSelection();
+  };
+  const bulkSetStatus = (status: Opportunity['status'], label: string) => {
+    if (!selectedIds.size) return;
+    const n = selectedIds.size;
+    bulkUpdateOpportunities([...selectedIds], { status });
+    pushToast({ title: `Marked ${label}`, description: `${n} opportunit${n === 1 ? 'y' : 'ies'} updated (demo session).`, variant: 'success' });
+    setBulkMenuOpen(false);
+    clearSelection();
+  };
   const toggleCard = (id: string) =>
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -115,7 +133,10 @@ export function Opportunities() {
 
   const switchTab = (t: Tab) => {
     setTab(t);
-    if (t !== 'bulk') clearSelection();
+    if (t !== 'bulk') {
+      clearSelection();
+      setBulkMenuOpen(false);
+    }
   };
 
   const listColumns: Column<Opportunity>[] = [
@@ -255,13 +276,30 @@ export function Opportunities() {
                 <span className="rounded-full bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand">
                   {selectedIds.size} opportunit{selectedIds.size === 1 ? 'y' : 'ies'} selected
                 </span>
+                <div className="relative">
+                  <button
+                    onClick={() => selectedIds.size && setBulkMenuOpen((v) => !v)}
+                    disabled={selectedIds.size === 0}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted hover:text-ink disabled:opacity-40"
+                  ><Pencil size={14} /> Edit</button>
+                  {bulkMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setBulkMenuOpen(false)} />
+                      <div className="absolute left-0 top-full z-20 mt-1 w-48 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-pop">
+                        <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">Set status</p>
+                        {([['won', 'Won'], ['lost', 'Lost'], ['open', 'Open'], ['abandoned', 'Abandoned']] as const).map(([s, label]) => (
+                          <button
+                            key={s}
+                            onClick={() => bulkSetStatus(s, label)}
+                            className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-surface-sunken"
+                          >Mark as {label}</button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
                 <button
-                  onClick={() => (selectedIds.size ? cosmetic('Bulk edit') : undefined)}
-                  disabled={selectedIds.size === 0}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted hover:text-ink disabled:opacity-40"
-                ><Pencil size={14} /> Edit</button>
-                <button
-                  onClick={() => { if (selectedIds.size) { pushToast({ title: 'Demo: Bulk delete', description: `${selectedIds.size} opportunities would be deleted. (Demo only.)`, variant: 'info' }); clearSelection(); } }}
+                  onClick={bulkDelete}
                   disabled={selectedIds.size === 0}
                   className="flex items-center gap-1.5 text-sm font-semibold text-bad hover:text-bad/80 disabled:opacity-40"
                 ><Trash2 size={14} /> Delete</button>
