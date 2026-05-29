@@ -1,9 +1,16 @@
 /**
  * workflowNodes.ts — local display-only node data for the Automations builder.
  *
- * These nodes are NEVER stored in the global store. They exist purely as
- * a demo-mode visual representation of each workflow's trigger + action chain.
+ * These nodes are NEVER stored in the global store. They exist purely as a
+ * demo-mode visual representation of each workflow's trigger + action chain.
  * No real automation logic, no real API calls.
+ *
+ * Scoped to the five flagship demo workflows (wf_1 … wf_5) so the builder
+ * shows a small set of strong, realistic automations rather than dozens of
+ * shallow ones. Each node carries:
+ *   - `config` — the concrete detail (message body, timing, tag, stage)
+ *   - `note`   — a plain-language "what this step does" explanation
+ * so a first-time visitor understands every step on the canvas.
  */
 
 export type WorkflowNodeKind = 'trigger' | 'action' | 'condition' | 'wait';
@@ -11,75 +18,74 @@ export type WorkflowNodeKind = 'trigger' | 'action' | 'condition' | 'wait';
 export interface WorkflowDisplayNode {
   id: string;
   type: WorkflowNodeKind;
+  /** Catalog id (matches TRIGGER_GROUPS / ACTION_GROUPS) — drives the icon. */
   subtype: string;
   label: string;
+  /** Concrete configuration detail (message text, delay, tag, stage…). */
   config?: string;
+  /** Plain-language "what this step accomplishes" note, shown in step detail. */
+  note?: string;
   icon?: string;
 }
 
 /** Maps workflow ID → ordered list of display nodes. */
 export const WORKFLOW_NODES: Record<string, WorkflowDisplayNode[]> = {
+  /* 1 — New Lead Speed-to-Lead ----------------------------------------- */
   wf_1: [
-    { id: 'n1', type: 'trigger', subtype: 'form_submitted', label: 'Form Submitted', config: 'Any contact form on the site.' },
-    { id: 'n2', type: 'action', subtype: 'send_sms', label: 'Send SMS', config: 'Thanks for reaching out! We will call you shortly.' },
-    { id: 'n3', type: 'action', subtype: 'send_email', label: 'Send Email', config: 'Subject: We received your request! Body: Hi {{first_name}}, our team will be in touch within the hour.' },
-    { id: 'n4', type: 'action', subtype: 'create_task', label: 'Create Task', config: 'Owner notified to follow up within 1 hour.' },
-    { id: 'n5', type: 'action', subtype: 'add_tag', label: 'Add Tag', config: 'Tag: lead' },
+    { id: 'n1', type: 'trigger', subtype: 'form_submitted', label: 'Form Submitted', config: 'Any "Get a Free Quote" form on the website.', note: 'Starts the workflow the moment a new lead submits a form.' },
+    { id: 'n2', type: 'action', subtype: 'send_sms', label: 'Send SMS', config: '"Thanks {{contact.first_name}}! A specialist will call you in the next few minutes."', note: 'Texts the lead instantly so they hear from you first.' },
+    { id: 'n3', type: 'action', subtype: 'send_email', label: 'Send Email', config: 'Subject: "We got your request — here is what happens next."', note: 'Sends a branded confirmation email with clear next steps.' },
+    { id: 'n4', type: 'action', subtype: 'assign_user', label: 'Assign To User', config: 'Round-robin to the Sales team.', note: 'Routes the lead to an available rep so someone clearly owns it.' },
+    { id: 'n5', type: 'action', subtype: 'create_task', label: 'Create Task', config: '"Call new lead" — due in 15 minutes, assigned to the owner.', note: 'Creates a fast follow-up call task so the lead is not forgotten.' },
+    { id: 'n6', type: 'action', subtype: 'move_opportunity', label: 'Move Opportunity', config: 'Open a deal in the "New Lead" stage.', note: 'Adds the deal to the pipeline so it can be tracked to close.' },
   ],
+
+  /* 2 — Missed Call Text Back ------------------------------------------ */
   wf_2: [
-    { id: 'n1', type: 'trigger', subtype: 'missed_call', label: 'Missed Call', config: 'Triggers on any missed inbound call.' },
-    { id: 'n2', type: 'action', subtype: 'send_sms', label: 'Send SMS', config: 'Hey! We missed your call — we will ring you back shortly. Reply with a good time.' },
-    { id: 'n3', type: 'action', subtype: 'create_task', label: 'Create Task', config: 'Call back this contact within 15 minutes.' },
+    { id: 'n1', type: 'trigger', subtype: 'missed_call', label: 'Missed Call', config: 'Any inbound call that is missed or goes to voicemail.', note: 'Starts whenever a caller could not be reached.' },
+    { id: 'n2', type: 'action', subtype: 'send_sms', label: 'Send SMS', config: '"Sorry we missed your call! Reply here and we will help right away."', note: 'Texts the caller back within seconds so the lead stays warm.' },
+    { id: 'n3', type: 'action', subtype: 'send_notification', label: 'Notify Assigned User', config: 'In-app + email alert to the contact owner.', note: 'Tells the rep to return the call promptly.' },
+    { id: 'n4', type: 'action', subtype: 'create_task', label: 'Create Task', config: '"Call back this contact" — due in 10 minutes.', note: 'Schedules the callback so it actually happens.' },
+    { id: 'n5', type: 'action', subtype: 'add_tag', label: 'Add Tag', config: 'Tag: "missed-call".', note: 'Tags the contact for reporting and later segmentation.' },
   ],
+
+  /* 3 — Appointment Reminder + No-Show Recovery ------------------------ */
   wf_3: [
-    { id: 'n1', type: 'trigger', subtype: 'appointment_booked', label: 'Appointment Booked', config: 'Any new confirmed appointment.' },
-    { id: 'n2', type: 'wait', subtype: 'wait_until', label: 'Wait', config: '24 hours before appointment start time.' },
-    { id: 'n3', type: 'action', subtype: 'send_sms', label: 'Send SMS Reminder', config: 'Reminder: your appointment is tomorrow at {{appt_time}}. Reply C to confirm or R to reschedule.' },
-    { id: 'n4', type: 'action', subtype: 'send_email', label: 'Send Email Reminder', config: 'Subject: Your appointment is tomorrow — see you soon!' },
-    { id: 'n5', type: 'wait', subtype: 'wait_until', label: 'Wait', config: '1 hour before appointment start time.' },
-    { id: 'n6', type: 'action', subtype: 'send_sms', label: 'Send Final Reminder SMS', config: 'Heads up — your appointment starts in 1 hour. See you soon!' },
+    { id: 'n1', type: 'trigger', subtype: 'appointment_booked', label: 'Appointment Booked', config: 'Any new confirmed appointment on a booking calendar.', note: 'Starts as soon as a contact books a time.' },
+    { id: 'n2', type: 'wait', subtype: 'wait_until', label: 'Wait Until 24h Before', config: 'Hold until 24 hours before the appointment start time.', note: 'Pauses so the reminder lands the day before, not too early.' },
+    { id: 'n3', type: 'action', subtype: 'send_sms', label: 'Send SMS Reminder', config: '"Reminder: your appointment is tomorrow at {{appointment.time}}. Reply C to confirm."', note: 'Reminds the contact by text 24 hours out.' },
+    { id: 'n4', type: 'action', subtype: 'send_email', label: 'Send Email Reminder', config: 'Subject: "Your appointment is tomorrow — see you soon!"', note: 'Backs up the SMS with an email reminder.' },
+    { id: 'n5', type: 'condition', subtype: 'check_no_show', label: 'If Appointment = No-Show', config: 'Branch when the appointment status becomes "No-Show".', note: 'Splits the flow so only no-shows get the recovery steps.' },
+    { id: 'n6', type: 'action', subtype: 'send_sms', label: 'Send No-Show Follow-Up', config: '"Sorry we missed you today! Tap here to grab a new time."', note: 'Re-engages no-shows with an easy rebooking link.' },
+    { id: 'n7', type: 'action', subtype: 'move_opportunity', label: 'Move Opportunity', config: 'Move the deal to the "No-Show / Re-engage" stage.', note: 'Flags the deal so the team can actively recover it.' },
   ],
+
+  /* 4 — Review Request After Completed Appointment --------------------- */
   wf_4: [
-    { id: 'n1', type: 'trigger', subtype: 'opportunity_won', label: 'Opportunity Won', config: 'Any pipeline, any stage moved to Won.' },
-    { id: 'n2', type: 'wait', subtype: 'wait_duration', label: 'Wait 1 Day', config: '1 day after trigger.' },
-    { id: 'n3', type: 'action', subtype: 'send_sms', label: 'Send Review Request SMS', config: 'Hi {{first_name}}! We hope everything is great. Would you mind leaving us a quick Google review? [link]' },
-    { id: 'n4', type: 'action', subtype: 'send_email', label: 'Send Review Request Email', config: 'Subject: How did we do? Your review matters!' },
+    { id: 'n1', type: 'trigger', subtype: 'appointment_status', label: 'Appointment Completed', config: 'Appointment status changes to "Showed / Completed".', note: 'Starts right after a successful, completed visit.' },
+    { id: 'n2', type: 'wait', subtype: 'wait_duration', label: 'Wait 1 Hour', config: 'Wait 1 hour after the appointment completes.', note: 'Gives the client a moment before asking for feedback.' },
+    { id: 'n3', type: 'action', subtype: 'request_review', label: 'Send Review Request SMS', config: '"Thanks for visiting! Mind leaving us a quick Google review? {{review.link}}"', note: 'Asks happy clients for a review by text while it is fresh.' },
+    { id: 'n4', type: 'action', subtype: 'send_email', label: 'Send Review Request Email', config: 'Subject: "How did we do? Your review means a lot."', note: 'Follows up with an email review request and link.' },
+    { id: 'n5', type: 'action', subtype: 'add_tag', label: 'Add Tag', config: 'Tag: "review-requested".', note: 'Tags the contact so they are never asked twice.' },
   ],
+
+  /* 5 — Pipeline Stage Follow-Up --------------------------------------- */
   wf_5: [
-    { id: 'n1', type: 'trigger', subtype: 'tag_added', label: 'Tag Added: past-client', config: 'Contact tag "past-client" applied.' },
-    { id: 'n2', type: 'action', subtype: 'send_email', label: 'Send Email — Day 1', config: 'Subject: We have been thinking about you!' },
-    { id: 'n3', type: 'wait', subtype: 'wait_duration', label: 'Wait 3 Days', config: '3 days.' },
-    { id: 'n4', type: 'action', subtype: 'send_sms', label: 'Send SMS — Day 4', config: 'Hey! Have not heard from you in a while. Got something special for you — want to hear it?' },
-    { id: 'n5', type: 'wait', subtype: 'wait_duration', label: 'Wait 4 Days', config: '4 days.' },
-    { id: 'n6', type: 'action', subtype: 'send_email', label: 'Final Email — Day 8', config: 'Subject: Last chance — your exclusive offer expires soon.' },
-  ],
-  wf_6: [
-    { id: 'n1', type: 'trigger', subtype: 'birthday', label: 'Birthday', config: 'On contact birthday (date custom field).' },
-    { id: 'n2', type: 'action', subtype: 'send_sms', label: 'Send Birthday SMS', config: '🎂 Happy Birthday {{first_name}}! Hope your day is wonderful. Here is a little gift from us: BDAY20 for 20% off.' },
-  ],
-  wf_7: [
-    { id: 'n1', type: 'trigger', subtype: 'booking_started', label: 'Booking Started', config: 'Contact started but did not complete the booking flow.' },
-    { id: 'n2', type: 'wait', subtype: 'wait_duration', label: 'Wait 30 Minutes', config: '30 minutes.' },
-    { id: 'n3', type: 'condition', subtype: 'check_appointment', label: 'Has Appointment?', config: 'Branch: Yes → exit. No → continue.' },
-    { id: 'n4', type: 'action', subtype: 'send_sms', label: 'Send Nudge SMS', config: 'Looks like you did not finish booking — want us to grab a spot for you? [link]' },
-  ],
-  wf_8: [
-    { id: 'n1', type: 'trigger', subtype: 'tag_added', label: 'Tag Added: new-client', config: 'Contact tag "new-client" applied.' },
-    { id: 'n2', type: 'action', subtype: 'send_email', label: 'Welcome Email', config: 'Subject: Welcome to the family, {{first_name}}!' },
-    { id: 'n3', type: 'wait', subtype: 'wait_duration', label: 'Wait 1 Day', config: '1 day.' },
-    { id: 'n4', type: 'action', subtype: 'send_sms', label: 'Day 2 SMS', config: 'Hi {{first_name}}! Quick check-in — everything going smoothly? Let us know if you need anything.' },
-    { id: 'n5', type: 'wait', subtype: 'wait_duration', label: 'Wait 2 Days', config: '2 days.' },
-    { id: 'n6', type: 'action', subtype: 'create_task', label: 'Create Onboarding Task', config: 'Schedule onboarding call if not yet completed.' },
-    { id: 'n7', type: 'action', subtype: 'send_email', label: 'Day 4 Tips Email', config: 'Subject: 3 tips to get the most out of your new plan.' },
+    { id: 'n1', type: 'trigger', subtype: 'opportunity_stage', label: 'Opportunity Stage Changed', config: 'A deal moves into the "Follow-Up" stage.', note: 'Starts when a deal clearly needs another touch.' },
+    { id: 'n2', type: 'action', subtype: 'send_sms', label: 'Send Follow-Up Message', config: '"Hi {{contact.first_name}}, just checking in on your quote — any questions?"', note: 'Sends the first follow-up the moment the stage changes.' },
+    { id: 'n3', type: 'action', subtype: 'create_task', label: 'Create Follow-Up Task', config: '"Personal follow-up" — due tomorrow, assigned to the deal owner.', note: 'Reminds the owner to reach out personally.' },
+    { id: 'n4', type: 'action', subtype: 'send_notification', label: 'Notify Owner', config: 'In-app alert to the opportunity owner.', note: 'Lets the owner know the deal is waiting on them.' },
+    { id: 'n5', type: 'wait', subtype: 'wait_duration', label: 'Wait 2 Days', config: 'Wait 2 days for a reply before the next touch.', note: 'Spaces the touches out so the follow-up is not pushy.' },
+    { id: 'n6', type: 'action', subtype: 'send_email', label: 'Send Second Follow-Up', config: 'Subject: "Still here to help — want to move forward?"', note: 'Sends a softer second follow-up if the deal has gone quiet.' },
   ],
 };
 
-/** Fallback nodes for any workflow not in WORKFLOW_NODES. */
+/** Fallback nodes for any workflow not in WORKFLOW_NODES (e.g. brand-new). */
 export function getFallbackNodes(workflowId: string, trigger: string): WorkflowDisplayNode[] {
   return [
-    { id: `${workflowId}_n1`, type: 'trigger', subtype: 'generic_trigger', label: trigger, config: 'Workflow starts when this trigger fires.' },
-    { id: `${workflowId}_n2`, type: 'action', subtype: 'send_sms', label: 'Send SMS', config: 'Automated SMS to contact.' },
-    { id: `${workflowId}_n3`, type: 'action', subtype: 'create_task', label: 'Create Task', config: 'Internal follow-up task created.' },
+    { id: `${workflowId}_n1`, type: 'trigger', subtype: 'generic_trigger', label: trigger || 'Workflow Trigger', config: 'This event starts the workflow.', note: 'Every workflow begins with a single trigger.' },
+    { id: `${workflowId}_n2`, type: 'action', subtype: 'send_sms', label: 'Send SMS', config: 'Automated text message to the contact.', note: 'A first action — reach out to the contact automatically.' },
+    { id: `${workflowId}_n3`, type: 'action', subtype: 'create_task', label: 'Create Task', config: 'Internal follow-up task for the owner.', note: 'Make sure a human follows up where it matters.' },
   ];
 }
 
