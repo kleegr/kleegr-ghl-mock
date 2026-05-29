@@ -43,15 +43,15 @@ export function OpportunityBoard({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   /**
-   * PointerSensor: mouse + stylus, 6 px distance guard so a plain click still
-   * opens the detail drawer without starting a drag.
-   *
-   * TouchSensor: finger-touch with a 250 ms hold + 8 px tolerance so vertical
-   * scroll gestures aren't intercepted by the drag handler.
+   * PointerSensor: mouse + stylus, 6 px distance guard.
+   * TouchSensor:   finger-touch, 150 ms hold + 8 px tolerance.
+   *   150 ms is enough to distinguish intentional drag from a quick tap
+   *   while still feeling immediate.  The tolerance prevents scroll from
+   *   being misclassified as a drag on slight finger wobble.
    */
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(TouchSensor,   { activationConstraint: { delay: 150, tolerance: 8 } }),
   );
 
   const activeOpp = activeOppId
@@ -61,12 +61,10 @@ export function OpportunityBoard({
   function handleDragEnd({ active, over }: DragEndEvent) {
     setActiveOppId(null);
     if (!over) return;
-    const oppId = String(active.id);
+    const oppId     = String(active.id);
     const toStageId = String(over.id);
-    const opp = opportunities.find((o) => o.id === oppId);
+    const opp       = opportunities.find((o) => o.id === oppId);
     if (!opp || opp.stageId === toStageId) return;
-    // Guard: only accept drops onto known stage columns (over.id is always a stageId
-    // because only StageColumn registers useDroppable).
     if (!pipeline.stages.some((s) => s.id === toStageId)) return;
     onMove(oppId, toStageId);
   }
@@ -81,9 +79,8 @@ export function OpportunityBoard({
       onDragCancel={() => setActiveOppId(null)}
     >
       {/*
-        Horizontal scroller. On iOS the inertia/momentum scroll is already
-        handled by the browser since iOS 13 — no vendor prefix needed.
-        min-w-max prevents columns from shrinking below 296 px on narrow views.
+        min-w-max prevents columns from shrinking below their natural width
+        on narrow viewports.  overflow-x-auto provides horizontal scroll.
       */}
       <div
         className="flex h-full min-w-max items-stretch gap-3 overflow-x-auto px-5 py-4"
