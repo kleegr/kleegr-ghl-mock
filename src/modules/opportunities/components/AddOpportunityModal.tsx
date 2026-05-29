@@ -10,16 +10,12 @@ import { Overlay } from './Overlay';
  * AddOpportunityModal — GHL-style "Create Opportunity" drawer.
  *
  * Mirrors the look of the Edit Opportunity drawer (left intro rail + form) so
- * the primary "Add opportunity" button opens a believable creation surface
- * instead of firing a bare toast.
+ * the primary "Add opportunity" button opens a believable creation surface.
  *
- * DEMO-SAFE: the store currently exposes no `addOpportunity` action (only
- * `moveOpportunity`). Until Developer #38 ships one, submit is simulated with a
- * success toast and nothing is persisted. The form is otherwise fully real:
- * validation, pipeline→stage dependency, contact/owner pickers.
- *
- * NEEDS FROM DEVELOPER #38 (shared store): `addOpportunity(input)` so this can
- * persist in-memory like `addContact` / `bookAppointment` already do.
+ * Wired to the store's `addOpportunity` action: submitting prepends a real
+ * in-memory opportunity (session-only, cleared by Reset Demo) and switches the
+ * board to the new deal's pipeline so the card is immediately visible. The form
+ * is fully real: validation, pipeline→stage dependency, contact/owner pickers.
  */
 
 interface Props {
@@ -28,6 +24,8 @@ interface Props {
   users: User[];
   /** Pipeline pre-selected from the board toolbar. */
   initialPipelineId: string;
+  /** Called after a successful create so the board can switch to the new deal's pipeline. */
+  onCreated?: (pipelineId: string) => void;
   onClose: () => void;
 }
 
@@ -56,8 +54,8 @@ function SelectInput({ value, onChange, children }: { value: string; onChange: (
   );
 }
 
-export function AddOpportunityModal({ pipelines, contacts, users, initialPipelineId, onClose }: Props) {
-  const pushToast = useStore((s) => s.pushToast);
+export function AddOpportunityModal({ pipelines, contacts, users, initialPipelineId, onCreated, onClose }: Props) {
+  const addOpportunity = useStore((s) => s.addOpportunity);
 
   const [form, setForm] = useState({
     name: '',
@@ -84,11 +82,17 @@ export function AddOpportunityModal({ pipelines, contacts, users, initialPipelin
 
   const handleCreate = () => {
     if (!isValid) return;
-    pushToast({
-      title: 'Demo: Opportunity created',
-      description: `“${form.name.trim()}” would be added to ${pipeline?.name ?? 'the pipeline'}. (Demo only — not persisted.)`,
-      variant: 'info',
+    addOpportunity({
+      name: form.name,
+      contactId: form.contactId,
+      pipelineId: form.pipelineId,
+      stageId: effectiveStageId,
+      status: form.status,
+      monetaryValue: parseFloat(form.value) || 0,
+      ownerId: form.ownerId,
+      source: form.source,
     });
+    onCreated?.(form.pipelineId);
     onClose();
   };
 
