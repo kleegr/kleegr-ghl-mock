@@ -25,6 +25,14 @@ All prompts run **outside the app** in any LLM tool (Claude, ChatGPT, Gemini, et
 | `tutorial-script-generation.md` | Step arrays for tutorial configs | `src/modules/guides/tutorialDefs.ts` |
 | `conversation-simulation.md` | Multi-turn inbox threads | `src/data/seed.ts` (conversations/messages) |
 | `demo-script-generation.md` | Per-module rep talking points | Future `DemoScriptPanel` component |
+| `pipeline-scenario-generation.md` | Opportunities spread across pipeline stages | `src/data/seed.ts` (opportunities) |
+| `workflow-explanation-generation.md` | Plain-English automation explanations | `automationData.ts` / `workflowNodes.ts` |
+| `contact-profile-generation.md` | Realistic CRM contact records | `src/data/seed.ts` (contacts) |
+| `onboarding-helper-generation.md` | Onboarding checklist copy | `dashboard.onboardingChecklist` / Guides |
+| `module-assistant-generation.md` | Module empty-state / helper copy | module components |
+| `review-response-generation.md` | Suggested replies to reviews | `reputation.replyModal` |
+| `campaign-copy-generation.md` | Email/SMS campaign copy | `src/data/seed.ts` (campaigns) |
+| `reporting-insight-generation.md` | AI-summary insight blurbs | `reporting.aiSummary` |
 
 ## Universal Guardrails
 
