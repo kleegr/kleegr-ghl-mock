@@ -17,6 +17,7 @@ import { Integrations } from '@/modules/integrations/Integrations';
 import { Media } from '@/modules/media/Media';
 import { Settings } from '@/modules/settings/Settings';
 import { Guides } from '@/modules/guides/Guides';
+import { Placeholder } from '@/modules/placeholder/Placeholder';
 
 export default function App() {
   return (
@@ -42,6 +43,15 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/:section" element={<Settings />} />
           <Route path="/guides" element={<Guides />} />
+          {/* New GHL-style shell entries — demo-safe placeholder pages. */}
+          <Route path="/launchpad" element={<Placeholder />} />
+          <Route path="/ask-ai" element={<Placeholder />} />
+          <Route path="/ai-studio" element={<Placeholder />} />
+          <Route path="/ai-agents" element={<Placeholder />} />
+          <Route path="/memberships" element={<Placeholder />} />
+          <Route path="/kleegr-wa" element={<Placeholder />} />
+          <Route path="/urls" element={<Placeholder />} />
+          <Route path="/app-marketplace" element={<Placeholder />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
