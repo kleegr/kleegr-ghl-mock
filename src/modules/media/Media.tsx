@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Image, FileText, Film, UploadCloud, Search, X,
-  Download, Link, FolderOpen, Eye, Filter, SortAsc,
+  Download, Link, FolderOpen, Eye, Filter, SortAsc, Trash2,
 } from 'lucide-react';
 import { PageHeader, Button, Badge, Card } from '@/components/ui/primitives';
 import { MiniStat } from '@/components/tables/SimpleTable';
@@ -9,9 +9,9 @@ import { Modal } from '@/components/ui/Modal';
 import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
 
-/* ─── Local fake media assets ─────────────────────────────────
+/* ─── Local fake media assets ─────────────────────────
    No real uploads or storage. All assets are defined here only.
-   ──────────────────────────────────────────────────────────── */
+   ─────────────────────────────────────── */
 
 type MediaType = 'image' | 'document' | 'video';
 
@@ -49,7 +49,7 @@ const MEDIA_ASSETS: MediaAsset[] = [
   { id: 'ma_16', name: 'facebook-ad-spring',    type: 'image',    ext: 'jpg', sizeKB: 210,  uploadedAt: new Date(now - 2  * DAY).toISOString(), owner: 'Marcus Bell',    dimensions: '1200×628' },
 ];
 
-/* ─── Helpers ─────────────────────────────────────────────────── */
+/* ─── Helpers ──────────────────────────────────── */
 
 function fmtSize(kb: number) {
   if (kb < 1000) return `${kb} KB`;
@@ -78,7 +78,7 @@ const TYPE_TONE: Record<MediaType, 'brand' | 'warn' | 'neutral'> = {
   video:    'neutral',
 };
 
-/* ─── Thumbnail / Icon ────────────────────────────────────────── */
+/* ─── Thumbnail / Icon ────────────────────────────── */
 
 function AssetThumb({ asset }: { asset: MediaAsset }) {
   const BG_COLORS = ['#dbeafe', '#dcfce7', '#fce7f3', '#ede9fe', '#ffedd5', '#e0f2fe', '#fef9c3'];
@@ -95,9 +95,9 @@ function AssetThumb({ asset }: { asset: MediaAsset }) {
   );
 }
 
-/* ─── File Detail Modal ───────────────────────────────────────── */
+/* ─── File Detail Modal ──────────────────────────── */
 
-function FileDetailModal({ asset, onClose }: { asset: MediaAsset | null; onClose: () => void }) {
+function FileDetailModal({ asset, onClose, onDelete }: { asset: MediaAsset | null; onClose: () => void; onDelete: (id: string) => void }) {
   const pushToast = useStore((s) => s.pushToast);
   return (
     <Modal
@@ -107,6 +107,19 @@ function FileDetailModal({ asset, onClose }: { asset: MediaAsset | null; onClose
       size="md"
       footer={
         <>
+          <Button
+            variant="danger"
+            size="sm"
+            className="mr-auto"
+            onClick={() => {
+              if (asset) {
+                onDelete(asset.id);
+                pushToast({ title: `Deleted ${asset.name}.${asset.ext}`, description: 'Removed for this session (demo only).', variant: 'info' });
+              }
+            }}
+          >
+            <Trash2 size={12} /> Delete
+          </Button>
           <Button variant="secondary" size="sm" onClick={() => pushToast({ title: 'Link copied (demo)', variant: 'success' })}>
             <Link size={12} /> Copy Link
           </Button>
@@ -147,7 +160,7 @@ function FileDetailModal({ asset, onClose }: { asset: MediaAsset | null; onClose
   );
 }
 
-/* ─── Upload Modal ─────────────────────────────────────────────── */
+/* ─── Upload Modal ──────────────────────────────── */
 
 function UploadModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pushToast = useStore((s) => s.pushToast);
@@ -198,7 +211,7 @@ function UploadModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   );
 }
 
-/* ─── Main Media Page ─────────────────────────────────────────── */
+/* ─── Main Media Page ────────────────────────────── */
 
 type SortKey = 'recent' | 'name' | 'size';
 
@@ -208,14 +221,15 @@ export function Media() {
   const [sort, setSort] = useState<SortKey>('recent');
   const [selAsset, setSelAsset] = useState<MediaAsset | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [assets, setAssets] = useState<MediaAsset[]>(MEDIA_ASSETS);
 
-  const images    = MEDIA_ASSETS.filter((a) => a.type === 'image');
-  const documents = MEDIA_ASSETS.filter((a) => a.type === 'document');
-  const videos    = MEDIA_ASSETS.filter((a) => a.type === 'video');
-  const totalKB   = MEDIA_ASSETS.reduce((s, a) => s + a.sizeKB, 0);
+  const images    = assets.filter((a) => a.type === 'image');
+  const documents = assets.filter((a) => a.type === 'document');
+  const videos    = assets.filter((a) => a.type === 'video');
+  const totalKB   = assets.reduce((s, a) => s + a.sizeKB, 0);
 
   const filtered = useMemo(() => {
-    let list = MEDIA_ASSETS;
+    let list = assets;
     if (typeFilter !== 'all') list = list.filter((a) => a.type === typeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -225,7 +239,12 @@ export function Media() {
     else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     else if (sort === 'size') list = [...list].sort((a, b) => b.sizeKB - a.sizeKB);
     return list;
-  }, [search, typeFilter, sort]);
+  }, [assets, search, typeFilter, sort]);
+
+  const handleDelete = (id: string) => {
+    setAssets((prev) => prev.filter((a) => a.id !== id));
+    setSelAsset(null);
+  };
 
   return (
     <div data-tour="media.page">
@@ -334,7 +353,7 @@ export function Media() {
         )}
       </div>
 
-      <FileDetailModal asset={selAsset} onClose={() => setSelAsset(null)} />
+      <FileDetailModal asset={selAsset} onClose={() => setSelAsset(null)} onDelete={handleDelete} />
       <UploadModal open={showUpload} onClose={() => setShowUpload(false)} />
     </div>
   );
