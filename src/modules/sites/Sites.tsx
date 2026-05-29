@@ -45,12 +45,32 @@ const FUNNEL_STEPS: Record<string,{name:string;visits:number;convPct:number}[]> 
 type SiteItem = typeof FUNNELS[0] | typeof WEBSITES[0];
 
 function BuilderPreview({ item, onClose }: { item: SiteItem|null; onClose: () => void }) {
+  const pushToast = useStore(s => s.pushToast);
   if (!item) return null;
   const steps    = FUNNEL_STEPS[item.id] ?? [];
   const convRate = item.visits ? `${Math.round(item.conversions/item.visits*100)}%` : '—';
   const pages    = 'pages' in item ? (item as typeof WEBSITES[0]).pages : null;
+  const isPublished = item.status === 'Published';
   return (
-    <Modal open onClose={onClose} size="lg" title={item.name}>
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      title={item.name}
+      footer={
+        <>
+          <Button variant="secondary" size="sm" onClick={() => pushToast({ title: `Previewing ${item.name}`, description: 'Opening a live preview (demo only).', variant: 'info' })}>
+            <Eye size={13}/> Preview
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => pushToast({ title: `Editing ${item.name}`, description: 'The builder would open here (demo only).', variant: 'info' })}>
+            Edit
+          </Button>
+          <Button size="sm" onClick={() => pushToast({ title: isPublished ? `${item.name} unpublished` : `${item.name} published`, description: 'Status change is session-only.', variant: 'success' })}>
+            {isPublished ? 'Unpublish' : 'Publish'}
+          </Button>
+        </>
+      }
+    >
       <div data-tour="sites.builderPreview" className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={item.status==='Published'?'good':'neutral'}>{item.status}</Badge>
