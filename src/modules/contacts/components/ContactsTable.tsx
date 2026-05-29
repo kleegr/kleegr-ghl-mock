@@ -23,8 +23,9 @@ export function ContactsTable({
   const users = useStore(s => s.users);
   const companies = useStore(s => s.companies);
   const pushToast = useStore(s => s.pushToast);
+  const removeContacts = useStore(s => s.removeContacts);
 
-  // Bulk selection (cosmetic — demo only).
+  // Bulk selection — Delete is wired to the store; tag/email stay demo-cosmetic.
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   if (contacts.length === 0) {
@@ -58,6 +59,12 @@ export function ContactsTable({
     });
   };
 
+  const handleBulkDelete = () => {
+    if (selected.size === 0) return;
+    removeContacts([...selected]);
+    setSelected(new Set());
+  };
+
   return (
     <div className="overflow-x-auto">
       {/* Bulk-action toolbar — appears when rows are selected */}
@@ -83,7 +90,7 @@ export function ContactsTable({
             <Mail size={12} /> Send Email
           </button>
           <button
-            onClick={() => bulkAction('Delete')}
+            onClick={handleBulkDelete}
             className="flex items-center gap-1.5 rounded-lg border border-bad/30 bg-surface px-2.5 py-1 text-xs font-semibold text-bad hover:bg-bad/5"
           >
             <Trash2 size={12} /> Delete

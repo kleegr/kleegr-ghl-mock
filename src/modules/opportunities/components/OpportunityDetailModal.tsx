@@ -83,11 +83,14 @@ function EmptyPanel({ icon, title, body, cta }: { icon: ReactNode; title: string
 export function OpportunityDetailModal({ opportunity: opp, contacts, users, onClose }: Props) {
   const pipelines = useStore((s) => s.pipelines);
   const moveOpportunity = useStore((s) => s.moveOpportunity);
+  const updateOpportunity = useStore((s) => s.updateOpportunity);
+  const removeOpportunity = useStore((s) => s.removeOpportunity);
   const pushToast = useStore((s) => s.pushToast);
 
   const contact = contacts.find((c) => c.id === opp.contactId);
   const [section, setSection] = useState<Section>('details');
   const [hideEmpty, setHideEmpty] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Local editable copy (demo-only except Stage, which is wired to the store).
   const [draft, setDraft] = useState({
@@ -112,6 +115,24 @@ export function OpportunityDetailModal({ opportunity: opp, contacts, users, onCl
 
   const demo = (label: string) => {
     pushToast({ title: `Demo: ${label}`, description: 'This action is simulated in the demo.', variant: 'info' });
+    onClose();
+  };
+
+  const handleUpdate = () => {
+    updateOpportunity(opp.id, {
+      name: draft.name.trim() || opp.name,
+      pipelineId: draft.pipelineId,
+      stageId: draft.stageId,
+      status: draft.status,
+      monetaryValue: parseFloat(draft.value) || 0,
+      ownerId: draft.ownerId,
+      source: draft.source,
+    });
+    onClose();
+  };
+
+  const handleDelete = () => {
+    removeOpportunity(opp.id);
     onClose();
   };
 
@@ -298,17 +319,27 @@ export function OpportunityDetailModal({ opportunity: opp, contacts, users, onCl
           <span className="mx-2 text-ink-subtle/60">·</span>
           Created On {dateLabel(opp.createdAt)}
         </p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => demo('Delete Opportunity')}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-line text-bad hover:bg-bad/5"
-            aria-label="Delete opportunity"
-          >
-            <Trash2 size={16} />
-          </button>
-          <Button variant="secondary" size="md" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" size="md" onClick={() => demo('Update Opportunity')}>Update</Button>
-        </div>
+        {confirmDelete ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-ink">Delete this opportunity?</span>
+            <Button variant="secondary" size="md" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button variant="danger" size="md" onClick={handleDelete}>
+              <Trash2 size={15} /> Delete
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="grid h-9 w-9 place-items-center rounded-lg border border-line text-bad hover:bg-bad/5"
+              aria-label="Delete opportunity"
+            >
+              <Trash2 size={16} />
+            </button>
+            <Button variant="secondary" size="md" onClick={onClose}>Cancel</Button>
+            <Button variant="primary" size="md" onClick={handleUpdate}>Update</Button>
+          </div>
+        )}
       </div>
     </Overlay>
   );

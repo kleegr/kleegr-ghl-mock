@@ -7,6 +7,8 @@ import { Overlay } from './Overlay';
 
 interface Props {
   onClose: () => void;
+  /** Called with the new pipeline id after a successful create. */
+  onCreated?: (pipelineId: string) => void;
 }
 
 type ColorMode = 'none' | 'dot' | 'tint';
@@ -19,8 +21,8 @@ const COLOR_OPTIONS: { id: ColorMode; caption: string }[] = [
   { id: 'tint', caption: 'Background tint' },
 ];
 
-export function CreatePipelineModal({ onClose }: Props) {
-  const pushToast = useStore((s) => s.pushToast);
+export function CreatePipelineModal({ onClose, onCreated }: Props) {
+  const addPipeline = useStore((s) => s.addPipeline);
   const [name, setName] = useState('');
   const [touched, setTouched] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>('none');
@@ -36,11 +38,8 @@ export function CreatePipelineModal({ onClose }: Props) {
   const handleCreate = () => {
     setTouched(true);
     if (name.trim() === '') return;
-    pushToast({
-      title: 'Demo: Pipeline created',
-      description: `“${name.trim()}” would be saved with ${stages.length} stages. (Demo only — not persisted.)`,
-      variant: 'success',
-    });
+    const pipeline = addPipeline({ name, stageNames: stages.map((s) => s.name) });
+    onCreated?.(pipeline.id);
     onClose();
   };
 

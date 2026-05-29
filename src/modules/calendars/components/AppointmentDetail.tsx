@@ -1,9 +1,11 @@
 /**
  * AppointmentDetail — modal showing all fields for a single appointment.
- * Read-only in V1; action buttons are cosmetic.
+ * "Cancel appointment" is wired to the store (marks the appointment cancelled,
+ * updates calendar chips immediately); "Reschedule" surfaces a demo notice.
  */
 import { MapPin, Video, Calendar as CalIcon, User, Clock } from 'lucide-react';
 import type { Appointment, Calendar, Contact } from '@/types';
+import { useStore } from '@/store/useStore';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/primitives';
 import type { BadgeProps } from '@/components/ui/primitives';
@@ -32,8 +34,20 @@ interface Props {
 }
 
 export function AppointmentDetail({ open, onClose, appt, calendars, contacts }: Props) {
+  const cancelAppointment = useStore((s) => s.cancelAppointment);
+  const pushToast = useStore((s) => s.pushToast);
   const cal = calendars.find((c) => c.id === appt.calendarId);
   const contact = contacts.find((c) => c.id === appt.contactId);
+
+  const isCancelled = appt.status === 'cancelled';
+  const handleCancel = () => {
+    cancelAppointment(appt.id);
+    onClose();
+  };
+  const handleReschedule = () => {
+    pushToast({ title: 'Reschedule', description: 'Use Book Appointment to pick a new time (demo only).', variant: 'info' });
+    onClose();
+  };
 
   return (
     <div data-tour="calendars.appointmentDetail">
@@ -116,19 +130,20 @@ export function AppointmentDetail({ open, onClose, appt, calendars, contacts }: 
           )}
         </dl>
 
-        {/* Cosmetic actions */}
+        {/* Actions */}
         <div className="mt-5 flex gap-2 border-t border-line pt-4">
           <button
             className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-sunken"
-            onClick={onClose}
+            onClick={handleReschedule}
           >
             Reschedule
           </button>
           <button
-            className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-sunken"
-            onClick={onClose}
+            className="rounded-lg border border-bad/30 px-3 py-1.5 text-xs font-semibold text-bad hover:bg-bad/5 disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={handleCancel}
+            disabled={isCancelled}
           >
-            Cancel appointment
+            {isCancelled ? 'Cancelled' : 'Cancel appointment'}
           </button>
         </div>
       </Modal>

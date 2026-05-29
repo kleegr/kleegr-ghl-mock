@@ -2,11 +2,14 @@ import { create } from 'zustand';
 import { generateDemoData } from '@/data/seed';
 import type {
   Appointment,
+  Channel,
   Contact,
+  Conversation,
   DemoData,
   ID,
   Message,
   Opportunity,
+  Pipeline,
 } from '@/types';
 
 let toastSeq = 0;
@@ -52,7 +55,21 @@ interface StoreState extends DemoData {
   sendMessage: (conversationId: ID, body: string) => void;
   markConversationRead: (conversationId: ID) => void;
   moveOpportunity: (opportunityId: ID, toStageId: ID) => void;
+  addOpportunity: (
+    input: Pick<Opportunity, 'name' | 'contactId' | 'pipelineId' | 'stageId' | 'status' | 'monetaryValue' | 'ownerId'> & { source?: string },
+  ) => Opportunity;
+  updateOpportunity: (
+    id: ID,
+    patch: Partial<Pick<Opportunity, 'name' | 'pipelineId' | 'stageId' | 'status' | 'monetaryValue' | 'ownerId' | 'source'>>,
+  ) => void;
+  removeOpportunity: (id: ID) => void;
+  removeOpportunities: (ids: ID[]) => void;
+  bulkUpdateOpportunities: (ids: ID[], patch: Partial<Pick<Opportunity, 'stageId' | 'status' | 'ownerId'>>) => void;
+  addPipeline: (input: { name: string; stageNames: string[] }) => Pipeline;
+  startConversation: (input: { contactId: ID; channel: Channel; body: string; subject?: string }) => Conversation;
   bookAppointment: (input: Pick<Appointment, 'calendarId' | 'contactId' | 'title' | 'startTime' | 'endTime' | 'location'>) => void;
+  cancelAppointment: (id: ID) => void;
+  removeContacts: (ids: ID[]) => void;
   toggleTask: (taskId: ID) => void;
   markAllNotificationsRead: () => void;
 }
@@ -165,6 +182,115 @@ export const useStore = create<StoreState>((set, get) => ({
       ),
     })),
 
+  addOpportunity: (input) => {
+    const now = new Date().toISOString();
+    const opp: Opportunity = {
+      id: `opp_new_${Date.now()}`,
+      name: input.name.trim() || 'Untitled opportunity',
+      contactId: input.contactId,
+      pipelineId: input.pipelineId,
+      stageId: input.stageId,
+      monetaryValue: Number.isFinite(input.monetaryValue) ? input.monetaryValue : 0,
+      status: input.status,
+      ownerId: input.ownerId,
+      source: input.source?.trim() || undefined,
+      createdAt: now,
+      updatedAt: now,
+    };
+    set((s) => ({ opportunities: [opp, ...s.opportunities] }));
+    get().pushToast({ title: 'Opportunity created', description: `“${opp.name}” was added to the pipeline.`, variant: 'success' });
+    return opp;
+  },
+
+  updateOpportunity: (id, patch) => {
+    const clean: typeof patch = { ...patch };
+    if (typeof clean.source === 'string') clean.source = clean.source.trim() || undefined;
+    set((s) => ({
+      opportunities: s.opportunities.map((o) =>
+        o.id === id ? { ...o, ...clean, updatedAt: new Date().toISOString() } : o,
+      ),
+    }));
+    get().pushToast({ title: 'Opportunity updated', description: 'Your changes were saved.', variant: 'success' });
+  },
+
+  removeOpportunity: (id) => {
+    set((s) => ({ opportunities: s.opportunities.filter((o) => o.id !== id) }));
+    get().pushToast({ title: 'Opportunity deleted', description: 'The opportunity was removed.', variant: 'success' });
+  },
+
+  removeOpportunities: (ids) => {
+    if (ids.length === 0) return;
+    const idSet = new Set(ids);
+    set((s) => ({ opportunities: s.opportunities.filter((o) => !idSet.has(o.id)) }));
+    get().pushToast({
+      title: `${ids.length} opportunit${ids.length === 1 ? 'y' : 'ies'} deleted`,
+      description: 'The selected opportunities were removed.',
+      variant: 'success',
+    });
+  },
+
+  bulkUpdateOpportunities: (ids, patch) => {
+    if (ids.length === 0 || Object.keys(patch).length === 0) return;
+    const idSet = new Set(ids);
+    const now = new Date().toISOString();
+    set((s) => ({
+      opportunities: s.opportunities.map((o) => (idSet.has(o.id) ? { ...o, ...patch, updatedAt: now } : o)),
+    }));
+    get().pushToast({
+      title: `${ids.length} opportunit${ids.length === 1 ? 'y' : 'ies'} updated`,
+      description: 'Bulk changes were applied.',
+      variant: 'success',
+    });
+  },
+
+  addPipeline: (input) => {
+    const names = input.stageNames.map((n) => n.trim()).filter(Boolean);
+    const safeNames = names.length ? names : ['New Stage'];
+    const base = Date.now();
+    const pipeline: Pipeline = {
+      id: `pipe_new_${base}`,
+      name: input.name.trim() || 'Untitled pipeline',
+      stages: safeNames.map((name, i) => ({ id: `stage_new_${base}_${i}`, name, order: i })),
+    };
+    set((s) => ({ pipelines: [...s.pipelines, pipeline] }));
+    get().pushToast({
+      title: 'Pipeline created',
+      description: `“${pipeline.name}” was added with ${pipeline.stages.length} stage${pipeline.stages.length === 1 ? '' : 's'}.`,
+      variant: 'success',
+    });
+    return pipeline;
+  },
+
+  startConversation: (input) => {
+    const now = new Date().toISOString();
+    const convId = `conv_new_${Date.now()}`;
+    const msg: Message = {
+      id: `msg_${convId}`,
+      conversationId: convId,
+      direction: 'outbound',
+      channel: input.channel,
+      body: input.body.trim(),
+      createdAt: now,
+      status: 'sent',
+    };
+    const me = get().users.find((u) => u.isCurrentUser);
+    const conv: Conversation = {
+      id: convId,
+      contactId: input.contactId,
+      channel: input.channel,
+      unread: false,
+      lastMessageAt: now,
+      assignedTo: me?.id,
+      messageIds: [msg.id],
+    };
+    set((s) => ({
+      conversations: [conv, ...s.conversations],
+      messages: [...s.messages, msg],
+    }));
+    get().pushToast({ title: 'Message sent', description: 'A new conversation was started (demo only).', variant: 'success' });
+    return conv;
+  },
+
   bookAppointment: (input) => {
     const appt: Appointment = {
       id: `appt_new_${Date.now()}`,
@@ -173,6 +299,24 @@ export const useStore = create<StoreState>((set, get) => ({
     };
     set((s) => ({ appointments: [...s.appointments, appt].sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime)) }));
     get().pushToast({ title: 'Appointment booked', description: 'Added to the calendar (demo only).', variant: 'success' });
+  },
+
+  cancelAppointment: (id) => {
+    set((s) => ({
+      appointments: s.appointments.map((a) => (a.id === id ? { ...a, status: 'cancelled' } : a)),
+    }));
+    get().pushToast({ title: 'Appointment cancelled', description: 'The appointment was marked cancelled (demo only).', variant: 'success' });
+  },
+
+  removeContacts: (ids) => {
+    if (ids.length === 0) return;
+    const idSet = new Set(ids);
+    set((s) => ({ contacts: s.contacts.filter((c) => !idSet.has(c.id)) }));
+    get().pushToast({
+      title: `${ids.length} contact${ids.length === 1 ? '' : 's'} deleted`,
+      description: 'The selected contacts were removed.',
+      variant: 'success',
+    });
   },
 
   toggleTask: (taskId) =>

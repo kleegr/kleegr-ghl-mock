@@ -11,16 +11,12 @@ import { CHANNEL_LABEL } from '../utils';
  * NewMessageModal — GHL-style "New Message" composer launched from the inbox.
  *
  * Lets the user pick a recipient + channel and draft a message, mirroring the
- * real portal's new-conversation flow instead of firing a bare toast.
+ * real portal's new-conversation flow.
  *
- * DEMO-SAFE: per the demo guardrails there is no real messaging. The store's
- * `sendMessage` only appends to an *existing* conversation thread, and there is
- * no `startConversation` action, so submit is simulated with a toast and
- * nothing is sent or persisted.
- *
- * NEEDS FROM DEVELOPER #38 (shared store): a `startConversation(contactId,
- * channel, body)` action to create a new in-memory thread — at which point this
- * modal can open the new thread instead of toasting.
+ * Wired to the store's `startConversation` action: sending creates a real
+ * in-memory conversation thread (with the drafted outbound message) and opens
+ * it in the inbox. Session-only — Reset Demo clears it. Nothing is delivered
+ * externally.
  */
 
 const CHANNELS: Channel[] = ['sms', 'email', 'webchat', 'whatsapp'];
@@ -41,12 +37,15 @@ export function NewMessageModal({
   open,
   onClose,
   contacts,
+  onSent,
 }: {
   open: boolean;
   onClose: () => void;
   contacts: Contact[];
+  /** Called with the new conversation id after a successful send. */
+  onSent?: (conversationId: string) => void;
 }) {
-  const pushToast = useStore((s) => s.pushToast);
+  const startConversation = useStore((s) => s.startConversation);
 
   const [contactId, setContactId] = useState(contacts[0]?.id ?? '');
   const [channel, setChannel] = useState<Channel>('sms');
@@ -64,12 +63,14 @@ export function NewMessageModal({
 
   const handleSend = () => {
     if (!isValid) return;
-    pushToast({
-      title: 'Demo: Message queued',
-      description: `A ${CHANNEL_LABEL[channel]} message to ${recipient ? fullName(recipient) : 'the contact'} would be sent. (Demo only — no real messages are delivered.)`,
-      variant: 'info',
+    const conv = startConversation({
+      contactId,
+      channel,
+      body,
+      subject: isEmail ? subject : undefined,
     });
     reset();
+    onSent?.(conv.id);
     onClose();
   };
 
@@ -142,8 +143,8 @@ export function NewMessageModal({
           />
         </Field>
 
-        <p className="rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-xs text-warn">
-          Demo only — no real messages are delivered.
+        <p className="rounded-lg border border-line bg-surface-sunken px-3 py-2 text-xs text-ink-muted">
+          Starts an in-memory conversation in this demo workspace — nothing is delivered externally.
         </p>
       </div>
     </Modal>
