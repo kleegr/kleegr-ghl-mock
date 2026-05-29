@@ -37,6 +37,15 @@ export interface Contact {
   createdAt: string;
   lastActivityAt: string;
   customFields: Record<string, string | number | boolean>;
+  // --- GHL-fidelity (optional, additive) ---
+  /** Classification shown on contact panels (GHL "Contact Type"). */
+  contactType?: 'lead' | 'customer';
+  /** Business / company display name, mirrored for panels that show it inline. */
+  businessName?: string;
+  /** ISO date (date-only ok) of birth, used by birthday workflows & panels. */
+  dateOfBirth?: string;
+  /** User IDs "following" this contact (GHL Followers). */
+  followerIds?: ID[];
 }
 
 export type Channel =
@@ -56,6 +65,33 @@ export interface Message {
   body: string;
   createdAt: string;
   status?: 'sent' | 'delivered' | 'read' | 'failed';
+  // --- GHL-fidelity (optional, additive) ---
+  /**
+   * Row kind for the thread. Defaults to a normal 'message' when omitted, so
+   * existing seeded messages render unchanged.
+   *  - 'note'   → internal note (not sent to the contact)
+   *  - 'call'   → call event (pairs well with channel:'call' + callDurationSec)
+   *  - 'system' → system/automation event (use `details` for the body)
+   */
+  kind?: 'message' | 'note' | 'call' | 'system';
+  /** Optional subject line (useful for email-channel messages). */
+  subject?: string;
+  /** Call length in seconds, for call rows. */
+  callDurationSec?: number;
+  /** Call/voicemail transcript text. */
+  transcript?: string;
+  /** Extra detail body for system events / notes. */
+  details?: string;
+}
+
+/** Lightweight activity-timeline entry for the contact/conversation panels. */
+export interface ActivityEvent {
+  id: ID;
+  type: 'note' | 'call' | 'sms' | 'email' | 'appointment' | 'task' | 'stage_change' | 'system';
+  title: string;
+  body?: string;
+  createdAt: string;
+  actorId?: ID;
 }
 
 export interface Conversation {
@@ -67,6 +103,8 @@ export interface Conversation {
   lastMessageAt: string;
   assignedTo?: ID;
   messageIds: ID[];
+  /** Optional activity timeline for the conversation/contact panel. */
+  activity?: ActivityEvent[];
 }
 
 export interface Stage {
@@ -78,6 +116,15 @@ export interface Pipeline {
   id: ID;
   name: string;
   stages: Stage[];
+}
+/** Per-opportunity activity tallies shown on GHL opportunity cards/detail. */
+export interface OpportunityActivity {
+  calls: number;
+  sms: number;
+  tags: number;
+  notes: number;
+  tasks: number;
+  appointments: number;
 }
 export interface Opportunity {
   id: ID;
@@ -91,6 +138,13 @@ export interface Opportunity {
   source?: string;
   createdAt: string;
   updatedAt: string;
+  // --- GHL-fidelity (optional, additive) ---
+  /** Business/company name displayed under the opportunity title. */
+  businessName?: string;
+  /** User IDs following the opportunity (GHL Followers). */
+  followerIds?: ID[];
+  /** Engagement tallies rendered as icons on the card. */
+  activity?: OpportunityActivity;
 }
 
 export interface Calendar {
@@ -117,6 +171,19 @@ export interface Workflow {
   enrolled: number;
   trigger: string;
   explanation?: string;
+  // --- GHL-fidelity (optional, additive) ---
+  /** Folder this workflow lives in (GHL groups workflows in folders). */
+  folder?: string;
+  /** Currently-active enrollments. */
+  activeEnrolled?: number;
+  /** All-time enrollments. */
+  totalEnrolled?: number;
+  /** ISO timestamp the workflow was last edited. */
+  lastUpdatedAt?: string;
+  /** ISO timestamp the workflow was created. */
+  createdAt?: string;
+  /** Flag for the "Needs Review" workflows tab. */
+  needsReview?: boolean;
 }
 
 export interface Campaign {

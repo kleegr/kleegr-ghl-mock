@@ -38,6 +38,17 @@ interface StoreState extends DemoData {
   sendMessage: (conversationId: ID, body: string) => void;
   markConversationRead: (conversationId: ID) => void;
   moveOpportunity: (opportunityId: ID, toStageId: ID) => void;
+  addOpportunity: (
+    input: Pick<Opportunity, 'name' | 'contactId' | 'pipelineId' | 'stageId'> &
+      Partial<Pick<Opportunity, 'monetaryValue' | 'status' | 'ownerId' | 'source' | 'businessName' | 'followerIds'>>,
+  ) => Opportunity;
+  updateOpportunity: (opportunityId: ID, patch: Partial<Opportunity>) => void;
+  removeOpportunity: (opportunityId: ID) => void;
+  removeOpportunities: (opportunityIds: ID[]) => void;
+  bulkUpdateOpportunities: (
+    opportunityIds: ID[],
+    patch: Partial<Pick<Opportunity, 'stageId' | 'status' | 'ownerId' | 'pipelineId'>>,
+  ) => void;
   bookAppointment: (input: Pick<Appointment, 'calendarId' | 'contactId' | 'title' | 'startTime' | 'endTime' | 'location'>) => void;
   toggleTask: (taskId: ID) => void;
   markAllNotificationsRead: () => void;
@@ -122,6 +133,53 @@ export const useStore = create<StoreState>((set, get) => ({
         o.id === opportunityId ? { ...o, stageId: toStageId, updatedAt: new Date().toISOString() } : o,
       ),
     })),
+
+  addOpportunity: (input) => {
+    const nowIso = new Date().toISOString();
+    const opp: Opportunity = {
+      id: `opp_new_${Date.now()}`,
+      name: input.name,
+      contactId: input.contactId,
+      pipelineId: input.pipelineId,
+      stageId: input.stageId,
+      monetaryValue: input.monetaryValue ?? 0,
+      status: input.status ?? 'open',
+      ownerId: input.ownerId ?? 'u_me',
+      source: input.source,
+      businessName: input.businessName,
+      followerIds: input.followerIds ?? [],
+      activity: { calls: 0, sms: 0, tags: 0, notes: 0, tasks: 0, appointments: 0 },
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+    set((s) => ({ opportunities: [opp, ...s.opportunities] }));
+    get().pushToast({ title: 'Opportunity created', description: `${opp.name} was added.`, variant: 'success' });
+    return opp;
+  },
+
+  updateOpportunity: (opportunityId, patch) =>
+    set((s) => ({
+      opportunities: s.opportunities.map((o) =>
+        o.id === opportunityId ? { ...o, ...patch, updatedAt: new Date().toISOString() } : o,
+      ),
+    })),
+
+  removeOpportunity: (opportunityId) =>
+    set((s) => ({ opportunities: s.opportunities.filter((o) => o.id !== opportunityId) })),
+
+  removeOpportunities: (opportunityIds) => {
+    const ids = new Set(opportunityIds);
+    set((s) => ({ opportunities: s.opportunities.filter((o) => !ids.has(o.id)) }));
+  },
+
+  bulkUpdateOpportunities: (opportunityIds, patch) => {
+    const ids = new Set(opportunityIds);
+    set((s) => ({
+      opportunities: s.opportunities.map((o) =>
+        ids.has(o.id) ? { ...o, ...patch, updatedAt: new Date().toISOString() } : o,
+      ),
+    }));
+  },
 
   bookAppointment: (input) => {
     const appt: Appointment = {
