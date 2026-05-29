@@ -9,10 +9,10 @@ import { Modal } from '@/components/ui/Modal';
 import { useStore } from '@/store/useStore';
 import { cx, relativeTime } from '@/utils';
 
-/* ─── Local Fake Email Data ─────────────────────────────────────
+/* ─── Local Fake Email Data ──────────────────────────
    Per spec: no real Outlook/Microsoft API. All emails are local
    fake data created purely inside this module.
-   ──────────────────────────────────────────────────────────── */
+   ─────────────────────────────────────── */
 
 interface FakeEmail {
   id: string;
@@ -127,7 +127,7 @@ const FAKE_EMAILS: FakeEmail[] = [
   },
 ];
 
-/* ─── Integration Card Data ───────────────────────────────────── */
+/* ─── Integration Card Data ──────────────────────── */
 
 type IntegrationStatus = 'connected' | 'not_connected' | 'demo_only';
 
@@ -160,7 +160,7 @@ const STATUS_LABEL: Record<IntegrationStatus, string> = {
   demo_only: 'Demo only',
 };
 
-/* ─── OAuth Mock Modal ────────────────────────────────────────── */
+/* ─── OAuth Mock Modal ───────────────────────── */
 
 function OAuthModal({ open, onClose, onConnect }: { open: boolean; onClose: () => void; onConnect: () => void }) {
   const [step, setStep] = useState<'form' | 'loading' | 'done'>('form');
@@ -218,7 +218,7 @@ function OAuthModal({ open, onClose, onConnect }: { open: boolean; onClose: () =
   );
 }
 
-/* ─── Outlook Inbox ───────────────────────────────────────────── */
+/* ─── Outlook Inbox ────────────────────────────── */
 
 const FOLDERS = [
   { id: 'inbox', label: 'Inbox', icon: <Inbox size={15} /> },
@@ -238,7 +238,19 @@ function OutlookInbox() {
   const [folder, setFolder] = useState<FakeEmail['folder']>('inbox');
   const [selEmail, setSelEmail] = useState<FakeEmail | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [starredIds, setStarredIds] = useState<Set<string>>(
+    () => new Set(FAKE_EMAILS.filter((e) => e.starred).map((e) => e.id)),
+  );
   const pushToast = useStore((s) => s.pushToast);
+
+  const isStarred = (id: string) => starredIds.has(id);
+  function toggleStar(id: string) {
+    setStarredIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   const emails = FAKE_EMAILS.filter((e) => e.folder === folder);
   const unreadCount = FAKE_EMAILS.filter((e) => e.folder === 'inbox' && !e.read && !readIds.has(e.id)).length;
@@ -302,7 +314,7 @@ function OutlookInbox() {
                 <p className={cx('truncate text-xs', !isRead ? 'font-semibold text-ink' : 'text-ink-muted')}>{e.subject}</p>
                 <p className="truncate text-[11px] text-ink-subtle">{e.preview}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  {e.starred && <Star size={10} className="text-warn fill-warn" />}
+                  {isStarred(e.id) && <Star size={10} className="text-warn fill-warn" />}
                   {e.hasAttachment && <Paperclip size={10} className="text-ink-subtle" />}
                   {!isRead && <span className="h-1.5 w-1.5 rounded-full bg-brand" />}
                 </div>
@@ -327,9 +339,21 @@ function OutlookInbox() {
                   <p className="text-xs text-ink-subtle">To: {selEmail.to} · {timeLabel(selEmail.date)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <button className="rounded-lg p-1.5 text-ink-subtle hover:bg-surface-sunken hover:text-ink"><Star size={15} className={selEmail.starred ? 'fill-warn text-warn' : ''} /></button>
-                  <button className="rounded-lg p-1.5 text-ink-subtle hover:bg-surface-sunken hover:text-ink"><MoreHorizontal size={15} /></button>
-                  <button onClick={() => setSelEmail(null)} className="rounded-lg p-1.5 text-ink-subtle hover:bg-surface-sunken hover:text-ink"><X size={15} /></button>
+                  <button
+                    onClick={() => toggleStar(selEmail.id)}
+                    aria-label={isStarred(selEmail.id) ? 'Unstar' : 'Star'}
+                    className="rounded-lg p-1.5 text-ink-subtle hover:bg-surface-sunken hover:text-ink"
+                  >
+                    <Star size={15} className={isStarred(selEmail.id) ? 'fill-warn text-warn' : ''} />
+                  </button>
+                  <button
+                    onClick={() => pushToast({ title: 'More actions', description: 'Move, archive, and labels are demo-only.', variant: 'info' })}
+                    aria-label="More actions"
+                    className="rounded-lg p-1.5 text-ink-subtle hover:bg-surface-sunken hover:text-ink"
+                  >
+                    <MoreHorizontal size={15} />
+                  </button>
+                  <button onClick={() => setSelEmail(null)} aria-label="Close" className="rounded-lg p-1.5 text-ink-subtle hover:bg-surface-sunken hover:text-ink"><X size={15} /></button>
                 </div>
               </div>
             </div>
@@ -365,7 +389,7 @@ function OutlookInbox() {
   );
 }
 
-/* ─── Main Integrations Page ─────────────────────────────────── */
+/* ─── Main Integrations Page ────────────────────── */
 
 export function Integrations() {
   const pushToast = useStore((s) => s.pushToast);
