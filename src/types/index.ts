@@ -1,5 +1,5 @@
 // Mock data models — shapes lean on GoHighLevel conventions (plan §17).
-// All IDs are fake strings. Dates are ISO; the seeder shifts them relative to "today".
+// All IDs are fake strings. Dates are ISO; the seeder shifts them relative to “today”.
 
 export type ID = string;
 
@@ -79,18 +79,49 @@ export interface Pipeline {
   name: string;
   stages: Stage[];
 }
+
+export type OpportunityStatus = 'open' | 'won' | 'lost' | 'abandoned';
+
+/**
+ * Per-opportunity activity tallies. These drive the little icon badges on the
+ * kanban card (calls / sms / emails / notes / tasks / appointments), so they
+ * are real numbers on the record rather than a cosmetic hash.
+ */
+export interface OpportunityActivity {
+  calls: number;
+  sms: number;
+  emails: number;
+  notes: number;
+  tasks: number;
+  appointments: number;
+}
+
 export interface Opportunity {
   id: ID;
   name: string;
   contactId: ID;
+  /** Denormalized business/company name shown on the card (GHL “Business Name”). */
+  businessName?: string;
   pipelineId: ID;
   stageId: ID;
   monetaryValue: number;
-  status: 'open' | 'won' | 'lost' | 'abandoned';
+  status: OpportunityStatus;
   ownerId: ID;
+  /** User ids following the deal. */
+  followers: ID[];
   source?: string;
+  tags: string[];
+  /** Real activity counts, surfaced on the card and used by the detail drawer. */
+  activity: OpportunityActivity;
+  /** Most recent touch (call/sms/email/note/etc). */
+  lastActivityAt: string;
+  /** When the next follow-up is due (set for the follow-up / appointment stages). */
+  nextFollowUpAt?: string;
+  /** Who created the record — a user name or an automation label like “Workflow”. */
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
+  customFields?: Record<string, string | number | boolean>;
 }
 
 export interface Calendar {
