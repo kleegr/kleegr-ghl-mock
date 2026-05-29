@@ -12,6 +12,7 @@ import { OpportunityDetailModal } from './components/OpportunityDetailModal';
 import { PipelineSelect } from './components/PipelineSelect';
 import { PipelinesTable } from './components/PipelinesTable';
 import { CreatePipelineModal } from './components/CreatePipelineModal';
+import { AddOpportunityModal } from './components/AddOpportunityModal';
 import { money, moneyCents, dateLabel, fullName, cx } from '@/utils';
 import type { Opportunity } from '@/types';
 
@@ -46,6 +47,7 @@ export function Opportunities() {
   const [detailOppId, setDetailOppId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [createPipelineOpen, setCreatePipelineOpen] = useState(false);
+  const [addOppOpen, setAddOppOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -215,7 +217,7 @@ export function Opportunities() {
               <button onClick={() => cosmetic('Import')} className="flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-semibold text-ink-muted hover:bg-surface-sunken">
                 <Upload size={15} /> Import
               </button>
-              <button onClick={() => cosmetic('Add opportunity')} className="flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-semibold text-brand-fg hover:bg-brand/90" data-tour="opportunities.add">
+              <button onClick={() => setAddOppOpen(true)} className="flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-semibold text-brand-fg hover:bg-brand/90" data-tour="opportunities.add">
                 <Plus size={16} /> Add opportunity
               </button>
               <div className="relative">
@@ -330,6 +332,15 @@ export function Opportunities() {
         />
       )}
       {createPipelineOpen && <CreatePipelineModal onClose={() => setCreatePipelineOpen(false)} />}
+      {addOppOpen && (
+        <AddOpportunityModal
+          pipelines={pipelines}
+          contacts={contacts}
+          users={users}
+          initialPipelineId={selectedPipelineId}
+          onClose={() => setAddOppOpen(false)}
+        />
+      )}
     </div>
   );
 }
