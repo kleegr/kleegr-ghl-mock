@@ -1,4 +1,5 @@
 import type {
+  ActivityEvent,
   Appointment,
   Calendar,
   Call,
@@ -79,7 +80,7 @@ const INDUSTRIES = [
   'Healthcare','Fitness','Real Estate','Home Services','Legal','Marketing',
   'Beauty and Wellness','Automotive','Finance','Photography','Education','Veterinary',
 ];
-const SOURCES = ['Facebook Ads','Google Ads','Website Form','Referral','Instagram','Cold Outreach','Walk-in','Webinar'];
+const SOURCES = ['Get started form','Facebook Ads','Google Ads','Website Form','Referral','Instagram','Cold Outreach','Walk-in','Webinar'];
 const TAGS = ['lead','hot','vip','nurture','newsletter','past-client','no-show','consult-booked','follow-up'];
 
 const now = () => Date.now();
@@ -118,6 +119,9 @@ export function generateDemoData(): DemoData {
     const company = chance(0.65) ? pick(companies) : undefined;
     const createdAt = now() - int(0, 180) * DAY;
     const tags = Array.from(new Set([pick(TAGS), ...(chance(0.5) ? [pick(TAGS)] : [])]));
+    const dob = chance(0.45)
+      ? iso(Date.UTC(int(1962, 2004), int(0, 11), int(1, 28))).slice(0, 10)
+      : undefined;
     const c: Contact = {
       id: `c_${i + 1}`,
       firstName: first,
@@ -132,6 +136,10 @@ export function generateDemoData(): DemoData {
       createdAt: iso(createdAt),
       lastActivityAt: iso(createdAt + int(0, 30) * DAY),
       customFields: { leadScore: int(10, 99), preferredChannel: pick(['SMS', 'Email', 'Phone']) },
+      contactType: tags.includes('past-client') || chance(0.35) ? 'customer' : 'lead',
+      businessName: company?.name,
+      dateOfBirth: dob,
+      followerIds: chance(0.4) ? [pick(ownerIds)] : [],
     };
     if (company) company.contactIds.push(c.id);
     contacts.push(c);
@@ -206,11 +214,55 @@ export function generateDemoData(): DemoData {
   });
   conversations.sort((a, b) => +new Date(b.lastMessageAt) - +new Date(a.lastMessageAt));
 
+  // --- GHL-fidelity message/activity enrichment (deterministic, in-place) ---
+  // Default every seeded message to a normal 'message' so omission == normal.
+  messages.forEach((m) => { m.kind = 'message'; });
+  // Add a subject to the first message of every email-channel conversation.
+  conversations.forEach((conv) => {
+    if (conv.channel !== 'email') return;
+    const first = messages.find((m) => m.id === conv.messageIds[0]);
+    if (first) first.subject = 'Re: Your enquiry';
+  });
+  // Turn a few rows of the most-recent conversation into a call, an internal
+  // note and a system event so the thread shows GHL-style mixed activity.
+  const lead = conversations[0];
+  if (lead) {
+    const rows = lead.messageIds.map((id) => messages.find((m) => m.id === id)).filter(Boolean) as Message[];
+    if (rows[2]) {
+      rows[2].kind = 'call';
+      rows[2].channel = 'call';
+      rows[2].callDurationSec = 82;
+      rows[2].body = 'Outbound call';
+      rows[2].transcript =
+        'Agent: Hi, following up on your enquiry — is now a good time? Contact: Yes! I had a couple of quick questions about pricing...';
+    }
+    if (rows[3]) {
+      rows[3].kind = 'note';
+      rows[3].body = 'Internal note: contact prefers morning callbacks. Sent pricing PDF.';
+    }
+    if (rows[4]) {
+      rows[4].kind = 'system';
+      rows[4].body = 'Contact entered workflow "New Lead Follow-up".';
+      rows[4].details = 'Trigger: Form submitted · Action: SMS + email sequence started.';
+    }
+    // Example activity timeline for the lead conversation.
+    const a0 = +new Date(lead.lastMessageAt);
+    const acts: ActivityEvent[] = [
+      { id: `act_${lead.id}_1`, type: 'system', title: 'Contact created', body: 'Source: Get started form', createdAt: iso(a0 - 6 * DAY) },
+      { id: `act_${lead.id}_2`, type: 'call', title: 'Outbound call · 1m 22s', createdAt: iso(a0 - 2 * HOUR), actorId: 'u_me' },
+      { id: `act_${lead.id}_3`, type: 'note', title: 'Note added', body: 'Prefers morning callbacks.', createdAt: iso(a0 - 90 * 60000), actorId: 'u_me' },
+      { id: `act_${lead.id}_4`, type: 'appointment', title: 'Discovery Call booked', createdAt: iso(a0 - 30 * 60000), actorId: 'u_me' },
+    ];
+    lead.activity = acts;
+  }
+
   const pipelines: Pipeline[] = [
-    { id: 'pipe_sales', name: 'Sales Pipeline', stages: ['New Lead','Contacted','Consult Booked','Proposal Sent','Won'].map((name, o) => ({ id: `st_s_${o}`, name, order: o })) },
-    { id: 'pipe_onboard', name: 'Client Onboarding', stages: ['Welcome','Kickoff Call','Setup','Live'].map((name, o) => ({ id: `st_o_${o}`, name, order: o })) },
-    { id: 'pipe_react', name: 'Reactivation', stages: ['Identified','Outreach','Re-engaged'].map((name, o) => ({ id: `st_r_${o}`, name, order: o })) },
-    { id: 'pipe_nurture', name: 'Follow-up Nurture', stages: ['Cold','Warming Up','Hot','Converted'].map((name, o) => ({ id: `st_n_${o}`, name, order: o })) },
+    // NOTE: pipeline ids are intentionally stable (e.g. 'pipe_sales' is read by
+    // the Dashboard). Only display names/stage labels are screenshot-styled.
+    { id: 'pipe_sales', name: 'Kleegr Sales', stages: ['New Lead','Contacted','Follow Up','Proposal Sent','Won'].map((name, o) => ({ id: `st_s_${o}`, name, order: o })) },
+    { id: 'pipe_onboard', name: 'Onboarding Process', stages: ['Welcome','Kickoff Call','Setup','Live'].map((name, o) => ({ id: `st_o_${o}`, name, order: o })) },
+    { id: 'pipe_react', name: 'Phone System', stages: ['New Lead','Called 1','Called 2','Called 3','Called 4','Contacted'].map((name, o) => ({ id: `st_r_${o}`, name, order: o })) },
+    { id: 'pipe_nurture', name: 'Archive', stages: ['Cold','Warming Up','Hot','Converted'].map((name, o) => ({ id: `st_n_${o}`, name, order: o })) },
   ];
   const opportunities: Opportunity[] = [];
   let oppN = 1;
@@ -235,6 +287,16 @@ export function generateDemoData(): DemoData {
         source: pick(SOURCES),
         createdAt: iso(created),
         updatedAt: iso(created + int(0, 20) * DAY),
+        businessName: contact.businessName ?? `${contact.lastName} ${pick(['Group','Co','Studio','Partners','Services'])}`,
+        followerIds: chance(0.5) ? [pick(ownerIds)] : [],
+        activity: {
+          calls: int(0, 6),
+          sms: int(0, 9),
+          tags: contact.tags.length,
+          notes: int(0, 4),
+          tasks: int(0, 3),
+          appointments: int(0, 2),
+        },
       });
     }
   });
@@ -280,6 +342,19 @@ export function generateDemoData(): DemoData {
     { id: 'wf_11', name: 'New Client Onboarding Checklist', status: 'draft', enrolled: 0, trigger: 'Opportunity moved to Onboarding', explanation: 'Triggers a checklist and welcome email series for newly closed clients.' },
     { id: 'wf_12', name: 'Referral Thank-you', status: 'published', enrolled: int(15, 60), trigger: 'Tag added: referred-by', explanation: 'Sends a thank-you note whenever a new client is tagged as a referral.' },
   ];
+
+  // Enrich workflows with GHL-style folder/enrollment/timestamp metadata.
+  const WF_FOLDERS = ['Lead Nurture', 'Appointments', 'Reviews & Reputation', 'Onboarding', 'Billing'];
+  workflows.forEach((wf, i) => {
+    const createdMs = now() - int(40, 400) * DAY;
+    const total = wf.enrolled + int(50, 900);
+    wf.folder = wf.status === 'draft' ? 'Drafts' : WF_FOLDERS[i % WF_FOLDERS.length];
+    wf.activeEnrolled = wf.enrolled;
+    wf.totalEnrolled = total;
+    wf.createdAt = iso(createdMs);
+    wf.lastUpdatedAt = iso(createdMs + int(1, 38) * DAY);
+    wf.needsReview = wf.status === 'draft' && chance(0.5);
+  });
 
   const campaigns: Campaign[] = [
     { id: 'cmp_e1', type: 'email', name: 'March Newsletter', status: 'sent', audienceSize: 2140, sentAt: iso(now() - 9 * DAY), metrics: { delivered: 2098, openRate: 0.42, clickRate: 0.07, bounceRate: 0.02 }, content: { subject: 'Spring updates + a little gift inside', body: 'Hi {{first_name}}, here is what is new this month...' } },
