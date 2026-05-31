@@ -49,6 +49,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   const resetDemo = useStore((s) => s.resetDemo);
   const searchOpen = useStore((s) => s.searchOpen);
   const setSearchOpen = useStore((s) => s.setSearchOpen);
+  const openDialer = useStore((s) => s.openDialer);
   const notifications = useStore((s) => s.notifications);
   const markAllRead = useStore((s) => s.markAllNotificationsRead);
   const pushToast = useStore((s) => s.pushToast);
@@ -241,9 +242,10 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
           <div className="relative z-10 flex items-center gap-1.5 pl-12 pr-3 sm:pr-4">
             {/* Phone (cosmetic) */}
             <button
-              onClick={() => cosmetic('Dialer', 'The phone dialer is not available in demo mode.')}
+              onClick={() => openDialer()}
+              data-tour="topbar.dialer"
               className="grid h-8 w-8 place-items-center rounded-full bg-good text-white transition-transform hover:scale-105"
-              aria-label="Phone"
+              aria-label="Open dialer"
             >
               <Phone size={15} />
             </button>
@@ -396,7 +398,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
               <input
                 id="tbsearch"
                 type="text"
-                placeholder="Search contacts, deals, tasks & appointments…"
+                placeholder="Search contacts, deals, tasks &amp; appointments…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
