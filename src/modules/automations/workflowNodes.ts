@@ -25,6 +25,9 @@ export interface WorkflowDisplayNode {
   note?: string;
   /** Example message text or detailed settings (inspector). */
   example?: string;
+  /** Branch metadata for `condition` nodes — drives the YES / NO fork rendered
+   *  on the builder canvas. Absent on non-branching nodes. */
+  branch?: { yesLabel: string; noLabel: string; noTerminal: string };
 }
 
 /** Maps workflow ID → ordered list of display nodes (trigger first). */
@@ -140,6 +143,7 @@ export const WORKFLOW_NODES: Record<string, WorkflowDisplayNode[]> = {
       config: 'Status = No-Show → continue',
       note: 'Branches on the appointment status — only contacts marked No-Show continue down the recovery path; everyone else exits.',
       example: 'If Appointment status = No-Show → take the YES branch. Otherwise → end the workflow.',
+      branch: { yesLabel: 'Yes · No-Show', noLabel: 'No · Showed', noTerminal: 'End — contact exits the workflow' },
     },
     {
       id: 'n7', type: 'action', subtype: 'send_sms', label: 'No-Show Follow-Up',

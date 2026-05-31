@@ -7,13 +7,16 @@ interface PickerProps {
   kind: 'trigger' | 'action';
   onClose: () => void;
   onSelect: (item: CatalogItem) => void;
+  /** Open the full-screen catalog (the drawer's expand button). */
+  onExpand: () => void;
 }
 
 /**
  * Right-side Add Trigger / Add Action drawer used in the workflow builder.
- * Cosmetic only — selecting an item fires onSelect (a demo toast) and closes.
+ * Selecting an item adds a real (demo-only) node to the canvas via onSelect;
+ * the expand button opens the full-screen searchable catalog via onExpand.
  */
-export function BuilderPicker({ kind, onClose, onSelect }: PickerProps) {
+export function BuilderPicker({ kind, onClose, onSelect, onExpand }: PickerProps) {
   const isTrigger = kind === 'trigger';
   const groups = isTrigger ? TRIGGER_GROUPS : ACTION_GROUPS;
   const [query, setQuery] = useState('');
@@ -45,7 +48,7 @@ export function BuilderPicker({ kind, onClose, onSelect }: PickerProps) {
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <h2 className="text-lg font-bold text-ink">{isTrigger ? 'Add Trigger' : 'Actions'}</h2>
         <div className="flex items-center gap-1 text-ink-subtle">
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-surface-sunken hover:text-ink" aria-label="Expand">
+          <button onClick={onExpand} className="rounded-lg p-1.5 hover:bg-surface-sunken hover:text-ink" aria-label="Expand">
             <Maximize2 size={17} />
           </button>
           <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-surface-sunken hover:text-ink" aria-label="Close">
