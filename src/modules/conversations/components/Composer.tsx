@@ -39,8 +39,8 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, cb: () => voi
 }
 
 const BUSINESS_NUMBER = '+1 (555) 010-0100';
-const BUSINESS_EMAIL = 'team@kleegr-demo.example.com';
-const BUSINESS_FROM_NAME = 'Kleegr Team';
+const BUSINESS_EMAIL = 'team@example.com';
+const BUSINESS_FROM_NAME = 'Demo Business';
 
 interface ComposerProps {
   conv: Conversation;
