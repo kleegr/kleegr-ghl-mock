@@ -1,6 +1,6 @@
 import {
   Rocket, LayoutDashboard, MessagesSquare, Calendar, Users, Filter, CreditCard,
-  CheckSquare, Megaphone, Workflow, LayoutTemplate, MonitorPlay, Star, BarChart3,
+  CheckSquare, KanbanSquare, Megaphone, Workflow, LayoutTemplate, MonitorPlay, Star, BarChart3,
   Phone, FolderOpen, Plug, Bot, Wand2, Sparkles, Link as LinkIcon, GraduationCap,
   Settings, type LucideIcon,
 } from 'lucide-react';
@@ -33,6 +33,7 @@ export const NAV: NavItem[] = [
   { label: 'Opportunities', path: '/opportunities', icon: Filter, tour: 'nav.opportunities' },
   { label: 'Payments', path: '/payments', icon: CreditCard, tour: 'nav.payments' },
   { label: 'Tasks / Projects', path: '/tasks', icon: CheckSquare, tour: 'nav.tasks' },
+  { label: 'Productivity', path: '/productivity', icon: KanbanSquare, tour: 'productivity.nav' },
 
   // Marketing & growth
   { label: 'Marketing', path: '/marketing/email', icon: Megaphone, tour: 'nav.marketing', dividerBefore: true },
