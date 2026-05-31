@@ -4,7 +4,7 @@
  * From / To (+ From Name / Subject / CC·BCC for email) · formatting toolbar ·
  * Send. Sending a reply calls the store's sendMessage() — fully in-memory.
  */
-import { useState, useRef, useEffect } from 'react';
+import { Fragment, useState, useRef, useEffect } from 'react';
 import {
   ChevronDown,
   Eye,
@@ -141,26 +141,28 @@ export function Composer({ conv, contact }: ComposerProps) {
                 >
                   {COMPOSER_CHANNELS.map((opt) => {
                     const Icon = opt.Icon;
-                    const isActive = opt.id === channelOpt.id;
+                    const isActive = opt.key === channelOpt.key;
                     return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        role="option"
-                        aria-selected={isActive}
-                        onClick={() => {
-                          setChannelOpt(opt);
-                          setChannelMenu(false);
-                        }}
-                        className={cx(
-                          'flex w-full items-center gap-2 px-3 py-2 text-[13px] hover:bg-surface-sunken',
-                          isActive ? 'font-semibold text-brand' : 'text-ink',
-                        )}
-                      >
-                        <Icon size={15} aria-hidden />
-                        <span className="flex-1 text-left">{opt.label}</span>
-                        {isActive && <Check size={14} className="text-brand" aria-hidden />}
-                      </button>
+                      <Fragment key={opt.key}>
+                        {opt.dividerBefore && <div className="my-1 h-px bg-line" aria-hidden />}
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={isActive}
+                          onClick={() => {
+                            setChannelOpt(opt);
+                            setChannelMenu(false);
+                          }}
+                          className={cx(
+                            'flex w-full items-center gap-2 px-3 py-2 text-[13px] hover:bg-surface-sunken',
+                            isActive ? 'font-semibold text-brand' : 'text-ink',
+                          )}
+                        >
+                          <Icon size={15} aria-hidden />
+                          <span className="flex-1 text-left">{opt.label}</span>
+                          {isActive && <Check size={14} className="text-brand" aria-hidden />}
+                        </button>
+                      </Fragment>
                     );
                   })}
                 </div>
