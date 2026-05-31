@@ -50,6 +50,9 @@ export default function App() {
           <Route path="/ai-studio" element={<Placeholder />} />
           <Route path="/ask-ai" element={<Placeholder />} />
           <Route path="/urls" element={<Placeholder />} />
+          {/* Foundation routes for upcoming module workstreams (polished placeholders). */}
+          <Route path="/companies" element={<Placeholder />} />
+          <Route path="/documents" element={<Placeholder />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
