@@ -21,7 +21,7 @@ import {
   ListTodo, GitBranch, LineChart as LineChartIcon,
 } from 'lucide-react';
 
-/* ── Widget kinds ──────────────────────────────────────────────── */
+/* ──── Widget kinds ──── */
 
 export type WidgetKind =
   // KPI tiles
@@ -86,7 +86,7 @@ export interface WidgetMeta {
   allowAllPipelines?: boolean;
 }
 
-/* ── Widget catalog ─────────────────────────────────────────── */
+/* ──── Widget catalog ──── */
 
 export const WIDGET_META: Record<WidgetKind, WidgetMeta> = {
   kpiPipelineValue: { title: 'Pipeline Value', description: 'Total open deal value across the pipeline.', icon: TrendingUp, category: 'KPI', defaultSpan: 1 },
@@ -121,7 +121,7 @@ export const WIDGET_CATALOG: { category: WidgetCategory; kinds: WidgetKind[] }[]
   { category: 'Lists', kinds: ['recentActivity', 'tasksDue', 'appointments'] },
 ];
 
-/* ── Date ranges ──────────────────────────────────────────────── */
+/* ──── Date ranges ──── */
 
 export type DateRangeId =
   | 'today' | 'last7' | 'last30' | 'thisMonth' | 'thisQuarter' | 'ytd' | 'all';
@@ -153,15 +153,29 @@ export function rangeSince(id: DateRangeId): number | null {
   }
 }
 
-/* ── Saved dashboards (the switcher) ────────────────────────────── */
+/* ──── Saved dashboards (the switcher) ──── */
 
 let widgetSeq = 0;
-const w = (kind: WidgetKind, span?: WidgetSpan, extra?: Partial<DashWidget>): DashWidget => ({
-  id: `w_${kind}_${++widgetSeq}`,
-  kind,
-  span: span ?? WIDGET_META[kind].defaultSpan,
-  ...extra,
-});
+
+/**
+ * Create a fresh widget instance with a process-unique id. Exported so the
+ * dashboard orchestrator can append widgets from the "Add widget" library.
+ */
+export function makeWidget(
+  kind: WidgetKind,
+  span?: WidgetSpan,
+  extra?: Partial<DashWidget>,
+): DashWidget {
+  return {
+    id: `w_${kind}_${++widgetSeq}`,
+    kind,
+    span: span ?? WIDGET_META[kind].defaultSpan,
+    ...extra,
+  };
+}
+
+const w = (kind: WidgetKind, span?: WidgetSpan, extra?: Partial<DashWidget>): DashWidget =>
+  makeWidget(kind, span, extra);
 
 /**
  * Build the initial saved-dashboard set. A factory (not a frozen constant) so
