@@ -4,7 +4,9 @@ import {
   ArrowLeft, Pencil, Undo2, Redo2, ChevronDown, Plus, Minus, Hand, Maximize,
   Sparkles, Mic, ArrowUp, MessageSquare, SquareCheck, PieChart, FileText, Share2,
   History, Keyboard, X, Settings2, Clock, Mail, Tag, CheckSquare, Split, Cake,
-  CalendarClock, Phone, Zap, Bell, Search,
+  CalendarClock, Phone, Zap, Bell, Search, Check, GitBranch, Briefcase,
+  UserPlus, UserCheck, UserSearch, MessagesSquare, CircleDollarSign, Star,
+  StickyNote, ArrowRightLeft,
 } from 'lucide-react';
 import type { Workflow } from '@/types';
 import { useStore } from '@/store/useStore';
@@ -13,6 +15,7 @@ import { Modal } from '@/components/ui/Modal';
 import { cx } from '@/utils';
 import { getNodesForWorkflow, type WorkflowDisplayNode, type WorkflowNodeKind } from './workflowNodes';
 import { BuilderPicker } from './BuilderPickers';
+import { CatalogModal } from './CatalogModal';
 import { AI_CHIPS, AI_PROMPTS, type CatalogItem } from './automationData';
 
 /* ── node visual maps ── */
@@ -30,25 +33,70 @@ const KIND_LABEL: Record<WorkflowNodeKind, string> = {
   wait: 'Wait',
 };
 
+/* Maps a node subtype → icon. Covers every catalog trigger/action id (so nodes
+   added from the picker render with the right glyph) plus the seed subtypes. */
 const SUBTYPE_ICON: Record<string, LucideIcon> = {
+  // triggers
   form_submitted: FileText,
   missed_call: Phone,
+  appointment_status: CalendarClock,
   appointment_booked: CalendarClock,
-  opportunity_won: SquareCheck,
-  tag_added: Tag,
-  birthday: Cake,
   booking_started: CalendarClock,
+  opportunity_stage: GitBranch,
+  opportunity_created: Briefcase,
+  contact_created: UserPlus,
+  tag_added: Tag,
+  customer_replied: MessagesSquare,
+  birthday: Cake,
+  birthday_reminder: Cake,
+  invoice_paid: CircleDollarSign,
   generic_trigger: Zap,
+  // actions
   send_sms: MessageSquare,
   send_email: Mail,
-  create_task: CheckSquare,
+  request_review: Star,
   add_tag: Tag,
+  remove_tag: Tag,
+  add_note: StickyNote,
+  create_contact: UserPlus,
+  create_opportunity: Briefcase,
+  move_opportunity: ArrowRightLeft,
+  assign_user: UserCheck,
+  find_contact: UserSearch,
+  send_notification: Bell,
+  create_task: CheckSquare,
+  // flow control
+  wait: Clock,
   wait_until: Clock,
   wait_duration: Clock,
+  if_else: Split,
   check_appointment: Split,
 };
 function iconFor(subtype: string): LucideIcon {
   return SUBTYPE_ICON[subtype] ?? Zap;
+}
+
+/* Build a display node from a picked catalog item (demo only — never stored). */
+let nodeSeq = 0;
+const WAIT_SUBTYPES = new Set(['wait', 'wait_until', 'wait_duration']);
+function buildNode(item: CatalogItem, kind: 'trigger' | 'action'): WorkflowDisplayNode {
+  const type: WorkflowNodeKind =
+    kind === 'trigger' ? 'trigger'
+      : item.id === 'if_else' ? 'condition'
+        : WAIT_SUBTYPES.has(item.id) ? 'wait'
+          : 'action';
+  return {
+    id: `n_new_${Date.now().toString(36)}_${(nodeSeq++).toString(36)}`,
+    type,
+    subtype: item.id,
+    label: item.label,
+    config: item.category ?? (kind === 'trigger' ? 'Trigger' : 'Action'),
+    note: item.desc,
+    example: item.example,
+    ...(type === 'condition'
+      ? { branch: { yesLabel: 'Yes', noLabel: 'No', noTerminal: 'End — contact exits the workflow' } }
+      : {}),
+  };
 }
 
 /* ── connector with inline add button ── */
@@ -70,15 +118,43 @@ function Connector({ onAdd }: { onAdd: () => void }) {
   );
 }
 
+/* ── End terminal pill ── */
+
+function Terminal({ label = 'End' }: { label?: string }) {
+  return (
+    <span className="rounded-full bg-surface-sunken px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-ink-subtle">
+      {label}
+    </span>
+  );
+}
+
+/* ── dashed "add new action" affordance ── */
+
+function AddActionButton({ onAdd, width = 'w-[300px]' }: { onAdd: () => void; width?: string }) {
+  return (
+    <button
+      onClick={onAdd}
+      className={cx(
+        'flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line px-4 py-3 text-sm font-semibold text-ink-muted transition-colors hover:border-brand/50 hover:text-brand',
+        width,
+      )}
+    >
+      <Plus size={16} /> Add New Action
+    </button>
+  );
+}
+
 /* ── node card ── */
 
 function NodeCard({
   node,
   step,
+  selected,
   onClick,
 }: {
   node: WorkflowDisplayNode;
   step: number | null;
+  selected?: boolean;
   onClick: () => void;
 }) {
   const Icon = iconFor(node.subtype);
@@ -89,7 +165,7 @@ function NodeCard({
       data-tour={isTrigger ? 'automations.triggerNode' : 'automations.actionNode'}
       className={cx(
         'group flex w-[300px] items-center gap-3 rounded-xl border bg-surface px-3.5 py-3 text-left shadow-card transition-all hover:-translate-y-px hover:border-brand/50 hover:shadow-pop',
-        isTrigger ? 'border-brand/40' : 'border-line',
+        selected ? 'border-brand ring-2 ring-brand/40' : isTrigger ? 'border-brand/40' : 'border-line',
       )}
     >
       <span className={cx('grid h-9 w-9 shrink-0 place-items-center rounded-lg', KIND_CHIP[node.type])}>
@@ -104,6 +180,122 @@ function NodeCard({
       </div>
       <Settings2 size={14} className="shrink-0 text-ink-subtle opacity-0 transition-opacity group-hover:opacity-100" />
     </button>
+  );
+}
+
+/* ── linear chain (no branching) ── */
+
+function LinearChain({
+  nodes, selId, onSelect, onAdd,
+}: {
+  nodes: WorkflowDisplayNode[];
+  selId: string | null;
+  onSelect: (n: WorkflowDisplayNode) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center pt-2">
+      {nodes.map((node, i) => (
+        <React.Fragment key={node.id}>
+          {i > 0 && <Connector onAdd={onAdd} />}
+          <NodeCard node={node} step={node.type === 'trigger' ? null : i} selected={selId === node.id} onClick={() => onSelect(node)} />
+        </React.Fragment>
+      ))}
+      <Connector onAdd={onAdd} />
+      <AddActionButton onAdd={onAdd} />
+      <span className="h-5 w-px bg-line" />
+      <Terminal />
+    </div>
+  );
+}
+
+/* ── If / Else branch fork (YES / NO lanes with connectors) ── */
+
+function BranchFork({
+  cond, yesNodes, baseStep, selId, onSelect, onAdd,
+}: {
+  cond: WorkflowDisplayNode;
+  yesNodes: WorkflowDisplayNode[];
+  baseStep: number;
+  selId: string | null;
+  onSelect: (n: WorkflowDisplayNode) => void;
+  onAdd: () => void;
+}) {
+  const b = cond.branch ?? { yesLabel: 'Yes', noLabel: 'No', noTerminal: 'End — contact exits' };
+  return (
+    <div className="flex w-full flex-col items-center">
+      <span className="h-5 w-px bg-line" />
+      {/* horizontal bridge splitting into two lanes */}
+      <div className="relative h-5 w-full">
+        <span className="absolute left-1/4 right-1/4 top-0 h-px bg-line" />
+        <span className="absolute left-1/4 top-0 h-5 w-px bg-line" />
+        <span className="absolute right-1/4 top-0 h-5 w-px bg-line" />
+      </div>
+      <div className="grid grid-cols-2 gap-10">
+        {/* YES lane */}
+        <div className="flex flex-col items-center">
+          <span className="inline-flex items-center gap-1 rounded-full bg-good/10 px-3 py-1 text-xs font-bold text-good">
+            <Check size={12} /> {b.yesLabel}
+          </span>
+          <span className="h-4 w-px bg-line" />
+          {yesNodes.map((node, j) => (
+            <React.Fragment key={node.id}>
+              {j > 0 && <Connector onAdd={onAdd} />}
+              <NodeCard node={node} step={baseStep + 1 + j} selected={selId === node.id} onClick={() => onSelect(node)} />
+            </React.Fragment>
+          ))}
+          {yesNodes.length > 0 && <Connector onAdd={onAdd} />}
+          <AddActionButton onAdd={onAdd} width="w-[280px]" />
+          <span className="h-5 w-px bg-line" />
+          <Terminal />
+        </div>
+        {/* NO lane */}
+        <div className="flex flex-col items-center">
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-1 text-xs font-bold text-ink-muted">
+            <X size={12} /> {b.noLabel}
+          </span>
+          <span className="h-4 w-px bg-line" />
+          <div className="w-[280px] rounded-xl border-2 border-dashed border-line bg-surface-sunken/40 px-4 py-4 text-center">
+            <p className="text-sm font-semibold text-ink">{b.noTerminal}</p>
+            <p className="mt-1 text-[11px] text-ink-subtle">No further steps on this path.</p>
+          </div>
+          <span className="h-5 w-px bg-line" />
+          <Terminal />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── the flow: linear, or forked when a condition node is present ── */
+
+function Flow({
+  nodes, selId, onSelect, onAdd,
+}: {
+  nodes: WorkflowDisplayNode[];
+  selId: string | null;
+  onSelect: (n: WorkflowDisplayNode) => void;
+  onAdd: () => void;
+}) {
+  const condIdx = nodes.findIndex((n) => n.type === 'condition');
+  if (condIdx === -1) {
+    return <LinearChain nodes={nodes} selId={selId} onSelect={onSelect} onAdd={onAdd} />;
+  }
+  const pre = nodes.slice(0, condIdx);
+  const cond = nodes[condIdx];
+  const post = nodes.slice(condIdx + 1);
+  return (
+    <div className="flex flex-col items-center pt-2">
+      {pre.map((node, i) => (
+        <React.Fragment key={node.id}>
+          {i > 0 && <Connector onAdd={onAdd} />}
+          <NodeCard node={node} step={node.type === 'trigger' ? null : i} selected={selId === node.id} onClick={() => onSelect(node)} />
+        </React.Fragment>
+      ))}
+      {pre.length > 0 && <Connector onAdd={onAdd} />}
+      <NodeCard node={cond} step={condIdx} selected={selId === cond.id} onClick={() => onSelect(cond)} />
+      <BranchFork cond={cond} yesNodes={post} baseStep={condIdx} selId={selId} onSelect={onSelect} onAdd={onAdd} />
+    </div>
   );
 }
 
@@ -172,13 +364,27 @@ const LEFT_TOOLS: { id: string; icon: LucideIcon; label: string }[] = [
   { id: 'ai', icon: Sparkles, label: 'AI' },
 ];
 
-/* ── AI composer panel (blank-state, cosmetic) ── */
+/* ── AI composer panel (blank-state) — typeable, with interactive chips ── */
 
-function AiPanel({ promptIndex }: { promptIndex: number }) {
-  const TONE: Record<string, string> = {
-    brand: 'text-brand',
-    good: 'text-good',
-    bad: 'text-bad',
+function AiPanel({
+  promptIndex, onStartBuild, onOpenTrigger,
+}: {
+  promptIndex: number;
+  onStartBuild: (prompt: string) => void;
+  onOpenTrigger: () => void;
+}) {
+  const [value, setValue] = useState('');
+  const placeholder = AI_PROMPTS[promptIndex % AI_PROMPTS.length];
+  const TONE: Record<string, string> = { brand: 'text-brand', good: 'text-good', bad: 'text-bad' };
+  const CHIP_PROMPT: Record<string, string> = {
+    lead_nurturing: 'When a new lead comes in, send a welcome SMS, wait one day, then follow up by email if they have not replied.',
+    form_automation: 'When a contact submits a form, create the contact, notify a sales rep, and start a follow-up sequence.',
+    email_campaigns: 'Send a three-email nurture sequence over one week to every new subscriber.',
+  };
+  const submit = () => {
+    const text = value.trim();
+    if (!text) return;
+    onStartBuild(text);
   };
   return (
     <div className="w-full max-w-2xl rounded-2xl border border-ai/30 bg-surface p-5 shadow-card">
@@ -188,23 +394,50 @@ function AiPanel({ promptIndex }: { promptIndex: number }) {
         <span className="text-[10px] font-bold uppercase tracking-wide text-ai">Beta</span>
       </div>
       <p className="mt-1 text-center text-sm text-ink-muted">Build workflows for free by chatting with AI</p>
-      <div className="relative mt-4 rounded-xl border border-line p-3">
-        <p className="min-h-[40px] pr-16 text-sm text-ink-muted">{AI_PROMPTS[promptIndex % AI_PROMPTS.length]}</p>
+      <div className="relative mt-4 rounded-xl border border-line focus-within:border-ai/60 focus-within:ring-2 focus-within:ring-ai/20">
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); } }}
+          rows={2}
+          placeholder={placeholder}
+          aria-label="Describe the workflow to build"
+          className="block w-full resize-none rounded-xl bg-transparent p-3 pr-16 text-sm text-ink placeholder:text-ink-subtle focus:outline-none"
+        />
         <div className="absolute bottom-2.5 right-2.5 flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-full text-ink-subtle"><Mic size={15} /></span>
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-ai text-white"><ArrowUp size={15} /></span>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!value.trim()}
+            aria-label="Generate workflow"
+            className="grid h-7 w-7 place-items-center rounded-full bg-ai text-white transition-opacity hover:bg-ai/90 disabled:opacity-40"
+          >
+            <ArrowUp size={15} />
+          </button>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {AI_CHIPS.map((c) => {
           const Icon = c.icon;
           return (
-            <span key={c.id} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink">
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setValue(CHIP_PROMPT[c.id] ?? c.label)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:border-ai/50 hover:bg-ai-soft/40"
+            >
               <Icon size={14} className={TONE[c.tone]} /> {c.label}
-            </span>
+            </button>
           );
         })}
-        <span className="inline-flex items-center rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink-muted">more</span>
+        <button
+          type="button"
+          onClick={onOpenTrigger}
+          className="inline-flex items-center rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:border-brand/50 hover:text-brand"
+        >
+          more
+        </button>
       </div>
     </div>
   );
@@ -228,16 +461,40 @@ export function WorkflowBuilder({
   const [published, setPublished] = useState(wf.status === 'published');
   const [zoom, setZoom] = useState(100);
   const [selNode, setSelNode] = useState<WorkflowDisplayNode | null>(null);
+  const [selId, setSelId] = useState<string | null>(null);
   const [picker, setPicker] = useState<null | 'trigger' | 'action'>(null);
+  const [catalog, setCatalog] = useState<null | 'trigger' | 'action'>(null);
   const [builderModeOpen, setBuilderModeOpen] = useState(false);
   const [promptIndex] = useState(() => Math.floor(Math.random() * AI_PROMPTS.length));
+  const [isBlank, setIsBlank] = useState(blank);
+  const [nodes, setNodes] = useState<WorkflowDisplayNode[]>(() => (blank ? [] : getNodesForWorkflow(wf.id, wf.trigger)));
 
-  const nodes = getNodesForWorkflow(wf.id, wf.trigger);
   const cosmetic = (title: string, description: string) => pushToast({ title, description, variant: 'info' });
+  const selectNode = (n: WorkflowDisplayNode) => { setSelNode(n); setSelId(n.id); };
 
-  const onPick = (item: CatalogItem) => {
-    pushToast({ title: `${picker === 'trigger' ? 'Trigger' : 'Action'} added (demo)`, description: `"${item.label}" is cosmetic — nothing is persisted.`, variant: 'success' });
+  /* Add a node from the picker / catalog — real local canvas state, then select it. */
+  const addNode = (item: CatalogItem, kind: 'trigger' | 'action') => {
+    const node = buildNode(item, kind);
+    if (kind === 'trigger') {
+      setNodes((ns) => [node, ...ns.filter((n) => n.type !== 'trigger')]);
+      setIsBlank(false);
+    } else {
+      setNodes((ns) => [...ns, node]);
+    }
+    setSelId(node.id);
     setPicker(null);
+    setCatalog(null);
+    pushToast({
+      title: `${kind === 'trigger' ? 'Trigger' : 'Action'} added`,
+      description: `“${item.label}” added to the canvas (demo session only).`,
+      variant: 'success',
+    });
+  };
+  const onPick = (item: CatalogItem) => { if (picker) addNode(item, picker); };
+  const onCatalogPick = (item: CatalogItem) => { if (catalog) addNode(item, catalog); };
+  const startBuild = (prompt: string) => {
+    setPicker('trigger');
+    cosmetic('Let’s build that', prompt ? 'Pick a trigger to anchor your AI-assisted workflow (demo).' : 'Pick a trigger to start (demo).');
   };
 
   return (
@@ -360,9 +617,13 @@ export function WorkflowBuilder({
 
               {/* flow */}
               <div className="flex min-h-full justify-center px-6 py-16" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}>
-                {blank ? (
+                {isBlank ? (
                   <div className="flex flex-col items-center gap-6 pt-2">
-                    <AiPanel promptIndex={promptIndex} />
+                    <AiPanel
+                      promptIndex={promptIndex}
+                      onStartBuild={startBuild}
+                      onOpenTrigger={() => setPicker('trigger')}
+                    />
                     <div className="flex w-full max-w-2xl items-center gap-3 text-xs font-semibold text-ink-subtle">
                       <span className="h-px flex-1 bg-line" /> Or <span className="h-px flex-1 bg-line" />
                     </div>
@@ -374,26 +635,10 @@ export function WorkflowBuilder({
                       <Plus size={18} /> Add New Trigger
                     </button>
                     <Connector onAdd={() => setPicker('action')} />
-                    <span className="rounded-full bg-surface-sunken px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-ink-subtle">End</span>
+                    <Terminal />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center pt-2">
-                    {nodes.map((node, i) => (
-                      <React.Fragment key={node.id}>
-                        {i > 0 && <Connector onAdd={() => setPicker('action')} />}
-                        <NodeCard node={node} step={node.type === 'trigger' ? null : i} onClick={() => setSelNode(node)} />
-                      </React.Fragment>
-                    ))}
-                    <Connector onAdd={() => setPicker('action')} />
-                    <button
-                      onClick={() => setPicker('action')}
-                      className="flex w-[300px] items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line px-4 py-3 text-sm font-semibold text-ink-muted hover:border-brand/50 hover:text-brand"
-                    >
-                      <Plus size={16} /> Add New Action
-                    </button>
-                    <span className="h-5 w-px bg-line" />
-                    <span className="rounded-full bg-surface-sunken px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-ink-subtle">End</span>
-                  </div>
+                  <Flow nodes={nodes} selId={selId} onSelect={selectNode} onAdd={() => setPicker('action')} />
                 )}
               </div>
 
@@ -488,12 +733,18 @@ export function WorkflowBuilder({
         {/* picker drawer */}
         {picker && (
           <div className="absolute inset-y-0 right-0 z-20 w-full sm:w-[420px]">
-            <BuilderPicker kind={picker} onClose={() => setPicker(null)} onSelect={onPick} />
+            <BuilderPicker
+              kind={picker}
+              onClose={() => setPicker(null)}
+              onSelect={onPick}
+              onExpand={() => { setCatalog(picker); setPicker(null); }}
+            />
           </div>
         )}
       </div>
 
       <NodeSettings node={selNode} onClose={() => setSelNode(null)} />
+      <CatalogModal kind={catalog} onClose={() => setCatalog(null)} onSelect={onCatalogPick} />
     </div>
   );
 }
