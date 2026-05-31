@@ -9,10 +9,10 @@ import { Modal } from '@/components/ui/Modal';
 import { useStore } from '@/store/useStore';
 import { cx, relativeTime } from '@/utils';
 
-/* ─── Local Fake Email Data ─────────────────────────────────────
+/* ─── Local Fake Email Data ─────────────────────────
    Per spec: no real Outlook/Microsoft API. All emails are local
    fake data created purely inside this module.
-   ──────────────────────────────────────────────────────────── */
+   ─────────────────────────────────────── */
 
 interface FakeEmail {
   id: string;
@@ -38,43 +38,43 @@ const FAKE_EMAILS: FakeEmail[] = [
   {
     id: 'em_1', folder: 'inbox',
     from: 'Ava Hartwell', fromEmail: 'ava.hartwell@example.com',
-    to: 'jordan@kleegr-demo.example.com',
+    to: 'demo.user@example.com',
     subject: 'Question about your consultation service',
-    preview: 'Hi Jordan, I saw your ad online and I am interested in booking a free consultation…',
-    body: 'Hi Jordan,\n\nI saw your ad online and I am interested in booking a free consultation. Could you let me know what times are available this week?\n\nLooking forward to hearing from you!\n\nAva',
+    preview: 'Hi Demo, I saw your ad online and I am interested in booking a free consultation…',
+    body: 'Hi Demo,\n\nI saw your ad online and I am interested in booking a free consultation. Could you let me know what times are available this week?\n\nLooking forward to hearing from you!\n\nAva',
     date: iso(now - 25 * 60000), read: false, starred: true, hasAttachment: false,
   },
   {
     id: 'em_2', folder: 'inbox',
     from: 'Liam Okafor', fromEmail: 'liam.okafor@example.com',
-    to: 'jordan@kleegr-demo.example.com',
+    to: 'demo.user@example.com',
     subject: 'Re: Your proposal — a few questions',
     preview: 'Thanks for sending over the proposal. Before we move forward, I had a couple of questions about pricing…',
-    body: 'Hi Jordan,\n\nThanks for sending over the proposal. Before we move forward I had a couple of questions:\n\n1. Is the onboarding fee a one-time cost?\n2. What is the minimum contract term?\n\nPlease let me know at your earliest convenience.\n\nBest,\nLiam',
+    body: 'Hi Demo,\n\nThanks for sending over the proposal. Before we move forward I had a couple of questions:\n\n1. Is the onboarding fee a one-time cost?\n2. What is the minimum contract term?\n\nPlease let me know at your earliest convenience.\n\nBest,\nLiam',
     date: iso(now - 2 * HOUR), read: false, starred: false, hasAttachment: false,
   },
   {
     id: 'em_3', folder: 'inbox',
     from: 'Maya Lindqvist', fromEmail: 'maya.lindqvist@example.com',
-    to: 'jordan@kleegr-demo.example.com',
+    to: 'demo.user@example.com',
     subject: 'Invoice INV-1014 — payment confirmation',
     preview: 'Please find attached the payment confirmation for invoice INV-1014 ($1,350)…',
-    body: 'Hi Jordan,\n\nPlease find attached the payment confirmation for invoice INV-1014 ($1,350). Transaction processed on ' + new Date(now - 3 * HOUR).toLocaleDateString() + '.\n\nThank you!\nMaya',
+    body: 'Hi Demo,\n\nPlease find attached the payment confirmation for invoice INV-1014 ($1,350). Transaction processed on ' + new Date(now - 3 * HOUR).toLocaleDateString() + '.\n\nThank you!\nMaya',
     date: iso(now - 3 * HOUR), read: true, starred: false, hasAttachment: true,
   },
   {
     id: 'em_4', folder: 'inbox',
     from: 'Noah Marsh', fromEmail: 'noah.marsh@example.com',
-    to: 'jordan@kleegr-demo.example.com',
+    to: 'demo.user@example.com',
     subject: 'Appointment reschedule request',
     preview: 'Hey, something came up on Thursday. Would it be possible to move our 10am appointment to Friday at 2pm?',
-    body: 'Hey Jordan,\n\nSomething came up on Thursday. Would it be possible to move our 10 am appointment to Friday at 2 pm?\n\nSorry for the short notice!\nNoah',
+    body: 'Hey Demo,\n\nSomething came up on Thursday. Would it be possible to move our 10 am appointment to Friday at 2 pm?\n\nSorry for the short notice!\nNoah',
     date: iso(now - 5 * HOUR), read: true, starred: false, hasAttachment: false,
   },
   {
     id: 'em_5', folder: 'inbox',
     from: 'Sofia Delgado', fromEmail: 'sofia.delgado@example.com',
-    to: 'jordan@kleegr-demo.example.com',
+    to: 'demo.user@example.com',
     subject: 'New 5-star Google review!',
     preview: 'We just received a 5-star Google review from Sofia Delgado. Read it now in your Reputation dashboard…',
     body: 'Great news!\n\nYou just received a new 5-star Google review:\n\n"Absolutely fantastic service, highly recommend! The team went above and beyond."\n— Sofia D.\n\nKeep up the great work!',
@@ -82,52 +82,52 @@ const FAKE_EMAILS: FakeEmail[] = [
   },
   {
     id: 'em_6', folder: 'inbox',
-    from: 'Priya Raman', fromEmail: 'priya@kleegr-demo.example.com',
-    to: 'jordan@kleegr-demo.example.com',
+    from: 'Priya Raman', fromEmail: 'priya.raman@example.com',
+    to: 'demo.user@example.com',
     subject: 'Team update — Q2 targets',
-    preview: 'Hi Jordan, just wanted to loop you in on the Q2 target review before Fridays call…',
-    body: 'Hi Jordan,\n\nJust wanted to loop you in on the Q2 target review before Friday\'s call. We are currently at 87% of goal with 3 weeks left in the quarter. Strong finish is very achievable!\n\nMore details attached.\n\nPriya',
+    preview: 'Hi Demo, just wanted to loop you in on the Q2 target review before Fridays call…',
+    body: 'Hi Demo,\n\nJust wanted to loop you in on the Q2 target review before Friday\'s call. We are currently at 87% of goal with 3 weeks left in the quarter. Strong finish is very achievable!\n\nMore details attached.\n\nPriya',
     date: iso(now - 2 * DAY), read: true, starred: false, hasAttachment: true,
   },
   {
     id: 'em_7', folder: 'sent',
-    from: 'Jordan Avery', fromEmail: 'jordan@kleegr-demo.example.com',
+    from: 'Demo User', fromEmail: 'demo.user@example.com',
     to: 'ava.hartwell@example.com',
     subject: 'Re: Question about your consultation service',
     preview: 'Hi Ava! Thanks for reaching out. We have openings Tuesday at 10am and Thursday at 2pm…',
-    body: 'Hi Ava!\n\nThanks for reaching out. We have openings Tuesday at 10 am and Thursday at 2 pm — which works best for you?\n\nThe first consultation is completely free and takes about 30 minutes.\n\nLooking forward to connecting!\nJordan',
+    body: 'Hi Ava!\n\nThanks for reaching out. We have openings Tuesday at 10 am and Thursday at 2 pm — which works best for you?\n\nThe first consultation is completely free and takes about 30 minutes.\n\nLooking forward to connecting!\nDemo',
     date: iso(now - 20 * 60000), read: true, starred: false, hasAttachment: false,
   },
   {
     id: 'em_8', folder: 'sent',
-    from: 'Jordan Avery', fromEmail: 'jordan@kleegr-demo.example.com',
+    from: 'Demo User', fromEmail: 'demo.user@example.com',
     to: 'liam.okafor@example.com',
     subject: 'Proposal — Growth Retainer Package',
     preview: 'Hi Liam, please find the updated proposal attached. Happy to hop on a quick call to walk through it…',
-    body: 'Hi Liam,\n\nPlease find the updated proposal attached. Happy to hop on a quick call to walk through it.\n\nKey terms:\n- Monthly retainer: $1,200/month\n- Setup fee (one-time): $750\n- Minimum term: 3 months\n\nLet me know if you have any questions!\nJordan',
+    body: 'Hi Liam,\n\nPlease find the updated proposal attached. Happy to hop on a quick call to walk through it.\n\nKey terms:\n- Monthly retainer: $1,200/month\n- Setup fee (one-time): $750\n- Minimum term: 3 months\n\nLet me know if you have any questions!\nDemo',
     date: iso(now - 4 * HOUR), read: true, starred: false, hasAttachment: true,
   },
   {
     id: 'em_9', folder: 'drafts',
-    from: 'Jordan Avery', fromEmail: 'jordan@kleegr-demo.example.com',
+    from: 'Demo User', fromEmail: 'demo.user@example.com',
     to: 'noah.marsh@example.com',
     subject: 'Re: Appointment reschedule request',
     preview: 'Hi Noah, no problem at all! I have moved you to Friday at 2pm…',
-    body: 'Hi Noah,\n\nNo problem at all! I have moved you to Friday at 2 pm. You should receive a calendar invite shortly.\n\nSee you then!\nJordan',
+    body: 'Hi Noah,\n\nNo problem at all! I have moved you to Friday at 2 pm. You should receive a calendar invite shortly.\n\nSee you then!\nDemo',
     date: iso(now - 30 * 60000), read: true, starred: false, hasAttachment: false,
   },
   {
     id: 'em_10', folder: 'archive',
     from: 'Ethan Whitfield', fromEmail: 'ethan.whitfield@example.com',
-    to: 'jordan@kleegr-demo.example.com',
+    to: 'demo.user@example.com',
     subject: 'Thank you — great experience!',
     preview: 'Just wanted to drop a quick note to say how impressed I was with the whole process from start to finish…',
-    body: 'Hi Jordan,\n\nJust wanted to drop a quick note to say how impressed I was with the whole process from start to finish. Everything was smooth, professional, and exactly what I needed.\n\nI will definitely be recommending you to my network.\n\nThanks again,\nEthan',
+    body: 'Hi Demo,\n\nJust wanted to drop a quick note to say how impressed I was with the whole process from start to finish. Everything was smooth, professional, and exactly what I needed.\n\nI will definitely be recommending you to my network.\n\nThanks again,\nEthan',
     date: iso(now - 5 * DAY), read: true, starred: false, hasAttachment: false,
   },
 ];
 
-/* ─── Integration Card Data ───────────────────────────────────── */
+/* ─── Integration Card Data ──────────────────────── */
 
 type IntegrationStatus = 'connected' | 'not_connected' | 'demo_only';
 
@@ -160,7 +160,7 @@ const STATUS_LABEL: Record<IntegrationStatus, string> = {
   demo_only: 'Demo only',
 };
 
-/* ─── OAuth Mock Modal ────────────────────────────────────────── */
+/* ─── OAuth Mock Modal ─────────────────────── */
 
 function OAuthModal({ open, onClose, onConnect }: { open: boolean; onClose: () => void; onConnect: () => void }) {
   const [step, setStep] = useState<'form' | 'loading' | 'done'>('form');
@@ -185,7 +185,7 @@ function OAuthModal({ open, onClose, onConnect }: { open: boolean; onClose: () =
           <div className="space-y-2">
             <label className="text-xs font-semibold text-ink-subtle">Microsoft Account Email</label>
             <input
-              defaultValue="jordan@kleegr-demo.example.com"
+              defaultValue="demo.user@example.com"
               className="w-full rounded-lg border border-line bg-surface-sunken px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none"
               readOnly
             />
@@ -218,7 +218,7 @@ function OAuthModal({ open, onClose, onConnect }: { open: boolean; onClose: () =
   );
 }
 
-/* ─── Outlook Inbox ───────────────────────────────────────────── */
+/* ─── Outlook Inbox ──────────────────────── */
 
 const FOLDERS = [
   { id: 'inbox', label: 'Inbox', icon: <Inbox size={15} /> },
@@ -254,7 +254,7 @@ function OutlookInbox() {
       <div className="w-40 shrink-0 border-r border-line bg-surface-sunken">
         <div className="border-b border-line px-3 py-3">
           <p className="text-xs font-bold text-ink">Outlook</p>
-          <p className="text-[10px] text-ink-muted">jordan@kleegr-demo.example.com</p>
+          <p className="text-[10px] text-ink-muted">demo.user@example.com</p>
         </div>
         {FOLDERS.map((f) => {
           const count = f.id === 'inbox' ? unreadCount : 0;
@@ -365,7 +365,7 @@ function OutlookInbox() {
   );
 }
 
-/* ─── Main Integrations Page ─────────────────────────────────── */
+/* ─── Main Integrations Page ─────────────── */
 
 export function Integrations() {
   const pushToast = useStore((s) => s.pushToast);
