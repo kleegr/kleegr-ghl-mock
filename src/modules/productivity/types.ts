@@ -38,6 +38,23 @@ export interface Comment {
   createdAt: string;
 }
 
+/**
+ * A single message in a ticket's customer-facing conversation thread
+ * (Ticketing's ThreadTabs / reply composer). Inbound = from the requester,
+ * outbound = an agent reply. Demo-only; nothing is actually emailed.
+ */
+export interface TicketReply {
+  id: ID;
+  body: string;
+  at: string;
+  /** true = agent reply (outbound); false = message from the requester (inbound). */
+  outbound: boolean;
+  /** Agent id for outbound replies. */
+  authorId?: ID;
+  /** Display name for an inbound (requester) message. */
+  authorName?: string;
+}
+
 /* ───────────────────────── Tickets (from Ticketing) ───────────────────────── */
 
 export type TicketStage = 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed';
@@ -52,6 +69,8 @@ export interface Ticket {
   stage: TicketStage;
   priority: Priority;
   channel: TicketChannel;
+  /** Triage category (Billing, Technical, …). Optional on seed; set on create. */
+  category?: string;
   assigneeId?: ID;
   /** Demo-safe requester display name. */
   requester: string;
@@ -66,6 +85,8 @@ export interface Ticket {
   notes: Comment[];
   /** Threaded activity timeline (Ticketing's ThreadAwareTimeline). */
   activity: ActivityItem[];
+  /** Customer-facing conversation replies (Ticketing's reply thread). Optional on seed. */
+  replies?: TicketReply[];
   /** Optional links to follow-up tasks (Ticketing's TicketTasksPanel). */
   linkedTaskIds: ID[];
 }

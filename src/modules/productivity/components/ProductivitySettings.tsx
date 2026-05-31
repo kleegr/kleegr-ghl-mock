@@ -20,6 +20,7 @@ import {
   TICKET_CATEGORIES,
   TICKET_STAGES,
 } from '../data';
+import { SLA_TARGETS } from '../ticketMeta';
 import { PriorityBadge, SectionLabel, inputCls } from './shared';
 
 function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string }) {
@@ -91,6 +92,7 @@ export function ProductivitySettings() {
     showWeekends: true,
     autoReadOnOpen: true,
   });
+  const [slaTimers, setSlaTimers] = useState(true);
 
   const set = <K extends keyof typeof notify>(k: K) => (v: boolean) => setNotify((p) => ({ ...p, [k]: v }));
   const setD = <K extends keyof typeof demo>(k: K) => (v: boolean) => setDemo((p) => ({ ...p, [k]: v }));
@@ -157,6 +159,38 @@ export function ProductivitySettings() {
                 {PRIORITIES.map((p) => <PriorityBadge key={p.id} priority={p.id} size="md" />)}
               </div>
             </div>
+          </div>
+        </Card>
+
+        {/* SLA targets */}
+        <Card className="p-4">
+          <SectionLabel>SLA targets</SectionLabel>
+          <p className="mb-2 -mt-1 text-[11px] text-ink-subtle">Response &amp; resolution goals by priority (demo reference — not enforced).</p>
+          <div className="overflow-hidden rounded-lg border border-line">
+            <table className="w-full text-[12px]">
+              <thead className="bg-surface-sunken text-ink-subtle">
+                <tr>
+                  <th className="px-3 py-1.5 text-left font-semibold">Priority</th>
+                  <th className="px-3 py-1.5 text-left font-semibold">First response</th>
+                  <th className="px-3 py-1.5 text-left font-semibold">Resolution</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SLA_TARGETS.map((s) => {
+                  const fmt = (h: number) => (h < 24 ? `${h}h` : `${h / 24}d`);
+                  return (
+                    <tr key={s.priority} className="border-t border-line">
+                      <td className="px-3 py-1.5"><PriorityBadge priority={s.priority} /></td>
+                      <td className="px-3 py-1.5 text-ink-muted">{fmt(s.firstResponseH)}</td>
+                      <td className="px-3 py-1.5 text-ink-muted">{fmt(s.resolutionH)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-1 divide-y divide-line">
+            <Toggle checked={slaTimers} onChange={setSlaTimers} label="Show SLA timers on tickets" hint="Display response/resolution countdowns (demo)" />
           </div>
         </Card>
       </div>

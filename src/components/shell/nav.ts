@@ -1,6 +1,6 @@
 import {
   Rocket, LayoutDashboard, MessagesSquare, Calendar, Users, Filter, CreditCard,
-  CheckSquare, KanbanSquare, Megaphone, Workflow, LayoutTemplate, MonitorPlay, Star, BarChart3,
+  KanbanSquare, Megaphone, Workflow, LayoutTemplate, MonitorPlay, Star, BarChart3,
   Phone, FolderOpen, Plug, Bot, Wand2, Sparkles, Link as LinkIcon, GraduationCap,
   Settings, type LucideIcon,
 } from 'lucide-react';
@@ -32,7 +32,9 @@ export const NAV: NavItem[] = [
   { label: 'Contacts', path: '/contacts', icon: Users, tour: 'nav.contacts' },
   { label: 'Opportunities', path: '/opportunities', icon: Filter, tour: 'nav.opportunities' },
   { label: 'Payments', path: '/payments', icon: CreditCard, tour: 'nav.payments' },
-  { label: 'Tasks / Projects', path: '/tasks', icon: CheckSquare, tour: 'nav.tasks' },
+  // Tasks & Projects are no longer separate sidebar entries — they live inside
+  // the Productivity hub (Tasks / Projects tabs). The /tasks route is kept as a
+  // hidden compatibility redirect to /productivity (see App.tsx).
   { label: 'Productivity', path: '/productivity', icon: KanbanSquare, tour: 'productivity.nav' },
 
   // Marketing & growth

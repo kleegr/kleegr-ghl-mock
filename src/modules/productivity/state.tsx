@@ -27,6 +27,7 @@ import type {
   TaskType,
   Ticket,
   TicketChannel,
+  TicketReply,
   TicketStage,
 } from './types';
 import {
@@ -57,6 +58,7 @@ export interface CreateTicketInput {
   body: string;
   priority: Priority;
   channel: TicketChannel;
+  category?: string;
   stage?: TicketStage;
   assigneeId?: ID;
   requester: string;
@@ -91,6 +93,7 @@ interface ProductivityContextValue {
   moveTicket: (id: ID, stage: TicketStage) => void;
   bulkUpdateTickets: (ids: ID[], patch: Partial<Ticket>, label?: string) => void;
   addTicketNote: (id: ID, body: string) => void;
+  addTicketReply: (id: ID, body: string) => void;
   markTicketRead: (id: ID) => void;
 
   // tasks
@@ -120,7 +123,7 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
   const [projects, setProjects] = useState<Project[]>(() => seedProjects());
   const [docs, setDocs] = useState<Doc[]>(() => seedDocs());
 
-  /* ── tickets ─────────────────────────────────────────────────────── */
+  /* ── tickets ── */
 
   const createTicket = useCallback(
     (input: CreateTicketInput): Ticket => {
@@ -133,6 +136,7 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
         stage: input.stage ?? 'open',
         priority: input.priority,
         channel: input.channel,
+        category: input.category?.trim() || undefined,
         assigneeId: input.assigneeId,
         requester: input.requester.trim() || 'Unknown requester',
         requesterEmail: input.requesterEmail?.trim() || undefined,
@@ -144,6 +148,7 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
         dueAt: input.dueAt || undefined,
         notes: [],
         activity: [mkActivity('created', 'Ticket created in demo session')],
+        replies: [],
         linkedTaskIds: [],
       };
       setTickets((prev) => [t, ...prev]);
@@ -206,7 +211,30 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
     setTickets((prev) => prev.map((t) => (t.id === id && t.unread ? { ...t, unread: false } : t)));
   }, []);
 
-  /* ── tasks ──────────────────────────────────────────────────────────── */
+  const addTicketReply = useCallback(
+    (id: ID, body: string) => {
+      const text = body.trim();
+      if (!text) return;
+      const reply: TicketReply = { id: uid('rep'), body: text, at: nowIso(), outbound: true, authorId: CURRENT_USER_ID };
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                replies: [...(t.replies ?? []), reply],
+                unread: false,
+                updatedAt: nowIso(),
+                activity: [mkActivity('comment', 'Replied to the requester'), ...t.activity],
+              }
+            : t,
+        ),
+      );
+      pushToast({ title: 'Reply sent', description: 'Demo session — no email was actually sent.', variant: 'success' });
+    },
+    [pushToast],
+  );
+
+  /* ── tasks ── */
 
   const createTask = useCallback(
     (input: CreateTaskInput): Task => {
@@ -277,7 +305,7 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
     );
   }, []);
 
-  /* ── projects ─────────────────────────────────────────────────── */
+  /* ── projects ── */
 
   const updateProject = useCallback((id: ID, patch: Partial<Project>) => {
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch, id: p.id } : p)));
@@ -293,7 +321,7 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
     );
   }, []);
 
-  /* ── docs ────────────────────────────────────────────────────────────── */
+  /* ── docs ── */
 
   const createDoc = useCallback(
     (input: { title: string; category: DocCategory }): Doc => {
@@ -303,7 +331,7 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
         category: input.category,
         authorId: CURRENT_USER_ID,
         updatedAt: nowIso(),
-        body: `# ${input.title.trim() || 'Untitled document'}\n\nStart writing your document here. This is a demo doc — edits live for the session only.`,
+        body: `# ${input.title.trim() || 'Untitled document'}. Start writing here — this is a demo doc.`,
         tags: [],
       };
       setDocs((prev) => [d, ...prev]);
@@ -320,14 +348,14 @@ export function ProductivityProvider({ children }: { children: React.ReactNode }
   const value = useMemo<ProductivityContextValue>(
     () => ({
       tickets, tasks, projects, docs,
-      createTicket, updateTicket, moveTicket, bulkUpdateTickets, addTicketNote, markTicketRead,
+      createTicket, updateTicket, moveTicket, bulkUpdateTickets, addTicketNote, addTicketReply, markTicketRead,
       createTask, updateTask, moveTask, toggleSubtask, addSubtask, addComment,
       updateProject, toggleMilestone,
       createDoc, updateDoc,
     }),
     [
       tickets, tasks, projects, docs,
-      createTicket, updateTicket, moveTicket, bulkUpdateTickets, addTicketNote, markTicketRead,
+      createTicket, updateTicket, moveTicket, bulkUpdateTickets, addTicketNote, addTicketReply, markTicketRead,
       createTask, updateTask, moveTask, toggleSubtask, addSubtask, addComment,
       updateProject, toggleMilestone,
       createDoc, updateDoc,
