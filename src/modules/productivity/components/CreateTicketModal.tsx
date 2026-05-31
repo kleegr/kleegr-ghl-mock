@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/primitives';
 import { Field, SelectInput, inputCls } from './shared';
 import { useProductivity } from '../state';
 import type { Priority, TicketChannel, TicketStage } from '../types';
-import { CHANNEL_LABEL, DEMO_COMPANIES, PRIORITIES, TEAM, TICKET_STAGES } from '../data';
+import { CHANNEL_LABEL, DEMO_COMPANIES, PRIORITIES, TEAM, TICKET_CATEGORIES, TICKET_STAGES } from '../data';
+
+const DEFAULT_CATEGORY = TICKET_CATEGORIES.includes('General') ? 'General' : TICKET_CATEGORIES[0];
 
 export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { createTicket } = useProductivity();
@@ -14,6 +16,7 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
   const [requester, setRequester] = useState('');
   const [company, setCompany] = useState(DEMO_COMPANIES[0]);
   const [channel, setChannel] = useState<TicketChannel>('email');
+  const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
   const [priority, setPriority] = useState<Priority>('medium');
   const [stage, setStage] = useState<TicketStage>('open');
   const [assigneeId, setAssigneeId] = useState('');
@@ -22,7 +25,8 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
 
   const reset = () => {
     setSubject(''); setBody(''); setRequester(''); setCompany(DEMO_COMPANIES[0]);
-    setChannel('email'); setPriority('medium'); setStage('open'); setAssigneeId(''); setDueAt(''); setTags('');
+    setChannel('email'); setCategory(DEFAULT_CATEGORY); setPriority('medium'); setStage('open');
+    setAssigneeId(''); setDueAt(''); setTags('');
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -35,6 +39,7 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
       requester,
       company,
       channel,
+      category,
       priority,
       stage,
       assigneeId: assigneeId || undefined,
@@ -84,7 +89,12 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Field label="Category">
+            <SelectInput value={category} onChange={setCategory}>
+              {TICKET_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </SelectInput>
+          </Field>
           <Field label="Channel">
             <SelectInput value={channel} onChange={(v) => setChannel(v as TicketChannel)}>
               {(Object.keys(CHANNEL_LABEL) as TicketChannel[]).map((c) => (
@@ -97,6 +107,9 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
               {PRIORITIES.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </SelectInput>
           </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <Field label="Stage">
             <SelectInput value={stage} onChange={(v) => setStage(v as TicketStage)}>
               {TICKET_STAGES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -110,7 +123,7 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
         <div className="grid grid-cols-2 gap-3">
           <Field label="Assignee">
             <SelectInput value={assigneeId} onChange={setAssigneeId}>
-              <option value="">— Unassigned —</option>
+              <option value="">\u2014 Unassigned \u2014</option>
               {TEAM.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </SelectInput>
           </Field>
@@ -120,7 +133,7 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
         </div>
 
         <p className="rounded-lg bg-surface-sunken px-3 py-2 text-[11px] text-ink-subtle">
-          Demo mode: tickets are stored in memory for this session only — no email, no backend, no real customer data.
+          Demo mode: tickets are stored in memory for this session only \u2014 no email, no backend, no real customer data.
         </p>
       </div>
     </Modal>
