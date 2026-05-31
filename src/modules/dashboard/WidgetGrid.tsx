@@ -146,7 +146,7 @@ export function WidgetGrid(props: WidgetGridProps) {
   );
 }
 
-/* ── Sortable grid cell ─────────────────────────────────────────── */
+/* ──── Sortable grid cell ──── */
 
 function SortableCell({
   id, span, children,
