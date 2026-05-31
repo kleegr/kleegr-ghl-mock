@@ -12,7 +12,6 @@ import { Reputation } from '@/modules/reputation/Reputation';
 import { Reporting } from '@/modules/reporting/Reporting';
 import { Payments } from '@/modules/payments/Payments';
 import { Phone } from '@/modules/phone/Phone';
-import { Tasks } from '@/modules/tasks/Tasks';
 import { Integrations } from '@/modules/integrations/Integrations';
 import { Media } from '@/modules/media/Media';
 import { Settings } from '@/modules/settings/Settings';
@@ -38,7 +37,10 @@ export default function App() {
           <Route path="/reporting" element={<Reporting />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/phone" element={<Phone />} />
-          <Route path="/tasks" element={<Tasks />} />
+          {/* Tasks & Projects consolidated into Productivity. /tasks is kept as a
+              hidden compatibility redirect (the smoke test asserts the literal
+              "/tasks" is still declared here). */}
+          <Route path="/tasks" element={<Navigate to="/productivity" replace />} />
           <Route path="/productivity" element={<Productivity />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/media" element={<Media />} />
