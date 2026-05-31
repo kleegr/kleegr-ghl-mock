@@ -11,6 +11,9 @@ export interface User {
   role: 'admin' | 'user';
   phone?: string;
   isCurrentUser?: boolean;
+  /** Foundation fields for the upcoming Staff settings workstream (optional). */
+  title?: string;
+  status?: 'active' | 'invited' | 'disabled';
 }
 
 export interface Company {
@@ -271,4 +274,65 @@ export interface DemoData {
   invoices: Invoice[];
   notifications: Notification[];
   leadSources: LeadSourceDatum[];
+  phoneNumbers: PhoneNumber[];
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+ * FOUNDATION TYPES (Wave 3) — shared contracts for the next module workstreams.
+ *
+ * These are intentionally added ahead of the modules that will consume them so
+ * the upcoming developers (Phone settings, Custom Fields, Dashboard editor,
+ * Documents/Contracts) build against one agreed shape instead of inventing
+ * their own. `PhoneNumber` is already wired (seed + store + Settings + dialer);
+ * the rest are scaffolding and are safe to extend.
+ * ───────────────────────────────────────────────────────────────────── */
+
+/** A provisioned phone number on the account (Settings → Phone Numbers, dialer). */
+export interface PhoneNumber {
+  id: ID;
+  number: string;
+  label: string;
+  type: 'local' | 'toll_free';
+  status: 'active' | 'inactive' | 'porting';
+}
+
+/** A custom field definition (Settings → Custom Fields). */
+export interface CustomFieldDefinition {
+  id: ID;
+  name: string;
+  type: 'text' | 'number' | 'dropdown' | 'date' | 'checkbox';
+  scope: 'contact' | 'opportunity' | 'company';
+  /** Folder/group the field is organized under (GHL groups custom fields). */
+  folder?: string;
+  options?: string[];
+}
+
+/** A single widget on a saved dashboard (Dashboard editor workstream). */
+export interface DashboardWidget {
+  id: ID;
+  kind: 'kpi' | 'lineChart' | 'barChart' | 'pieChart' | 'table' | 'list';
+  title: string;
+  /** Free-form config consumed by the future dashboard renderer. */
+  config?: Record<string, string | number | boolean>;
+}
+
+/** A user-saved dashboard layout (Dashboard editor workstream). */
+export interface SavedDashboard {
+  id: ID;
+  name: string;
+  widgets: DashboardWidget[];
+  isDefault?: boolean;
+}
+
+/** A document / contract record (Documents & Contracts workstream). */
+export interface DocumentRecord {
+  id: ID;
+  name: string;
+  contactId?: ID;
+  status: 'draft' | 'sent' | 'viewed' | 'signed' | 'void';
+  createdAt: string;
+  updatedAt?: string;
+  /** e.g. 'contract', 'proposal', 'invoice', 'form'. */
+  kind?: string;
 }

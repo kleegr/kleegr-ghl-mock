@@ -9,9 +9,9 @@ import { Modal } from '@/components/ui/Modal';
 import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
 
-/* ─── Local fake media assets ─────────────────────────────────
+/* ─── Local fake media assets ─────────────────────────────
    No real uploads or storage. All assets are defined here only.
-   ──────────────────────────────────────────────────────────── */
+   ─────────────────────────────────────── */
 
 type MediaType = 'image' | 'document' | 'video';
 
@@ -49,7 +49,7 @@ const MEDIA_ASSETS: MediaAsset[] = [
   { id: 'ma_16', name: 'facebook-ad-spring',    type: 'image',    ext: 'jpg', sizeKB: 210,  uploadedAt: new Date(now - 2  * DAY).toISOString(), owner: 'Marcus Bell',    dimensions: '1200×628' },
 ];
 
-/* ─── Helpers ─────────────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────── */
 
 function fmtSize(kb: number) {
   if (kb < 1000) return `${kb} KB`;
@@ -78,7 +78,7 @@ const TYPE_TONE: Record<MediaType, 'brand' | 'warn' | 'neutral'> = {
   video:    'neutral',
 };
 
-/* ─── Thumbnail / Icon ────────────────────────────────────────── */
+/* ─── Thumbnail / Icon ───────────────────────── */
 
 function AssetThumb({ asset }: { asset: MediaAsset }) {
   const BG_COLORS = ['#dbeafe', '#dcfce7', '#fce7f3', '#ede9fe', '#ffedd5', '#e0f2fe', '#fef9c3'];
@@ -95,7 +95,7 @@ function AssetThumb({ asset }: { asset: MediaAsset }) {
   );
 }
 
-/* ─── File Detail Modal ───────────────────────────────────────── */
+/* ─── File Detail Modal ────────────────────── */
 
 function FileDetailModal({ asset, onClose }: { asset: MediaAsset | null; onClose: () => void }) {
   const pushToast = useStore((s) => s.pushToast);
@@ -139,7 +139,7 @@ function FileDetailModal({ asset, onClose }: { asset: MediaAsset | null; onClose
           </div>
           <div className="rounded-lg border border-line bg-surface-sunken px-3 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">Demo URL</p>
-            <p className="mt-0.5 font-mono text-xs text-ink-muted">https://cdn.kleegr-demo.example.com/media/{asset.name}.{asset.ext}</p>
+            <p className="mt-0.5 font-mono text-xs text-ink-muted">https://cdn.example.com/media/{asset.name}.{asset.ext}</p>
           </div>
         </div>
       )}
@@ -147,7 +147,7 @@ function FileDetailModal({ asset, onClose }: { asset: MediaAsset | null; onClose
   );
 }
 
-/* ─── Upload Modal ─────────────────────────────────────────────── */
+/* ─── Upload Modal ─────────────────────── */
 
 function UploadModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pushToast = useStore((s) => s.pushToast);
@@ -198,7 +198,7 @@ function UploadModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   );
 }
 
-/* ─── Main Media Page ─────────────────────────────────────────── */
+/* ─── Main Media Page ────────────────────── */
 
 type SortKey = 'recent' | 'name' | 'size';
 

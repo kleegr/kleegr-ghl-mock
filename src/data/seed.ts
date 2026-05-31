@@ -13,6 +13,7 @@ import type {
   Message,
   Notification,
   Opportunity,
+  PhoneNumber,
   Pipeline,
   Product,
   Review,
@@ -22,14 +23,18 @@ import type {
 } from '@/types';
 
 /**
- * Deterministic seed generator — Wave 1 / Dev 6 enriched version.
+ * Deterministic seed generator - Wave 1 / Dev 6 enriched version.
  * Fixed PRNG seed ensures resetDemo() always restores identical state.
  *
- * V1 TARGETS:
- *   Contacts 200 | Companies 48 | Conversations 35 | Messages 8-15/thread
- *   Pipelines 4 | Opportunities ~96 | Calendars 3 | Appointments 55
- *   Workflows 5 | Email campaigns 10 | SMS campaigns 8 | Calls 70
- *   Tasks 45 | Reviews 26 | Invoices 32 | Products 15 | Notifications 15
+ * WAVE 3 DEMO-CURATED VOLUMES (reduced from the V1 enrichment pass so the demo
+ * reads like a tidy, believable account instead of an overloaded data dump):
+ *   Contacts 52 | Companies 14 | Conversations 12 | Messages 8-15/thread
+ *   Pipelines 4 | Opportunities ~34 | Calendars 3 | Appointments 28
+ *   Workflows 5 | Email campaigns 4 | SMS campaigns 3 | Calls 14
+ *   Tasks 12 | Reviews 10 | Invoices 7 | Products 15 | Notifications 15 | Phone numbers 3
+ *
+ * Identity is generic + demo-safe: account "Demo Business", user "Demo User",
+ * fictional contact names, @example.com emails, +1 (555) phone numbers only.
  */
 
 function rng(seed: number) {
@@ -98,14 +103,14 @@ export function generateDemoData(): DemoData {
   const chance = (p: number) => r() < p;
 
   const users: User[] = [
-    { id: 'u_me', name: 'Jordan Avery', email: 'jordan@kleegr-demo.example.com', avatarColor: '#1f6feb', role: 'admin', phone: '+1 (555) 010-0100', isCurrentUser: true },
-    { id: 'u_2', name: 'Priya Raman', email: 'priya@kleegr-demo.example.com', avatarColor: '#12986a', role: 'user', phone: '+1 (555) 010-0102' },
-    { id: 'u_3', name: 'Marcus Bell', email: 'marcus@kleegr-demo.example.com', avatarColor: '#d99111', role: 'user', phone: '+1 (555) 010-0103' },
-    { id: 'u_4', name: 'Dana Cole', email: 'dana@kleegr-demo.example.com', avatarColor: '#7c3aed', role: 'user', phone: '+1 (555) 010-0104' },
+    { id: 'u_me', name: 'Demo User', email: 'demo.user@example.com', avatarColor: '#1f6feb', role: 'admin', phone: '+1 (555) 010-0100', isCurrentUser: true, title: 'Account Admin', status: 'active' },
+    { id: 'u_2', name: 'Priya Raman', email: 'priya.raman@example.com', avatarColor: '#12986a', role: 'user', phone: '+1 (555) 010-0102', title: 'Sales Lead', status: 'active' },
+    { id: 'u_3', name: 'Marcus Bell', email: 'marcus.bell@example.com', avatarColor: '#d99111', role: 'user', phone: '+1 (555) 010-0103', title: 'Account Manager', status: 'active' },
+    { id: 'u_4', name: 'Dana Cole', email: 'dana.cole@example.com', avatarColor: '#7c3aed', role: 'user', phone: '+1 (555) 010-0104', title: 'Support Specialist', status: 'invited' },
   ];
   const ownerIds = users.map((u) => u.id);
 
-  const companies: Company[] = COMPANY_NAMES.map((name, i) => ({
+  const companies: Company[] = COMPANY_NAMES.slice(0, 14).map((name, i) => ({
     id: `co_${i + 1}`,
     name,
     industry: pick(INDUSTRIES),
@@ -116,7 +121,7 @@ export function generateDemoData(): DemoData {
   }));
 
   const contacts: Contact[] = [];
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 52; i++) {
     const first = pick(FIRST);
     const last = pick(LAST);
     const company = chance(0.65) ? pick(companies) : undefined;
@@ -168,7 +173,7 @@ export function generateDemoData(): DemoData {
   const contactPool = [...contacts];
   const convContacts: Contact[] = [];
   const usedForConv = new Set<string>();
-  for (let i = 0; i < contactPool.length && convContacts.length < 35; i++) {
+  for (let i = 0; i < contactPool.length && convContacts.length < 12; i++) {
     const idx = Math.floor(r() * (contactPool.length - i) + i);
     const tmp = contactPool[i]; contactPool[i] = contactPool[idx]; contactPool[idx] = tmp;
     if (!usedForConv.has(contactPool[i].id)) {
@@ -213,7 +218,7 @@ export function generateDemoData(): DemoData {
   const pipelines: Pipeline[] = [
     {
       id: 'pipe_sales',
-      name: 'Kleegr Sales',
+      name: 'Sales Pipeline',
       stages: [
         'New Lead', 'Called 1', 'Called 2', 'Called 3', 'Called 4',
         'Contacted', 'Booked Appointment', 'No Show',
@@ -275,8 +280,8 @@ export function generateDemoData(): DemoData {
 
   const opportunities: Opportunity[] = [];
   let oppN = 1;
-  // Kleegr Sales is the hero pipeline (50–80); the rest stay smaller. Total ≈ 102.
-  const pipelineCounts: Record<string, number> = { pipe_sales: 64, pipe_onboard: 16, pipe_react: 12, pipe_nurture: 10 };
+  // Kleegr Sales is the hero pipeline (50-80); the rest stay smaller. Total ~ 34.
+  const pipelineCounts: Record<string, number> = { pipe_sales: 20, pipe_onboard: 6, pipe_react: 4, pipe_nurture: 4 };
   pipelines.forEach((p) => {
     const count = pipelineCounts[p.id] ?? 20;
     const zeroValue = ZERO_VALUE_PIPELINES.has(p.id);
@@ -288,7 +293,7 @@ export function generateDemoData(): DemoData {
       const stageName = stage.name;
       const company = contact.companyId ? companyById.get(contact.companyId) : undefined;
 
-      // ── Status ──────────────────────────────────────────────────────────
+      // -- Status ----------------------------------------------------------
       let status: Opportunity['status'];
       if (isArchive) {
         status = stageName === 'Won' ? 'won' : stageName === 'Lost' ? 'lost' : 'abandoned';
@@ -304,7 +309,7 @@ export function generateDemoData(): DemoData {
         status = 'open';
       }
 
-      // ── Value ───────────────────────────────────────────────────────────
+      // -- Value -----------------------------------------------------------
       // Phone System is always $0. Elsewhere value attaches as the deal matures:
       // early call stages are mostly $0; proposals/closed deals always carry value.
       let monetaryValue: number;
@@ -322,7 +327,7 @@ export function generateDemoData(): DemoData {
         else monetaryValue = chance(0.35) ? 0 : int(5, 40) * 100;
       }
 
-      // ── Dates ───────────────────────────────────────────────────────────
+      // -- Dates -----------------------------------------------------------
       const created = now() - int(2, 90) * DAY;
       const updated = Math.min(now(), created + int(0, 20) * DAY);
       const lastActivityAt = Math.min(now(), Math.max(updated, now() - int(0, 21) * DAY - int(0, 23) * HOUR));
@@ -336,7 +341,7 @@ export function generateDemoData(): DemoData {
       else if (stageName === 'Waiting on Client') nextFollowUpAt = iso(TODAY0 + int(2, 9) * DAY + int(9, 17) * HOUR);
       else if (status === 'open' && chance(0.2)) nextFollowUpAt = iso(TODAY0 + int(1, 10) * DAY + int(9, 17) * HOUR);
 
-      // ── Activity counts ─────────────────────────────────────────────────
+      // -- Activity counts -------------------------------------------------
       const calledMatch = /^Called (\d)$/.exec(stageName);
       const calls = calledMatch
         ? Number(calledMatch[1]) + int(0, 1)
@@ -357,7 +362,7 @@ export function generateDemoData(): DemoData {
         appointments,
       };
 
-      // ── Followers / tags / business name ──────────────────────────────────
+      // -- Followers / tags / business name ----------------------------------
       const followers = chance(0.45)
         ? Array.from(new Set([pick(ownerIds), ...(chance(0.3) ? [pick(ownerIds)] : [])]))
         : [];
@@ -397,7 +402,7 @@ export function generateDemoData(): DemoData {
   ];
   const appointments: Appointment[] = [];
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 55; i++) {
+  for (let i = 0; i < 28; i++) {
     const dayOffset = int(-12, 20);
     const hour = int(8, 17);
     const cal = pick(calendars);
@@ -418,7 +423,7 @@ export function generateDemoData(): DemoData {
   appointments.sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime));
 
   /*
-   * Five flagship demo workflows — deliberately small so the Automations
+   * Five flagship demo workflows - deliberately small so the Automations
    * module reads like a real, well-run account rather than dozens of shallow
    * fakes. Enrollment numbers are fixed (not PRNG-drawn) so the totals stay
    * coherent with the Overview dashboard: 5 workflows, 4 published, and a
@@ -461,7 +466,7 @@ export function generateDemoData(): DemoData {
       category: 'Appointments',
       explanation: 'Reminds contacts by SMS and email before their appointment, then automatically follows up and re-engages anyone who does not show.',
       needsReview: true,
-      lastError: 'SMS step failed — invalid phone number · 2 days ago',
+      lastError: 'SMS step failed - invalid phone number - 2 days ago',
       createdAt: 'Dec 09 2025, 11:30 AM',
       lastUpdatedAt: 'May 26 2026, 8:15 AM',
     },
@@ -496,20 +501,9 @@ export function generateDemoData(): DemoData {
     { id: 'cmp_e2', type: 'email', name: 'Spring Promo 20 Percent Off', status: 'sent', audienceSize: 1580, sentAt: iso(now() - 4 * DAY), metrics: { delivered: 1551, openRate: 0.51, clickRate: 0.14, bounceRate: 0.018 }, content: { subject: '48 hours only: 20% off', body: 'Our biggest offer of the season...' } },
     { id: 'cmp_e3', type: 'email', name: 'Re-engagement Sequence', status: 'scheduled', audienceSize: 640, metrics: {}, content: { subject: 'We miss you', body: 'It has been a while - here is 15% to come back.' } },
     { id: 'cmp_e4', type: 'email', name: 'Webinar Invite', status: 'draft', audienceSize: 0, metrics: {}, content: { subject: 'You are invited', body: 'Join our live session...' } },
-    { id: 'cmp_e5', type: 'email', name: 'VIP Client Update', status: 'sent', audienceSize: 380, sentAt: iso(now() - 18 * DAY), metrics: { delivered: 374, openRate: 0.67, clickRate: 0.22, bounceRate: 0.01 }, content: { subject: 'A personal note for our VIP clients', body: 'Thank you for being with us...' } },
-    { id: 'cmp_e6', type: 'email', name: 'Product Feature Spotlight', status: 'sent', audienceSize: 1100, sentAt: iso(now() - 30 * DAY), metrics: { delivered: 1078, openRate: 0.38, clickRate: 0.09, bounceRate: 0.025 }, content: { subject: 'Have you tried this yet?', body: 'This month we want to highlight...' } },
-    { id: 'cmp_e7', type: 'email', name: 'Holiday Promo', status: 'sent', audienceSize: 2500, sentAt: iso(now() - 45 * DAY), metrics: { delivered: 2430, openRate: 0.44, clickRate: 0.11, bounceRate: 0.02 }, content: { subject: 'Holiday deals just for you', body: 'Celebrate the season with exclusive savings...' } },
-    { id: 'cmp_e8', type: 'email', name: 'Post-Service Survey', status: 'sent', audienceSize: 760, sentAt: iso(now() - 7 * DAY), metrics: { delivered: 748, openRate: 0.35, clickRate: 0.06, bounceRate: 0.015 }, content: { subject: 'How did we do?', body: 'We would love your feedback on your recent experience...' } },
-    { id: 'cmp_e9', type: 'email', name: 'Referral Program Launch', status: 'scheduled', audienceSize: 1200, metrics: {}, content: { subject: 'Give 50 Get 50', body: 'Introduce a friend and you both save...' } },
-    { id: 'cmp_e10', type: 'email', name: 'End-of-Quarter Recap', status: 'draft', audienceSize: 0, metrics: {}, content: { subject: 'Q1 highlights + what is coming next', body: 'A look back at what we accomplished together...' } },
     { id: 'cmp_s1', type: 'sms', name: 'Flash Sale Blast', status: 'sent', audienceSize: 900, sentAt: iso(now() - 2 * DAY), metrics: { delivered: 889, replyRate: 0.06, optOutRate: 0.011 }, content: { body: 'Flash sale today only - reply YES to claim' } },
     { id: 'cmp_s2', type: 'sms', name: 'Appointment Nudge', status: 'sent', audienceSize: 320, sentAt: iso(now() - 6 * DAY), metrics: { delivered: 318, replyRate: 0.21, optOutRate: 0.003 }, content: { body: 'Reminder: your appt is tomorrow. Reply C to confirm.' } },
     { id: 'cmp_s3', type: 'sms', name: 'Win-back', status: 'draft', audienceSize: 0, metrics: {}, content: { body: 'We saved your spot - want it back?' } },
-    { id: 'cmp_s4', type: 'sms', name: 'Review Request Blast', status: 'sent', audienceSize: 450, sentAt: iso(now() - 12 * DAY), metrics: { delivered: 443, replyRate: 0.08, optOutRate: 0.005 }, content: { body: 'We loved working with you! Mind leaving us a quick review?' } },
-    { id: 'cmp_s5', type: 'sms', name: 'New Year Offer', status: 'sent', audienceSize: 1800, sentAt: iso(now() - 55 * DAY), metrics: { delivered: 1762, replyRate: 0.04, optOutRate: 0.012 }, content: { body: 'Happy New Year! Start the year right - reply DEAL for a special offer.' } },
-    { id: 'cmp_s6', type: 'sms', name: 'Late Cancellation Follow-up', status: 'sent', audienceSize: 95, sentAt: iso(now() - 3 * DAY), metrics: { delivered: 94, replyRate: 0.32, optOutRate: 0.0 }, content: { body: 'We noticed you missed your appointment. Ready to reschedule? Reply YES.' } },
-    { id: 'cmp_s7', type: 'sms', name: 'Summer Special', status: 'scheduled', audienceSize: 1100, metrics: {}, content: { body: 'Summer is here! Book before June 30 and save 15%. Reply INFO.' } },
-    { id: 'cmp_s8', type: 'sms', name: 'VIP Early Access', status: 'draft', audienceSize: 0, metrics: {}, content: { body: 'You are on our VIP list - get early access to our new packages. Reply VIP.' } },
   ];
 
   const TASK_TITLES = [
@@ -518,7 +512,7 @@ export function generateDemoData(): DemoData {
     'Send onboarding materials','Review service agreement','Follow up on review request',
     'Update contact record','Reschedule missed call',
   ];
-  const tasks: Task[] = Array.from({ length: 45 }, (_, i) => {
+  const tasks: Task[] = Array.from({ length: 12 }, (_, i) => {
     const contact = pick(contacts);
     return {
       id: `task_${i + 1}`,
@@ -545,7 +539,7 @@ export function generateDemoData(): DemoData {
     'Waited longer than expected.','Communication could be better.',
     'Had some issues but they did get resolved.',
   ];
-  const reviews: Review[] = Array.from({ length: 26 }, (_, i) => {
+  const reviews: Review[] = Array.from({ length: 10 }, (_, i) => {
     const rating = (chance(0.7) ? 5 : chance(0.6) ? 4 : chance(0.6) ? 3 : 2) as Review['rating'];
     const text = rating >= 4 ? pick(REVIEW_TEXT_POS) : rating === 3 ? pick(REVIEW_TEXT_MID) : pick(REVIEW_TEXT_NEG);
     return {
@@ -560,7 +554,7 @@ export function generateDemoData(): DemoData {
     };
   });
 
-  const calls: Call[] = Array.from({ length: 70 }, (_, i) => {
+  const calls: Call[] = Array.from({ length: 14 }, (_, i) => {
     const contact = pick(contacts);
     const dir = pick(['inbound','outbound','missed','missed'] as const);
     return {
@@ -592,7 +586,7 @@ export function generateDemoData(): DemoData {
     { id: 'prod_15', name: 'SMS Automation Add-on', price: 250, type: 'recurring' },
   ];
 
-  const invoices: Invoice[] = Array.from({ length: 32 }, (_, i) => {
+  const invoices: Invoice[] = Array.from({ length: 7 }, (_, i) => {
     const contact = pick(contacts);
     const lineCount = int(1, 3);
     const lineItems = Array.from({ length: lineCount }, () => {
@@ -635,6 +629,14 @@ export function generateDemoData(): DemoData {
     { id: 'n_15', type: 'new_lead', title: 'New lead', body: 'Zoe Whitfield submitted the website chat form.', createdAt: iso(now() - 4 * DAY), read: true, link: '/contacts' },
   ];
 
+  // Provisioned phone numbers for this demo account (shared foundation type;
+  // consumed by Settings -> Phone Numbers and the global dialer). Demo-safe 555s.
+  const phoneNumbers: PhoneNumber[] = [
+    { id: 'ph_1', number: '+1 (555) 400-1100', label: 'Main Line', type: 'local', status: 'active' },
+    { id: 'ph_2', number: '+1 (555) 400-1101', label: 'Toll Free', type: 'toll_free', status: 'active' },
+    { id: 'ph_3', number: '+1 (555) 400-1102', label: 'Sales', type: 'local', status: 'active' },
+  ];
+
   const leadSources: LeadSourceDatum[] = SOURCES.map((source) => ({
     source,
     value: contacts.filter((c) => c.source === source).length,
@@ -643,6 +645,6 @@ export function generateDemoData(): DemoData {
   return {
     users, companies, contacts, conversations, messages, pipelines, opportunities,
     calendars, appointments, workflows, campaigns, tasks, reviews, calls, products,
-    invoices, notifications, leadSources,
+    invoices, notifications, leadSources, phoneNumbers,
   };
 }

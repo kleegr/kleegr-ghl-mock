@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Toaster } from '@/components/ui/Modal';
 import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
+import { GlobalDialer } from './GlobalDialer';
 import { cx } from '@/utils';
 
 export function AppShell() {
@@ -31,6 +32,7 @@ export function AppShell() {
       </div>
       <Toaster />
       <TutorialOverlay />
+      <GlobalDialer />
     </div>
   );
 }

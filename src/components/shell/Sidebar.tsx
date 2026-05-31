@@ -22,10 +22,10 @@ const CORE_CRM_PATHS = new Set([
 
 /** Cosmetic demo sub-accounts (account switching is visual-only in demo mode). */
 const DEMO_ACCOUNTS = [
-  { id: 'a1', name: 'Kleegr Inc', region: 'Monsey, New York' },
-  { id: 'a2', name: 'Acme Home Services', region: 'Austin, Texas' },
-  { id: 'a3', name: 'Sunset Dental', region: 'San Diego, California' },
-  { id: 'a4', name: 'Peak Fitness Studio', region: 'Denver, Colorado' },
+  { id: 'a1', name: 'Demo Business', region: 'Demo Location' },
+  { id: 'a2', name: 'Northwind Trading Co', region: 'Austin, Texas' },
+  { id: 'a3', name: 'Riverside Group', region: 'San Diego, California' },
+  { id: 'a4', name: 'Summit Studio', region: 'Denver, Colorado' },
 ];
 
 interface SidebarProps {

@@ -12,6 +12,7 @@
 import { useLocation, Link } from 'react-router-dom';
 import {
   Rocket, MonitorPlay, Bot, Wand2, Sparkles, Link as LinkIcon, ArrowRight,
+  Building2, FileText,
   type LucideIcon,
 } from 'lucide-react';
 import { PageHeader, Card } from '@/components/ui/primitives';
@@ -92,6 +93,28 @@ const DEFS: Record<string, PlaceholderDef> = {
       'Track clicks and attribute them back to contacts.',
     ],
     cta: { label: 'Open Marketing', to: '/marketing/email' },
+  },
+  '/companies': {
+    title: 'Companies',
+    subtitle: 'Group contacts under the businesses they belong to.',
+    Icon: Building2,
+    points: [
+      'A directory of company records with linked contacts and deals.',
+      'Roll up activity and pipeline value by company.',
+      'Filter and segment contacts by their parent business.',
+    ],
+    cta: { label: 'See Contacts', to: '/contacts' },
+  },
+  '/documents': {
+    title: 'Documents & Contracts',
+    subtitle: 'Send, track, and e-sign proposals and contracts.',
+    Icon: FileText,
+    points: [
+      'Build proposals and contracts from reusable templates.',
+      'Track status from draft to sent, viewed, and signed.',
+      'Tie signed documents to the contact and opportunity.',
+    ],
+    cta: { label: 'See Payments', to: '/payments' },
   },
 };
 
