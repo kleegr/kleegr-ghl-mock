@@ -1,9 +1,10 @@
 /**
  * MessageThread — center pane: thread header (action icons) and a day-grouped
  * stream that interleaves message bubbles, completed-call cards (audio player +
- * transcript), and inline system-event rows. The stream is derived in-memory
- * from the seed via `buildThreadItems` (messages + the contact's calls +
- * opportunity-driven events), so Reset Demo restores it exactly.
+ * transcript) and inline system-event rows, plus — for showcase threads —
+ * internal notes (distinct styling + @mention), collapsed email cards, and
+ * appointment / opportunity / task event cards. The stream is derived in-memory
+ * from the seed via `buildThreadItems`, so Reset Demo restores it exactly.
  */
 import { Fragment, useMemo, useState } from 'react';
 import {
@@ -17,6 +18,7 @@ import {
   MailOpen,
   Trash2,
   ChevronDown,
+  ChevronRight,
   Play,
   Volume2,
   RotateCcw,
@@ -25,13 +27,18 @@ import {
   CheckCheck,
   CornerDownRight,
   FileText,
+  Lock,
+  Mail,
+  CalendarCheck,
+  TrendingUp,
+  CheckSquare,
 } from 'lucide-react';
-import { Avatar } from '@/components/ui/primitives';
+import { Avatar, Badge } from '@/components/ui/primitives';
 import { useStore } from '@/store/useStore';
-import { cx, fullName, clockTime, initials, relativeTime } from '@/utils';
+import { cx, fullName, clockTime, initials, relativeTime, money } from '@/utils';
 import type { Conversation, Contact, Call, Message } from '@/types';
 import { CHANNEL_META, threadDayLabel, dayKey } from '../utils';
-import { buildThreadItems, formatCallDuration, type ThreadItem } from '../threadModel';
+import { buildThreadItems, formatCallDuration, type ThreadItem, type LocalNote } from '../threadModel';
 
 // --- Thread header ---------------------------------------------------------
 
@@ -255,12 +262,164 @@ function MessageRow({ msg, contactName, agentName }: { msg: Message; contactName
   );
 }
 
+// --- Internal note (distinct styling + @mention) ---------------------------
+
+function renderWithMentions(body: string) {
+  return body.split(/(@[A-Za-z][\w-]*)/g).map((part, i) =>
+    part.startsWith('@') ? (
+      <span key={i} className="rounded bg-ai-soft px-1 font-semibold text-ai">{part}</span>
+    ) : (
+      <Fragment key={i}>{part}</Fragment>
+    ),
+  );
+}
+
+function NoteRow({ author, body, iso }: { author: string; body: string; iso: string }) {
+  return (
+    <div className="flex justify-center">
+      <div className="w-full max-w-[78%] rounded-xl border-l-4 border-warn bg-warn/10 px-3.5 py-2.5 shadow-sm">
+        <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-warn">
+          <Lock size={11} aria-hidden /> Internal note
+          <span className="ml-auto font-medium normal-case text-ink-subtle">
+            {author} · {clockTime(iso)}
+          </span>
+        </div>
+        <p className="whitespace-pre-wrap text-[13px] leading-snug text-ink">{renderWithMentions(body)}</p>
+      </div>
+    </div>
+  );
+}
+
+// --- Collapsed email card --------------------------------------------------
+
+function EmailCard({
+  direction, from, to, subject, body, iso,
+}: { direction: 'inbound' | 'outbound'; from: string; to: string; subject: string; body: string; iso: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex justify-start">
+      <div className="w-full max-w-[560px] overflow-hidden rounded-xl bg-surface shadow-sm ring-1 ring-line">
+        <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-surface-sunken">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#eef2f6] text-[#5b6b7c]">
+            <Mail size={14} aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold text-ink">{subject}</p>
+            <p className="truncate text-[11px] text-ink-muted">
+              {direction === 'inbound' ? `From ${from}` : `To ${to}`} · {clockTime(iso)}
+            </p>
+          </div>
+          <Badge tone="neutral">{direction === 'inbound' ? 'Received' : 'Sent'}</Badge>
+          {open ? <ChevronDown size={15} className="text-ink-subtle" aria-hidden /> : <ChevronRight size={15} className="text-ink-subtle" aria-hidden />}
+        </button>
+        {open && (
+          <div className="border-t border-line px-3.5 py-3 text-[13px] leading-relaxed text-ink">
+            <p className="mb-1 text-[11px] text-ink-subtle">From: {from} &nbsp;·&nbsp; To: {to}</p>
+            <p className="whitespace-pre-wrap">{body}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Event cards (appointment / opportunity / task) ------------------------
+
+function EventCard({
+  Icon, tone, eyebrow, title, meta, badge, iso, onOpen,
+}: {
+  Icon: React.ElementType;
+  tone: string;
+  eyebrow: string;
+  title: string;
+  meta?: string;
+  badge?: React.ReactNode;
+  iso: string;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="flex justify-start">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex w-full max-w-[460px] items-start gap-3 rounded-xl bg-surface px-3.5 py-3 text-left shadow-sm ring-1 ring-line transition-colors hover:bg-surface-sunken"
+      >
+        <span className={cx('grid h-8 w-8 shrink-0 place-items-center rounded-full', tone)}>
+          <Icon size={15} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-ink-subtle">{eyebrow}</p>
+          <p className="truncate text-[13px] font-semibold text-ink">{title}</p>
+          {meta && <p className="mt-0.5 truncate text-[12px] text-ink-muted">{meta}</p>}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {badge}
+          <span className="text-[10px] text-ink-subtle">{clockTime(iso)}</span>
+        </div>
+      </button>
+    </div>
+  );
+}
+
 // --- One thread item -------------------------------------------------------
 
 function ThreadItemRow({ item, contactName, agentName }: { item: ThreadItem; contactName: string; agentName: string }) {
-  if (item.kind === 'message') return <MessageRow msg={item.message} contactName={contactName} agentName={agentName} />;
-  if (item.kind === 'call') return <CallCard call={item.call} agentName={agentName} />;
-  return <SystemEventRow title={item.title} detail={item.detail} iso={item.iso} />;
+  const pushToast = useStore((s) => s.pushToast);
+  const open = (title: string) => pushToast({ title, description: 'Opens the related record (demo).', variant: 'info' });
+
+  switch (item.kind) {
+    case 'message':
+      return <MessageRow msg={item.message} contactName={contactName} agentName={agentName} />;
+    case 'call':
+      return <CallCard call={item.call} agentName={agentName} />;
+    case 'event':
+      return <SystemEventRow title={item.title} detail={item.detail} iso={item.iso} />;
+    case 'note':
+      return <NoteRow author={item.author} body={item.body} iso={item.iso} />;
+    case 'email':
+      return <EmailCard direction={item.direction} from={item.from} to={item.to} subject={item.subject} body={item.body} iso={item.iso} />;
+    case 'appointment':
+      return (
+        <EventCard
+          Icon={CalendarCheck}
+          tone="bg-good/15 text-good"
+          eyebrow="Appointment"
+          title={item.title}
+          meta={new Date(item.startTime).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          badge={<Badge tone={item.status === 'confirmed' ? 'good' : item.status === 'cancelled' ? 'bad' : 'neutral'}>{item.status}</Badge>}
+          iso={item.iso}
+          onOpen={() => open('Appointment')}
+        />
+      );
+    case 'opportunity':
+      return (
+        <EventCard
+          Icon={TrendingUp}
+          tone="bg-brand/15 text-brand"
+          eyebrow="Opportunity"
+          title={item.title}
+          meta={`${money(item.value)} · ${item.stage}`}
+          badge={<Badge tone={item.status === 'won' ? 'good' : item.status === 'lost' ? 'bad' : 'brand'}>{item.status}</Badge>}
+          iso={item.iso}
+          onOpen={() => open('Opportunity')}
+        />
+      );
+    case 'task':
+      return (
+        <EventCard
+          Icon={CheckSquare}
+          tone="bg-ai-soft text-ai"
+          eyebrow="Task"
+          title={item.title}
+          meta={`Due ${new Date(item.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+          badge={<Badge tone={item.done ? 'good' : 'neutral'}>{item.done ? 'completed' : 'open'}</Badge>}
+          iso={item.iso}
+          onOpen={() => open('Task')}
+        />
+      );
+    default:
+      return null;
+  }
 }
 
 // --- Thread body -----------------------------------------------------------
@@ -270,34 +429,43 @@ interface ThreadProps {
   contact: Contact;
   messages: Message[];
   agentName: string;
+  rich: boolean;
+  localNotes: LocalNote[];
   scrollRef: React.RefObject<HTMLDivElement>;
   onBack?: () => void;
 }
 
-export function MessageThread({ conv, contact, messages, agentName, scrollRef, onBack }: ThreadProps) {
+export function MessageThread({ conv, contact, messages, agentName, rich, localNotes, scrollRef, onBack }: ThreadProps) {
   const contactName = fullName(contact);
   const meta = CHANNEL_META[conv.channel];
 
   const calls = useStore((s) => s.calls);
   const opportunities = useStore((s) => s.opportunities);
+  const appointments = useStore((s) => s.appointments);
+  const tasks = useStore((s) => s.tasks);
+  const users = useStore((s) => s.users);
   const pipelines = useStore((s) => s.pipelines);
 
-  // Build the interleaved item stream (messages + this contact's calls +
-  // opportunity-driven system events), derived from the in-memory store.
+  // Build the interleaved item stream (messages + the contact's calls +
+  // opportunity-driven events + showcase demo items), derived from the store.
   const items = useMemo(() => {
     const stageName = new Map<string, string>();
     pipelines.forEach((p) => p.stages.forEach((st) => stageName.set(st.id, st.name)));
-    const contactCalls = calls.filter((c) => c.contactId === contact.id);
-    const contactOpps = opportunities.filter((o) => o.contactId === contact.id);
     return buildThreadItems({
       conv,
       contact,
       messages,
-      calls: contactCalls,
-      opportunities: contactOpps,
+      calls: calls.filter((c) => c.contactId === contact.id),
+      opportunities: opportunities.filter((o) => o.contactId === contact.id),
+      appointments: appointments.filter((a) => a.contactId === contact.id),
+      tasks: tasks.filter((t) => t.contactId === contact.id),
       stageNameOf: (opp) => stageName.get(opp.stageId),
+      agentName,
+      teamFirstNames: users.map((u) => u.name.split(' ')[0]),
+      rich,
+      localNotes,
     });
-  }, [conv, contact, messages, calls, opportunities, pipelines]);
+  }, [conv, contact, messages, calls, opportunities, appointments, tasks, users, pipelines, agentName, rich, localNotes]);
 
   // Group items by calendar day for the separator pills.
   const groups: { key: string; label: string; items: ThreadItem[] }[] = [];
