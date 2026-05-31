@@ -74,17 +74,17 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         {collapsed ? (
           <span
             aria-label="Kleegr"
-            className="bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] bg-clip-text text-[20px] font-black leading-none text-transparent"
+            className="bg-brand-gradient bg-clip-text text-[20px] font-black leading-none text-transparent"
           >
             k
           </span>
         ) : (
-          <span
-            aria-label="Kleegr"
-            className="select-none bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#7c3aed] bg-clip-text text-[24px] font-black lowercase tracking-tight text-transparent"
-          >
-            kleegr
-          </span>
+          <img
+            src="/kleegr-logo.svg"
+            alt="Kleegr"
+            draggable={false}
+            className="h-7 w-auto select-none"
+          />
         )}
       </div>
 

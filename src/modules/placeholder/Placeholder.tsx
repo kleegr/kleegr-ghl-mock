@@ -166,6 +166,15 @@ export function Placeholder() {
               <ArrowRight size={15} aria-hidden />
             </Link>
           </div>
+
+          <div className="mt-8 flex justify-center border-t border-line pt-5">
+            <img
+              src="/kleegr-logo.svg"
+              alt="Kleegr"
+              draggable={false}
+              className="h-4 w-auto select-none opacity-40"
+            />
+          </div>
         </Card>
       </div>
     </div>
