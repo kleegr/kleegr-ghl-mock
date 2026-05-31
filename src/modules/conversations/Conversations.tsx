@@ -26,12 +26,33 @@ export function Conversations() {
   const allMessages = useStore((s) => s.messages);
   const contacts = useStore((s) => s.contacts);
   const users = useStore((s) => s.users);
+  const calls = useStore((s) => s.calls);
+  const opportunities = useStore((s) => s.opportunities);
   const markRead = useStore((s) => s.markConversationRead);
   const pushToast = useStore((s) => s.pushToast);
 
+  // Default to a conversation that best showcases the thread. Preference order:
+  // an *answered* call (audio player) or a call with a voicemail *transcript*,
+  // paired with an opportunity (system-event rows), degrading to any call
+  // thread, then the newest thread. Purely a cosmetic default selection.
+  const defaultConvId = useMemo(() => {
+    const answered = new Set(calls.filter((c) => c.direction !== 'missed').map((c) => c.contactId));
+    const transcript = new Set(calls.filter((c) => c.voicemailTranscript).map((c) => c.contactId));
+    const anyCall = new Set(calls.map((c) => c.contactId));
+    const hasOpp = new Set(opportunities.map((o) => o.contactId));
+    const pick =
+      conversations.find((c) => answered.has(c.contactId) && hasOpp.has(c.contactId)) ??
+      conversations.find((c) => transcript.has(c.contactId) && hasOpp.has(c.contactId)) ??
+      conversations.find((c) => answered.has(c.contactId) || transcript.has(c.contactId)) ??
+      conversations.find((c) => anyCall.has(c.contactId) && hasOpp.has(c.contactId)) ??
+      conversations.find((c) => anyCall.has(c.contactId)) ??
+      conversations[0];
+    return pick?.id ?? null;
+  }, [conversations, calls, opportunities]);
+
   const [activeFilter, setActiveFilter] = useState<ConvFilter>('all');
   const [subTab, setSubTab] = useState<SubNavTab>('Conversations');
-  const [selectedConvId, setSelectedConvId] = useState<string | null>(conversations[0]?.id ?? null);
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(defaultConvId);
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
   const [newMsgOpen, setNewMsgOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -68,7 +89,7 @@ export function Conversations() {
   const agentName =
     (selectedConv && users.find((u) => u.id === selectedConv.assignedTo)?.name) ||
     users.find((u) => u.isCurrentUser)?.name ||
-    'Jordan Avery';
+    'Demo Agent';
 
   const filteredConvs = useMemo(() => {
     if (activeFilter === 'unread') return conversations.filter((c) => c.unread);

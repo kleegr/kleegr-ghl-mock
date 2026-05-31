@@ -72,17 +72,31 @@ export type SubNavTab = (typeof SUBNAV_TABS)[number];
 // -- Composer channel options (mirrors the channel dropdown) ----------------
 
 export interface ComposerChannelOption {
+  /** Stable identifier for the menu (the underlying `id` may repeat across
+   *  cosmetic WhatsApp variants, so selection keys off this instead). */
+  key: string;
+  /** Underlying delivery channel the reply routes through. */
   id: Channel;
   label: string;
   Icon: React.ElementType;
   /** Email-style composer surfaces From / From Name / Subject / CC-BCC. */
   kind: 'sms' | 'email' | 'whatsapp';
+  /** Render a thin separator above this option (mirrors the GHL menu). */
+  dividerBefore?: boolean;
 }
 
+/**
+ * Channel dropdown options mirroring GHL's composer menu (img 11):
+ * `SMS · WhatsApp · Email · — · Whatsapp Send Only · Kleegr Whatsapp`.
+ * The last two are demo-only WhatsApp variants (cosmetic); all replies still
+ * route through the conversation's own channel via the store.
+ */
 export const COMPOSER_CHANNELS: ComposerChannelOption[] = [
-  { id: 'sms', label: 'SMS', Icon: MessageSquare, kind: 'sms' },
-  { id: 'whatsapp', label: 'WhatsApp', Icon: MessageCircle, kind: 'whatsapp' },
-  { id: 'email', label: 'Email', Icon: Mail, kind: 'email' },
+  { key: 'sms', id: 'sms', label: 'SMS', Icon: MessageSquare, kind: 'sms' },
+  { key: 'whatsapp', id: 'whatsapp', label: 'WhatsApp', Icon: MessageCircle, kind: 'whatsapp' },
+  { key: 'email', id: 'email', label: 'Email', Icon: Mail, kind: 'email' },
+  { key: 'wa-send-only', id: 'whatsapp', label: 'Whatsapp Send Only', Icon: MessageCircle, kind: 'whatsapp', dividerBefore: true },
+  { key: 'kleegr-wa', id: 'whatsapp', label: 'Kleegr Whatsapp', Icon: MessageCircle, kind: 'whatsapp' },
 ];
 
 // -- Thread date grouping ---------------------------------------------------

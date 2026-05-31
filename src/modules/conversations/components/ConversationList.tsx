@@ -155,7 +155,7 @@ function ConvRow({ conv, contact, lastMessage, isSelected, unreadN, onClick }: R
                 {relativeTime(conv.lastMessageAt)}
               </span>
               {conv.unread && (
-                <span className="grid min-w-[18px] place-items-center rounded bg-brand px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+                <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand px-1 text-[10px] font-bold leading-none text-white">
                   {unreadN}
                 </span>
               )}
