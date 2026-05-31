@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { generateDemoData } from '@/data/seed';
 import type {
   Appointment,
+  Company,
   Contact,
   DemoData,
   ID,
@@ -36,6 +37,35 @@ export interface AddOpportunityInput {
 
 /** Any subset of an opportunity may be patched (id is fixed). */
 export type OpportunityPatch = Partial<Omit<Opportunity, 'id'>>;
+
+/**
+ * Fields a caller may supply when creating a contact. The Add Contact drawer
+ * sends the full set; older callers (and tutorials) still satisfy this because
+ * everything beyond the four required fields is optional.
+ */
+export interface AddContactInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  source: string;
+  tags?: string[];
+  ownerId?: ID;
+  companyId?: ID;
+  dnd?: boolean;
+  customFields?: Record<string, string | number | boolean>;
+}
+
+/** Any subset of a contact may be patched (id is fixed). */
+export type ContactPatch = Partial<Omit<Contact, 'id'>>;
+
+/** Fields a caller may supply when creating a company. */
+export interface AddCompanyInput {
+  name: string;
+  industry?: string;
+  website?: string;
+  phone?: string;
+}
 
 interface StoreState extends DemoData {
   mode: Mode;
@@ -72,7 +102,13 @@ interface StoreState extends DemoData {
 
   // mutations (all in-memory, session only)
   resetDemo: () => void;
-  addContact: (input: Pick<Contact, 'firstName' | 'lastName' | 'email' | 'phone' | 'source'> & { tags?: string[] }) => Contact;
+  addContact: (input: AddContactInput) => Contact;
+  updateContact: (id: ID, patch: ContactPatch) => void;
+  removeContacts: (ids: ID[]) => void;
+  addTagToContacts: (ids: ID[], tag: string) => void;
+  removeTagFromContacts: (ids: ID[], tag: string) => void;
+  assignOwnerToContacts: (ids: ID[], ownerId: ID) => void;
+  addCompany: (input: AddCompanyInput) => Company;
   sendMessage: (conversationId: ID, body: string) => void;
   markConversationRead: (conversationId: ID) => void;
   moveOpportunity: (opportunityId: ID, toStageId: ID) => void;
@@ -153,17 +189,85 @@ export const useStore = create<StoreState>((set, get) => ({
       lastName: input.lastName,
       email: input.email,
       phone: input.phone,
+      companyId: input.companyId,
       tags: input.tags ?? ['lead'],
       source: input.source,
-      ownerId: 'u_me',
-      dnd: false,
+      ownerId: input.ownerId ?? 'u_me',
+      dnd: input.dnd ?? false,
       createdAt: new Date().toISOString(),
       lastActivityAt: new Date().toISOString(),
-      customFields: {},
+      customFields: input.customFields ?? {},
     };
-    set((s) => ({ contacts: [contact, ...s.contacts] }));
+    set((s) => {
+      const companies = input.companyId
+        ? s.companies.map((co) =>
+            co.id === input.companyId ? { ...co, contactIds: [...co.contactIds, id] } : co,
+          )
+        : s.companies;
+      return { contacts: [contact, ...s.contacts], companies };
+    });
     get().pushToast({ title: 'Contact added', description: `${contact.firstName} ${contact.lastName} was added.`, variant: 'success' });
     return contact;
+  },
+
+  updateContact: (id, patch) =>
+    set((s) => ({
+      contacts: s.contacts.map((c) =>
+        c.id === id ? { ...c, ...patch, id: c.id, lastActivityAt: new Date().toISOString() } : c,
+      ),
+    })),
+
+  removeContacts: (ids) => {
+    const target = new Set(ids);
+    set((s) => ({
+      contacts: s.contacts.filter((c) => !target.has(c.id)),
+      companies: s.companies.map((co) => ({
+        ...co,
+        contactIds: co.contactIds.filter((cid) => !target.has(cid)),
+      })),
+    }));
+  },
+
+  addTagToContacts: (ids, tag) => {
+    const clean = tag.trim();
+    if (!clean) return;
+    const target = new Set(ids);
+    set((s) => ({
+      contacts: s.contacts.map((c) =>
+        target.has(c.id) && !c.tags.includes(clean) ? { ...c, tags: [...c.tags, clean] } : c,
+      ),
+    }));
+  },
+
+  removeTagFromContacts: (ids, tag) => {
+    const target = new Set(ids);
+    set((s) => ({
+      contacts: s.contacts.map((c) =>
+        target.has(c.id) ? { ...c, tags: c.tags.filter((t) => t !== tag) } : c,
+      ),
+    }));
+  },
+
+  assignOwnerToContacts: (ids, ownerId) => {
+    const target = new Set(ids);
+    set((s) => ({
+      contacts: s.contacts.map((c) => (target.has(c.id) ? { ...c, ownerId } : c)),
+    }));
+  },
+
+  addCompany: (input) => {
+    const company: Company = {
+      id: `co_new_${Date.now()}`,
+      name: input.name.trim(),
+      industry: input.industry?.trim() || undefined,
+      website: input.website?.trim() || undefined,
+      phone: input.phone?.trim() || undefined,
+      contactIds: [],
+      createdAt: new Date().toISOString(),
+    };
+    set((s) => ({ companies: [company, ...s.companies] }));
+    get().pushToast({ title: 'Company added', description: `${company.name} was added.`, variant: 'success' });
+    return company;
   },
 
   sendMessage: (conversationId, body) => {
