@@ -115,7 +115,7 @@ export function computeMetrics(data: DashboardData, rangeId: DateRangeId): Metri
   const now = Date.now();
   const primaryPipelineId = pipelines.find((p) => p.id === 'pipe_sales')?.id ?? pipelines[0]?.id ?? '';
 
-  // ── KPIs ────────────────────────────────────────────────────
+  // ──── KPIs ────
   const openOppList = opportunities.filter((o) => o.status === 'open');
   const pipelineValue = openOppList.reduce((s, o) => s + o.monetaryValue, 0);
   const unread = conversations.filter((c) => c.unread).length;
@@ -133,7 +133,7 @@ export function computeMetrics(data: DashboardData, rangeId: DateRangeId): Metri
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : '—';
 
-  // ── Activity feed (range-aware, newest first) ─────────────────────────
+  // ──── Activity feed (range-aware, newest first) ────
   const feed: ActivityItem[] = [
     ...contacts.map((c) => ({ id: `a_c_${c.id}`, type: 'contact' as const, label: `${fullName(c)} joined as a new lead`, sub: c.source, time: c.createdAt })),
     ...conversations.filter((c) => !c.unread).map((c) => {
@@ -159,7 +159,7 @@ export function computeMetrics(data: DashboardData, rangeId: DateRangeId): Metri
     .sort((a, b) => +new Date(b.time) - +new Date(a.time))
     .slice(0, 14);
 
-  // ── Lists ────────────────────────────────────────────────────
+  // ──── Lists ────
   const dueTasks = [...openTasks]
     .sort((a, b) => +new Date(a.dueDate) - +new Date(b.dueDate))
     .slice(0, 6);
@@ -169,7 +169,7 @@ export function computeMetrics(data: DashboardData, rangeId: DateRangeId): Metri
     .sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime))
     .slice(0, 5);
 
-  // ── Lead volume trend — last 8 days (a stable trend, not range-bound) ─────
+  // ──── Lead volume trend — last 8 days (a stable trend, not range-bound) ────
   const leadTrend = Array.from({ length: 8 }, (_, i) => {
     const start = now - (7 - i) * DAY;
     const end = start + DAY;
@@ -182,7 +182,7 @@ export function computeMetrics(data: DashboardData, rangeId: DateRangeId): Metri
     };
   });
 
-  // ── Revenue by month — last 6 months from paid invoices ─────────────────
+  // ──── Revenue by month — last 6 months from paid invoices ────
   const monthOrder: string[] = [];
   const revByMonth: Record<string, number> = {};
   invoices
@@ -196,7 +196,7 @@ export function computeMetrics(data: DashboardData, rangeId: DateRangeId): Metri
     });
   const revenueByMonth = monthOrder.slice(-6).map((m) => ({ month: m, revenue: revByMonth[m] }));
 
-  // ── Per-pipeline metric closure ───────────────────────────────────
+  // ──── Per-pipeline metric closure ────
   function pipelineMetric(pipelineId: string): PipelineMetric {
     const isAll = pipelineId === 'all';
     const pipe = isAll ? undefined : pipelines.find((p) => p.id === pipelineId);
