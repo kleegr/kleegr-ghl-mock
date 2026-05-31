@@ -17,6 +17,7 @@ import { Integrations } from '@/modules/integrations/Integrations';
 import { Media } from '@/modules/media/Media';
 import { Settings } from '@/modules/settings/Settings';
 import { Guides } from '@/modules/guides/Guides';
+import { Productivity } from '@/modules/productivity/Productivity';
 import { Placeholder } from '@/modules/placeholder/Placeholder';
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/payments" element={<Payments />} />
           <Route path="/phone" element={<Phone />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/productivity" element={<Productivity />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/media" element={<Media />} />
           <Route path="/settings" element={<Settings />} />
