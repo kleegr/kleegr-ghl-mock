@@ -186,11 +186,14 @@ function ContactDetails({ contact, onClose }: { contact: Contact; onClose: () =>
           <div>
             <p className="mb-1 text-[12px] text-ink-subtle">Followers</p>
             <div className="flex items-center gap-1">
-              {(owner ? [owner.name, 'N H'] : ['M B', 'N H']).map((n) => (
-                <span key={n} className="grid h-6 w-6 place-items-center rounded-full bg-ai-soft text-[9px] font-bold text-ai ring-2 ring-surface">
-                  {initials(n.split(' ')[0], n.split(' ')[1])}
-                </span>
-              ))}
+              {[owner, ...users.filter((u) => u.id !== owner?.id)]
+                .filter((u): u is NonNullable<typeof u> => Boolean(u))
+                .slice(0, 2)
+                .map((u) => (
+                  <span key={u.id} className="grid h-6 w-6 place-items-center rounded-full bg-ai-soft text-[9px] font-bold text-ai ring-2 ring-surface" title={u.name}>
+                    {initials(u.name.split(' ')[0], u.name.split(' ')[1])}
+                  </span>
+                ))}
               <ChevronDown size={11} className="text-ink-subtle" aria-hidden />
             </div>
           </div>
