@@ -52,7 +52,7 @@ export default function App() {
           <Route path="/urls" element={<Placeholder />} />
           {/* Foundation routes for upcoming module workstreams (polished placeholders). */}
           <Route path="/companies" element={<Placeholder />} />
-          <Route path="/documents" element={<Placeholder />} />
+          <Route path="/documents" element={<Payments />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
