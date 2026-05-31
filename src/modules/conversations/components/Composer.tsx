@@ -45,9 +45,11 @@ const BUSINESS_FROM_NAME = 'Demo Business';
 interface ComposerProps {
   conv: Conversation;
   contact: Contact;
+  /** Adds an internal comment to the current thread in-memory (distinct styling). */
+  onAddInternalNote: (body: string) => void;
 }
 
-export function Composer({ conv, contact }: ComposerProps) {
+export function Composer({ conv, contact, onAddInternalNote }: ComposerProps) {
   const sendMessage = useStore((s) => s.sendMessage);
   const pushToast = useStore((s) => s.pushToast);
 
@@ -83,11 +85,14 @@ export function Composer({ conv, contact }: ComposerProps) {
     const trimmed = text.trim();
     if (!trimmed) return;
     if (internal) {
-      // internal notes are not outbound messages — kept demo-safe (no send)
+      // Internal comments are not outbound messages, but they DO post to the
+      // thread in-memory with distinct styling (handled by the container +
+      // MessageThread NoteRow). Not delivered to the contact.
+      onAddInternalNote(trimmed);
       pushToast({
-        title: 'Internal note added (demo)',
-        description: 'Internal comments are not delivered to the contact.',
-        variant: 'info',
+        title: 'Internal comment added',
+        description: 'Visible to your team only — not delivered to the contact.',
+        variant: 'success',
       });
       setText('');
       return;
