@@ -27,8 +27,8 @@ import type {
  *
  * V1 TARGETS:
  *   Contacts 200 | Companies 48 | Conversations 35 | Messages 8-15/thread
- *   Pipelines 4 | Opportunities ~102 | Calendars 3 | Appointments 55
- *   Workflows 12 | Email campaigns 10 | SMS campaigns 8 | Calls 70
+ *   Pipelines 4 | Opportunities ~96 | Calendars 3 | Appointments 55
+ *   Workflows 5 | Email campaigns 10 | SMS campaigns 8 | Calls 70
  *   Tasks 45 | Reviews 26 | Invoices 32 | Products 15 | Notifications 15
  */
 
