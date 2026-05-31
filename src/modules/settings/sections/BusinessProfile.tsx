@@ -1,269 +1,230 @@
 import { useState } from 'react';
-import { Building2, Upload, Globe, Mail, Phone as PhoneIcon, MapPin } from 'lucide-react';
+import { Building2, Upload, MapPin, User2, Globe2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { Button } from '@/components/ui/primitives';
-import { GroupCard, Field, TextInput, Select, CopyChip, KeyValue } from './ui';
-import { TIMEZONES } from './staffData';
+import { Avatar, Badge, Button } from '@/components/ui/primitives';
+import { Field, TextInput, Select, SettingsCard, SaveBar, CopyId } from './_ui';
 
 /**
- * Settings → Business Profile.
+ * Settings -> Business Profile.
  *
- * GoHighLevel-style account profile: business identity, address, an authorized
- * contact person, and copyable account identifiers. Read-only by default; the
- * Edit button swaps every value for an input. Everything is local + demo-safe —
- * no real identity, nothing persisted (Save just shows confirmation feedback).
+ * A GHL-style account profile: business identity, contact details, locale, and
+ * an authorized representative, plus a copyable Location ID chip. All values are
+ * generic demo data and edits are session-local (committed on Save, reverted on
+ * Cancel) - nothing is persisted or sent anywhere.
  */
-
-const CATEGORIES = [
-  'Professional Services',
-  'Marketing Agency',
-  'Real Estate',
-  'Home Services',
-  'Health & Wellness',
-  'Fitness & Coaching',
-  'Education',
-  'Other',
-];
-
-const COUNTRIES = ['United States', 'Canada', 'United Kingdom', 'Australia'];
 
 interface ProfileForm {
   name: string;
   legalName: string;
+  category: string;
+  website: string;
   email: string;
   phone: string;
-  website: string;
-  category: string;
-  timezone: string;
   street: string;
   city: string;
   state: string;
   postal: string;
   country: string;
-  contactName: string;
-  contactEmail: string;
-  contactPhone: string;
+  timezone: string;
+  repName: string;
+  repEmail: string;
+  repPhone: string;
 }
 
 const INITIAL: ProfileForm = {
   name: 'Demo Business',
   legalName: 'Demo Business LLC',
+  category: 'Professional Services',
+  website: 'https://demo-business.example.com',
   email: 'contact@example.com',
   phone: '+1 (555) 010-0100',
-  website: 'https://demo-business.example.com',
-  category: 'Professional Services',
-  timezone: 'America/Chicago (CT)',
   street: '100 Demo Street, Suite 200',
   city: 'Demo City',
-  state: 'CA',
-  postal: '94000',
+  state: 'NY',
+  postal: '10001',
   country: 'United States',
-  contactName: 'Demo User',
-  contactEmail: 'demo.user@example.com',
-  contactPhone: '+1 (555) 010-0100',
+  timezone: 'America/New_York',
+  repName: 'Demo User',
+  repEmail: 'demo.user@example.com',
+  repPhone: '+1 (555) 010-0101',
 };
+
+const CATEGORIES = [
+  'Professional Services',
+  'Home Services',
+  'Health & Wellness',
+  'Real Estate',
+  'Marketing Agency',
+  'Retail',
+  'Other',
+];
+
+const TIMEZONES = [
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'America/Phoenix',
+  'Europe/London',
+  'UTC',
+];
+
+const COUNTRIES = ['United States', 'Canada', 'United Kingdom', 'Australia'];
+
+const LOCATION_ID = 'loc_DEMO000111222';
 
 export function BusinessProfile() {
   const pushToast = useStore((s) => s.pushToast);
   const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState<ProfileForm>(INITIAL);
+  const [committed, setCommitted] = useState<ProfileForm>(INITIAL);
   const [form, setForm] = useState<ProfileForm>(INITIAL);
 
-  const set = <K extends keyof ProfileForm>(key: K, value: ProfileForm[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
+  const set = <K extends keyof ProfileForm>(k: K, v: ProfileForm[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   const startEdit = () => {
-    setForm(saved);
+    setForm(committed);
     setEditing(true);
   };
   const cancel = () => {
-    setForm(saved);
+    setForm(committed);
     setEditing(false);
   };
   const save = () => {
-    setSaved(form);
+    setCommitted(form);
     setEditing(false);
-    pushToast({
-      title: 'Business profile saved',
-      description: 'Your changes were applied for this demo session.',
-      variant: 'success',
-    });
+    pushToast({ title: 'Business profile saved', description: 'Profile details updated for this demo session.', variant: 'success' });
   };
 
-  const cityLine = [saved.city, saved.state, saved.postal].filter(Boolean).join(', ');
+  /* Read-only value or an editable control depending on mode. */
+  const ro = (value: string) => <p className="text-sm text-ink">{value || <span className="text-ink-subtle">-</span>}</p>;
 
   return (
-    <div data-tour="settings.businessProfile" className="space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
+    <div data-tour="settings.businessProfile" className="space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-ink">Business Profile</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            How your business appears across the account and on outbound communications.
-          </p>
+          <p className="text-sm font-bold text-ink">Business Profile</p>
+          <p className="mt-0.5 text-xs text-ink-muted">How your business appears across the account.</p>
         </div>
         {!editing ? (
-          <Button variant="secondary" size="sm" onClick={startEdit}>
-            Edit Profile
-          </Button>
+          <Button variant="secondary" size="sm" onClick={startEdit}>Edit profile</Button>
         ) : (
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={cancel}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={save}>
-              Save Changes
-            </Button>
+            <Button variant="secondary" size="sm" onClick={cancel}>Cancel</Button>
+            <Button size="sm" onClick={save}>Save changes</Button>
           </div>
         )}
       </div>
 
-      {/* Logo + identity strip */}
-      <GroupCard title="Logo & branding" desc="Shown on invoices, booking pages, and emails.">
+      {/* Identity / logo */}
+      <SettingsCard>
         <div className="flex flex-wrap items-center gap-4">
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand">
-            <Building2 size={26} />
+          <Avatar name={committed.name} size="xl" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-base font-bold text-ink">{committed.name}</p>
+              <Badge tone="neutral">{committed.category}</Badge>
+            </div>
+            <p className="mt-0.5 text-xs text-ink-muted">Location ID</p>
+            <div className="mt-1"><CopyId id={LOCATION_ID} label="Location ID" /></div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink">{saved.name}</p>
-            <p className="text-xs text-ink-muted">{saved.category}</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => pushToast({ title: 'Upload logo (demo)', description: 'File pickers are disabled in this demo.', variant: 'info' })}>
-              <Upload size={13} /> Upload logo
-            </Button>
-          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => pushToast({ title: 'Upload logo', description: 'Logo upload is simulated in the demo.', variant: 'info' })}
+          >
+            <Upload size={14} /> Upload logo
+          </Button>
         </div>
-      </GroupCard>
+      </SettingsCard>
 
-      {/* General information */}
-      <GroupCard title="General information" bodyClassName={editing ? 'space-y-4' : 'p-0'}>
-        {editing ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Business name" required>
-              <TextInput value={form.name} onChange={(e) => set('name', e.target.value)} />
-            </Field>
-            <Field label="Legal business name" hint="Used for invoicing & A2P registration.">
-              <TextInput value={form.legalName} onChange={(e) => set('legalName', e.target.value)} />
-            </Field>
-            <Field label="Business email">
-              <TextInput type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
-            </Field>
-            <Field label="Business phone">
-              <TextInput value={form.phone} onChange={(e) => set('phone', e.target.value)} />
-            </Field>
-            <Field label="Website">
-              <TextInput value={form.website} onChange={(e) => set('website', e.target.value)} />
-            </Field>
-            <Field label="Business category">
+      {/* Business details */}
+      <SettingsCard title="Business details" desc="Name, category, and public website." actions={<Building2 size={16} className="text-ink-subtle" />}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Business name" required>
+            {editing ? <TextInput value={form.name} onChange={(e) => set('name', e.target.value)} /> : ro(committed.name)}
+          </Field>
+          <Field label="Legal business name">
+            {editing ? <TextInput value={form.legalName} onChange={(e) => set('legalName', e.target.value)} /> : ro(committed.legalName)}
+          </Field>
+          <Field label="Business category">
+            {editing ? (
               <Select value={form.category} onChange={(e) => set('category', e.target.value)}>
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
+                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </Select>
-            </Field>
-            <Field label="Timezone" className="sm:col-span-2">
-              <Select value={form.timezone} onChange={(e) => set('timezone', e.target.value)}>
-                {TIMEZONES.map((tz) => (
-                  <option key={tz}>{tz}</option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-        ) : (
-          <div className="divide-y divide-line">
-            <KeyValue label="Business name">{saved.name}</KeyValue>
-            <KeyValue label="Legal business name">{saved.legalName}</KeyValue>
-            <KeyValue label="Business email">
-              <span className="inline-flex items-center gap-1.5"><Mail size={13} className="text-ink-subtle" />{saved.email}</span>
-            </KeyValue>
-            <KeyValue label="Business phone">
-              <span className="inline-flex items-center gap-1.5"><PhoneIcon size={13} className="text-ink-subtle" />{saved.phone}</span>
-            </KeyValue>
-            <KeyValue label="Website">
-              <span className="inline-flex items-center gap-1.5"><Globe size={13} className="text-ink-subtle" />{saved.website}</span>
-            </KeyValue>
-            <KeyValue label="Business category">{saved.category}</KeyValue>
-            <KeyValue label="Timezone">{saved.timezone}</KeyValue>
-          </div>
-        )}
-      </GroupCard>
-
-      {/* Address */}
-      <GroupCard title="Business address" bodyClassName={editing ? 'space-y-4' : 'p-0'}>
-        {editing ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Street address" className="sm:col-span-2">
-              <TextInput value={form.street} onChange={(e) => set('street', e.target.value)} />
-            </Field>
-            <Field label="City">
-              <TextInput value={form.city} onChange={(e) => set('city', e.target.value)} />
-            </Field>
-            <Field label="State / Region">
-              <TextInput value={form.state} onChange={(e) => set('state', e.target.value)} />
-            </Field>
-            <Field label="Postal code">
-              <TextInput value={form.postal} onChange={(e) => set('postal', e.target.value)} />
-            </Field>
-            <Field label="Country">
-              <Select value={form.country} onChange={(e) => set('country', e.target.value)}>
-                {COUNTRIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-        ) : (
-          <div className="divide-y divide-line">
-            <KeyValue label="Street">
-              <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-ink-subtle" />{saved.street}</span>
-            </KeyValue>
-            <KeyValue label="City / State / ZIP">{cityLine}</KeyValue>
-            <KeyValue label="Country">{saved.country}</KeyValue>
-          </div>
-        )}
-      </GroupCard>
-
-      {/* Authorized contact */}
-      <GroupCard
-        title="Authorized representative"
-        desc="Primary contact for compliance and account notices."
-        bodyClassName={editing ? 'space-y-4' : 'p-0'}
-      >
-        {editing ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Full name">
-              <TextInput value={form.contactName} onChange={(e) => set('contactName', e.target.value)} />
-            </Field>
-            <Field label="Email">
-              <TextInput type="email" value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} />
-            </Field>
-            <Field label="Phone">
-              <TextInput value={form.contactPhone} onChange={(e) => set('contactPhone', e.target.value)} />
-            </Field>
-          </div>
-        ) : (
-          <div className="divide-y divide-line">
-            <KeyValue label="Full name">{saved.contactName}</KeyValue>
-            <KeyValue label="Email">{saved.contactEmail}</KeyValue>
-            <KeyValue label="Phone">{saved.contactPhone}</KeyValue>
-          </div>
-        )}
-      </GroupCard>
-
-      {/* Identifiers */}
-      <GroupCard title="Account identifiers" desc="Reference these IDs when contacting support.">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-          <div>
-            <p className="mb-1 text-xs font-semibold text-ink-subtle">Location ID</p>
-            <CopyChip value="loc_DEMO1234ABCD" />
-          </div>
-          <div>
-            <p className="mb-1 text-xs font-semibold text-ink-subtle">Account ID</p>
-            <CopyChip value="acct_DEMO5678WXYZ" />
-          </div>
+            ) : ro(committed.category)}
+          </Field>
+          <Field label="Website">
+            {editing ? <TextInput value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://" /> : ro(committed.website)}
+          </Field>
         </div>
-      </GroupCard>
+      </SettingsCard>
+
+      {/* Contact */}
+      <SettingsCard title="Contact" desc="Where customers and the platform reach your business." actions={<Globe2 size={16} className="text-ink-subtle" />}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Business email" required>
+            {editing ? <TextInput type="email" value={form.email} onChange={(e) => set('email', e.target.value)} /> : ro(committed.email)}
+          </Field>
+          <Field label="Business phone">
+            {editing ? <TextInput value={form.phone} onChange={(e) => set('phone', e.target.value)} /> : ro(committed.phone)}
+          </Field>
+        </div>
+
+        <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-ink-subtle">
+          <MapPin size={14} /> Business address
+        </div>
+        <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Street" className="sm:col-span-2">
+            {editing ? <TextInput value={form.street} onChange={(e) => set('street', e.target.value)} /> : ro(committed.street)}
+          </Field>
+          <Field label="City">
+            {editing ? <TextInput value={form.city} onChange={(e) => set('city', e.target.value)} /> : ro(committed.city)}
+          </Field>
+          <Field label="State / Region">
+            {editing ? <TextInput value={form.state} onChange={(e) => set('state', e.target.value)} /> : ro(committed.state)}
+          </Field>
+          <Field label="Postal code">
+            {editing ? <TextInput value={form.postal} onChange={(e) => set('postal', e.target.value)} /> : ro(committed.postal)}
+          </Field>
+          <Field label="Country">
+            {editing ? (
+              <Select value={form.country} onChange={(e) => set('country', e.target.value)}>
+                {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </Select>
+            ) : ro(committed.country)}
+          </Field>
+        </div>
+      </SettingsCard>
+
+      {/* Locale */}
+      <SettingsCard title="Locale" desc="Default timezone used for scheduling and reporting.">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Timezone">
+            {editing ? (
+              <Select value={form.timezone} onChange={(e) => set('timezone', e.target.value)}>
+                {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
+              </Select>
+            ) : ro(committed.timezone)}
+          </Field>
+        </div>
+      </SettingsCard>
+
+      {/* Authorized representative */}
+      <SettingsCard title="Authorized representative" desc="Primary contact person for this account." actions={<User2 size={16} className="text-ink-subtle" />}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Full name" className="sm:col-span-2">
+            {editing ? <TextInput value={form.repName} onChange={(e) => set('repName', e.target.value)} /> : ro(committed.repName)}
+          </Field>
+          <Field label="Email">
+            {editing ? <TextInput type="email" value={form.repEmail} onChange={(e) => set('repEmail', e.target.value)} /> : ro(committed.repEmail)}
+          </Field>
+          <Field label="Phone">
+            {editing ? <TextInput value={form.repPhone} onChange={(e) => set('repPhone', e.target.value)} /> : ro(committed.repPhone)}
+          </Field>
+        </div>
+        {editing && <SaveBar onSave={save} onCancel={cancel} saveLabel="Save changes" />}
+      </SettingsCard>
     </div>
   );
 }

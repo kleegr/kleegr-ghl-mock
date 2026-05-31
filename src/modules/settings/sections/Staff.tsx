@@ -1,208 +1,191 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, Pencil, Send, UserX, UserCheck, Trash2, Users } from 'lucide-react';
-import type { User } from '@/types';
+import { Plus, Search, Pencil, Send, UserCheck, UserX, Trash2, Users } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Avatar, Badge, Button, EmptyState } from '@/components/ui/primitives';
-import { Kebab, CopyChip, Select } from './ui';
-import { INPUT_CX } from './ui';
-import { StaffDrawer, type StaffPatch } from './StaffDrawer';
 import { cx } from '@/utils';
+import { fieldCls, Select, CopyId, KebabMenu, type MenuItem } from './_ui';
+import { StaffDrawer } from './StaffDrawer';
+import {
+  buildStaff,
+  blankStaffMember,
+  fullStaffName,
+  type StaffMember,
+  type StaffStatus,
+} from './staffModel';
 
 /**
- * Settings → Staff.
+ * Settings -> Staff.
  *
- * A real, GHL-style team table (not cards) with search + role filter, an Add
- * User flow, per-row action menu, and a full edit drawer. The roster is seeded
- * from the shared store but kept in local state so edits/additions are visible
- * for the demo session without mutating global data.
+ * A GHL-style staff roster table (search + role/status filters + row count)
+ * wired to the StaffDrawer editor. The list is seeded from the demo store's
+ * users via buildStaff() and then held in local state, so add/edit/status
+ * changes and removals update the table immediately. Everything is
+ * session-local and demo-safe - no real people, no persistence.
  */
 
-type RoleFilter = 'all' | 'admin' | 'user';
+const STATUS_TONE: Record<StaffStatus, 'good' | 'warn' | 'neutral'> = {
+  active: 'good',
+  invited: 'warn',
+  disabled: 'neutral',
+};
 
-const AVATAR_COLORS = ['#2563eb', '#16a34a', '#9333ea', '#db2777', '#ea580c', '#0891b2'];
-
-function statusTone(status: User['status']): 'good' | 'warn' | 'neutral' {
-  if (status === 'active') return 'good';
-  if (status === 'invited') return 'warn';
-  return 'neutral';
-}
+type DrawerState = { mode: 'edit' | 'add'; member: StaffMember } | null;
 
 export function StaffSection() {
-  const seedUsers = useStore((s) => s.users);
+  const users = useStore((s) => s.users);
   const pushToast = useStore((s) => s.pushToast);
 
-  const [roster, setRoster] = useState<User[]>(() => seedUsers.map((u) => ({ ...u })));
+  const [staff, setStaff] = useState<StaffMember[]>(() => buildStaff(users));
   const [query, setQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
-
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<'edit' | 'new'>('edit');
-  const [activeUser, setActiveUser] = useState<User | null>(null);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'Admin' | 'User'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | StaffStatus>('all');
+  const [drawer, setDrawer] = useState<DrawerState>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return roster.filter((u) => {
-      if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+    return staff.filter((m) => {
+      if (roleFilter !== 'all' && m.role !== roleFilter) return false;
+      if (statusFilter !== 'all' && m.status !== statusFilter) return false;
       if (!q) return true;
       return (
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        (u.title ?? '').toLowerCase().includes(q)
+        fullStaffName(m).toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q) ||
+        m.title.toLowerCase().includes(q)
       );
     });
-  }, [roster, query, roleFilter]);
+  }, [staff, query, roleFilter, statusFilter]);
 
-  const openEdit = (user: User) => {
-    setActiveUser(user);
-    setDrawerMode('edit');
-    setDrawerOpen(true);
-  };
-  const openNew = () => {
-    setActiveUser(null);
-    setDrawerMode('new');
-    setDrawerOpen(true);
-  };
-
-  const handleSave = (id: string | null, patch: StaffPatch) => {
-    if (id) {
-      setRoster((list) =>
-        list.map((u) =>
-          u.id === id
-            ? { ...u, name: patch.name, email: patch.email, phone: patch.phone, role: patch.role, title: patch.title, status: patch.status }
-            : u,
-        ),
-      );
-      pushToast({ title: 'Staff member updated', description: `${patch.name}'s profile was saved.`, variant: 'success' });
-    } else {
-      const newUser: User = {
-        id: `u_new_${Date.now()}`,
-        name: patch.name,
-        email: patch.email,
-        phone: patch.phone || undefined,
-        avatarColor: AVATAR_COLORS[roster.length % AVATAR_COLORS.length],
-        role: patch.role,
-        title: patch.title || undefined,
-        status: patch.status === 'active' ? 'invited' : patch.status,
-      };
-      setRoster((list) => [...list, newUser]);
-      pushToast({ title: 'Invite sent (demo)', description: `${patch.name} was added to the team.`, variant: 'success' });
-    }
-    setDrawerOpen(false);
-  };
-
-  const resendInvite = (u: User) =>
-    pushToast({ title: 'Invite resent (demo)', description: `A new invite email would be sent to ${u.email}.`, variant: 'info' });
-
-  const toggleStatus = (u: User) => {
-    const next: User['status'] = u.status === 'disabled' ? 'active' : 'disabled';
-    setRoster((list) => list.map((x) => (x.id === u.id ? { ...x, status: next } : x)));
+  const upsert = (m: StaffMember) => {
+    setStaff((list) => {
+      const exists = list.some((x) => x.id === m.id);
+      return exists ? list.map((x) => (x.id === m.id ? m : x)) : [m, ...list];
+    });
     pushToast({
-      title: next === 'disabled' ? 'User deactivated' : 'User reactivated',
-      description: `${u.name} is now ${next}.`,
+      title: drawer?.mode === 'add' ? 'User added' : 'User updated',
+      description: `${fullStaffName(m) || 'User'} saved for this demo session.`,
       variant: 'success',
     });
+    setDrawer(null);
   };
 
-  const removeUser = (u: User) => {
-    setRoster((list) => list.filter((x) => x.id !== u.id));
-    pushToast({ title: 'User removed (demo)', description: `${u.name} was removed from the team.`, variant: 'success' });
+  const setStatus = (id: string, status: StaffStatus, label: string) => {
+    setStaff((list) => list.map((m) => (m.id === id ? { ...m, status } : m)));
+    pushToast({ title: label, variant: 'success' });
   };
+
+  const removeMember = (m: StaffMember) => {
+    setStaff((list) => list.filter((x) => x.id !== m.id));
+    pushToast({ title: 'User removed', description: `${fullStaffName(m)} was removed (demo only).`, variant: 'info' });
+  };
+
+  const menuFor = (m: StaffMember): MenuItem[] => {
+    const items: MenuItem[] = [
+      { label: 'Edit user', icon: <Pencil size={14} />, onClick: () => setDrawer({ mode: 'edit', member: m }) },
+    ];
+    if (m.status === 'invited') {
+      items.push({ label: 'Resend invite', icon: <Send size={14} />, onClick: () => pushToast({ title: 'Invite resent', description: `Invitation re-sent to ${m.email} (demo only).`, variant: 'info' }) });
+      items.push({ label: 'Mark active', icon: <UserCheck size={14} />, onClick: () => setStatus(m.id, 'active', 'User activated') });
+    } else if (m.status === 'active') {
+      items.push({ label: 'Deactivate', icon: <UserX size={14} />, onClick: () => setStatus(m.id, 'disabled', 'User deactivated') });
+    } else {
+      items.push({ label: 'Reactivate', icon: <UserCheck size={14} />, onClick: () => setStatus(m.id, 'active', 'User reactivated') });
+    }
+    if (!m.isCurrentUser) {
+      items.push({ label: 'Remove user', icon: <Trash2 size={14} />, danger: true, onClick: () => removeMember(m) });
+    }
+    return items;
+  };
+
+  const activeCount = staff.filter((m) => m.status === 'active').length;
 
   return (
     <div data-tour="settings.staff" className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-ink">My Staff</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">{roster.length} team members in this demo account.</p>
+          <p className="text-sm font-bold text-ink">My Staff</p>
+          <p className="mt-0.5 text-xs text-ink-muted">{staff.length} users - {activeCount} active</p>
         </div>
-        <Button size="sm" data-tour="settings.addConfig" onClick={openNew}>
-          <Plus size={13} /> Add User
+        <Button
+          size="sm"
+          data-tour="settings.addConfig"
+          onClick={() => setDrawer({ mode: 'add', member: blankStaffMember() })}
+        >
+          <Plus size={13} /> Add user
         </Button>
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-0 flex-1 sm:max-w-xs">
+        <div className="relative min-w-[180px] flex-1">
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, email, or title"
-            className={cx(INPUT_CX, 'pl-9')}
+            placeholder="Search users..."
+            className={cx(fieldCls, 'pl-9')}
           />
         </div>
-        <Select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
-          className="w-auto"
-        >
-          <option value="all">All roles</option>
-          <option value="admin">Admins</option>
-          <option value="user">Users</option>
-        </Select>
+        <div className="w-36">
+          <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)} aria-label="Filter by role">
+            <option value="all">All roles</option>
+            <option value="Admin">Admin</option>
+            <option value="User">User</option>
+          </Select>
+        </div>
+        <div className="w-40">
+          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} aria-label="Filter by status">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="invited">Invited</option>
+            <option value="disabled">Disabled</option>
+          </Select>
+        </div>
       </div>
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse text-sm">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
-              <tr className="border-b border-line bg-surface-sunken text-left text-[11px] font-bold uppercase tracking-wide text-ink-subtle">
-                <th className="px-5 py-2.5 font-bold">Name</th>
-                <th className="px-4 py-2.5 font-bold">Phone</th>
-                <th className="px-4 py-2.5 font-bold">Role</th>
-                <th className="px-4 py-2.5 font-bold">Status</th>
-                <th className="px-4 py-2.5 font-bold">User ID</th>
-                <th className="px-4 py-2.5 font-bold text-right">Actions</th>
+              <tr className="border-b border-line bg-surface-sunken text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
+                <th className="px-4 py-2.5 font-semibold">User</th>
+                <th className="px-4 py-2.5 font-semibold">Phone</th>
+                <th className="px-4 py-2.5 font-semibold">Role</th>
+                <th className="px-4 py-2.5 font-semibold">Status</th>
+                <th className="px-4 py-2.5 font-semibold">User ID</th>
+                <th className="w-10 px-4 py-2.5" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-line/70">
-              {filtered.map((u) => (
-                <tr key={u.id} className="transition-colors hover:bg-surface-sunken/50">
-                  <td className="px-5 py-3">
+            <tbody className="divide-y divide-line">
+              {filtered.map((m) => (
+                <tr key={m.id} className="group transition-colors hover:bg-surface-sunken/50">
+                  <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <Avatar name={u.name} size="md" />
+                      <Avatar name={fullStaffName(m)} size="md" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="truncate font-semibold text-ink">{u.name}</span>
-                          {u.isCurrentUser && <Badge tone="brand">You</Badge>}
+                          <button
+                            onClick={() => setDrawer({ mode: 'edit', member: m })}
+                            className="truncate text-sm font-semibold text-ink hover:text-brand hover:underline"
+                          >
+                            {fullStaffName(m) || 'Unnamed user'}
+                          </button>
+                          {m.isCurrentUser && <Badge tone="brand">You</Badge>}
                         </div>
-                        <p className="truncate text-xs text-ink-muted">
-                          {u.title ? `${u.title} · ` : ''}
-                          {u.email}
-                        </p>
+                        <p className="truncate text-xs text-ink-muted">{m.title ? `${m.title} - ` : ''}{m.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-ink-muted">{u.phone ?? '—'}</td>
+                  <td className="px-4 py-3 text-ink-muted">{m.phone || '-'}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={u.role === 'admin' ? 'brand' : 'neutral'}>{u.role}</Badge>
+                    <Badge tone={m.role === 'Admin' ? 'brand' : 'neutral'}>{m.role}</Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge tone={statusTone(u.status)}>{u.status ?? 'active'}</Badge>
+                    <Badge tone={STATUS_TONE[m.status]}>{m.status}</Badge>
                   </td>
-                  <td className="px-4 py-3">
-                    <CopyChip value={u.id} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="xs" onClick={() => openEdit(u)}>
-                        <Pencil size={12} /> Edit
-                      </Button>
-                      <Kebab
-                        items={[
-                          { label: 'Edit user', icon: <Pencil size={14} />, onClick: () => openEdit(u) },
-                          ...(u.status === 'invited'
-                            ? [{ label: 'Resend invite', icon: <Send size={14} />, onClick: () => resendInvite(u) }]
-                            : []),
-                          u.status === 'disabled'
-                            ? { label: 'Reactivate', icon: <UserCheck size={14} />, onClick: () => toggleStatus(u) }
-                            : { label: 'Deactivate', icon: <UserX size={14} />, onClick: () => toggleStatus(u) },
-                          { label: 'Remove user', icon: <Trash2 size={14} />, onClick: () => removeUser(u), danger: true },
-                        ]}
-                      />
-                    </div>
+                  <td className="px-4 py-3"><CopyId id={m.id} label="User ID" /></td>
+                  <td className="px-4 py-3 text-right">
+                    <KebabMenu items={menuFor(m)} ariaLabel={`Actions for ${fullStaffName(m)}`} />
                   </td>
                 </tr>
               ))}
@@ -213,24 +196,26 @@ export function StaffSection() {
         {filtered.length === 0 && (
           <EmptyState
             icon={<Users size={26} />}
-            title="No matching staff"
-            body="Try a different search term or role filter, or add a new user."
+            title="No users match"
+            body="Try a different search or clear the role and status filters."
             action={
-              <Button size="sm" onClick={openNew}>
-                <Plus size={13} /> Add User
+              <Button variant="secondary" size="sm" onClick={() => { setQuery(''); setRoleFilter('all'); setStatusFilter('all'); }}>
+                Clear filters
               </Button>
             }
           />
         )}
       </div>
 
-      <StaffDrawer
-        user={activeUser}
-        mode={drawerMode}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onSave={handleSave}
-      />
+      <p className="text-xs text-ink-subtle">Showing {filtered.length} of {staff.length} users.</p>
+
+      {drawer && (
+        <StaffDrawer
+          member={drawer.member}
+          onClose={() => setDrawer(null)}
+          onSave={upsert}
+        />
+      )}
     </div>
   );
 }
