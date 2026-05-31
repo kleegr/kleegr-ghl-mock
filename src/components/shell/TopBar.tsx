@@ -253,7 +253,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
             {/* Ask AI pill (cosmetic) */}
             <button
               onClick={() => cosmetic('Ask AI', 'AI assistant is not available in demo mode.')}
-              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.03]"
+              className="flex items-center gap-1.5 rounded-full bg-brand-gradient px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.03]"
               aria-label="Ask AI"
             >
               <Sparkles size={14} />
@@ -263,7 +263,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
             {/* What's new (cosmetic) */}
             <button
               onClick={() => cosmetic("What's new", 'Product updates are not available in demo mode.')}
-              className="relative grid h-8 w-8 place-items-center rounded-full bg-[#0ea5a3] text-white transition-transform hover:scale-105"
+              className="relative grid h-8 w-8 place-items-center rounded-full bg-[#02b0ac] text-white transition-transform hover:scale-105"
               aria-label="What's new"
             >
               <Megaphone size={15} />
