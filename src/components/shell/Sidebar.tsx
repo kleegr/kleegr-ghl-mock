@@ -8,6 +8,14 @@ import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
 
 /**
+ * Official Kleegr logo (raster master) as uploaded to the GHL company profile —
+ * this is the exact asset the live CRM renders, so the expanded sidebar uses it
+ * directly. public/kleegr-logo-white.svg is the vector fallback if it fails to load.
+ */
+const KLEEGR_LOGO_URL =
+  'https://msgsndr-private.storage.googleapis.com/companyPhotos/0ea2d330-0413-48f4-8c31-0fbd53e43fe1.png';
+
+/**
  * Core CRM paths — visual emphasis only (rendered slightly darker).
  */
 const CORE_CRM_PATHS = new Set([
@@ -79,10 +87,15 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           />
         ) : (
           <img
-            src="/kleegr-logo-white.svg"
+            src={KLEEGR_LOGO_URL}
             alt="Kleegr"
-            className="h-[22px] w-auto select-none"
+            className="h-[26px] w-auto max-w-[180px] select-none object-contain object-left"
             draggable={false}
+            onError={(e) => {
+              // Fall back to the in-repo white wordmark if the hosted asset fails.
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = '/kleegr-logo-white.svg';
+            }}
           />
         )}
       </div>
@@ -94,22 +107,22 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             <button
               onClick={() => setAcctOpen((v) => !v)}
               data-tour="topbar.accountSwitcher"
-              className="flex w-full items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-2 py-2 text-left transition-colors hover:bg-white/15"
+              className="flex w-full items-center gap-2 rounded-lg border border-white/30 bg-[#e3f4fc] px-2 py-2 text-left shadow-sm transition-colors hover:bg-white"
               aria-haspopup="listbox"
               aria-expanded={acctOpen}
             >
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white/15 text-white">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-brand text-white">
                 <Building2 size={15} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-bold leading-tight text-white">
+                <span className="block truncate text-[13px] font-bold leading-tight text-ink">
                   {selectedAcct.name}
                 </span>
-                <span className="block truncate text-[11px] leading-tight text-white/55">
+                <span className="block truncate text-[11px] leading-tight text-ink-muted">
                   {selectedAcct.region}
                 </span>
               </span>
-              <ChevronsUpDown size={14} className="shrink-0 text-white/55" />
+              <ChevronsUpDown size={14} className="shrink-0 text-ink-subtle" />
             </button>
 
             {acctOpen && (
@@ -219,7 +232,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                       ? 'mx-1.5 my-px justify-center rounded-lg px-0 py-2'
                       : 'mx-2 my-px rounded-lg px-3 py-[7px]',
                     isActive
-                      ? 'bg-brand text-white shadow-sm'
+                      ? 'bg-sidebar-active text-white shadow-sm'
                       : cx(
                           'hover:bg-white/10 hover:text-white',
                           isCore ? 'text-white/90' : 'text-white/65',
@@ -265,7 +278,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 ? 'mx-1.5 my-px justify-center rounded-lg px-0 py-2'
                 : 'mx-2 my-px rounded-lg px-3 py-[7px]',
               isActive
-                ? 'bg-brand text-white shadow-sm'
+                ? 'bg-sidebar-active text-white shadow-sm'
                 : 'text-white/75 hover:bg-white/10 hover:text-white',
             )
           }
