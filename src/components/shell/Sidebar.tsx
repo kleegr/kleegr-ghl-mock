@@ -17,7 +17,6 @@ const CORE_CRM_PATHS = new Set([
   '/opportunities',
   '/calendars',
   '/payments',
-  '/tasks',
 ]);
 
 /** Cosmetic demo sub-accounts (account switching is visual-only in demo mode). */
