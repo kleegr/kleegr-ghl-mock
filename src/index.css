@@ -5,10 +5,11 @@
 @tailwind utilities;
 
 :root {
-  /* Fallbacks; real values injected by applyTheme() from src/theme/tokens.ts */
-  --brand: 31 111 235;
+  /* Fallbacks; real values injected by applyTheme() from src/theme/tokens.ts.
+     Keep these in sync with kleegrTheme.colors. */
+  --brand: 26 127 201;
   --brand-fg: 255 255 255;
-  --brand-soft: 232 240 254;
+  --brand-soft: 226 240 251;
   --ink: 16 24 40;
   --ink-muted: 71 84 103;
   --ink-subtle: 152 162 179;
@@ -16,19 +17,19 @@
   --surface-raised: 255 255 255;
   --surface-sunken: 247 248 250;
   --line: 228 231 236;
-  --sidebar: 12 31 58;
-  --sidebar-fg: 226 232 240;
-  --sidebar-active: 31 111 235;
-  --sidebar-from: 8 23 45;
-  --sidebar-via: 12 31 58;
-  --sidebar-to: 16 40 72;
+  --sidebar: 0 42 82;
+  --sidebar-fg: 219 231 243;
+  --sidebar-active: 26 127 201;
+  --sidebar-from: 0 37 74;
+  --sidebar-via: 1 53 96;
+  --sidebar-to: 2 73 127;
   --good: 18 152 99;
   --warn: 217 145 17;
   --bad: 217 54 62;
   --ai: 124 58 237;
   --ai-soft: 237 233 254;
-  --banner: 11 31 64;
-  --banner-accent: 56 189 248;
+  --banner: 0 35 68;
+  --banner-accent: 85 191 231;
   --font-sans: 'Plus Jakarta Sans';
   --font-display: 'Plus Jakarta Sans';
 }
@@ -42,6 +43,9 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+
+/* Brand-tinted text selection */
+::selection { background: rgb(var(--brand) / 0.22); color: rgb(var(--ink)); }
 
 /* Thin, GHL-like scrollbars */
 *::-webkit-scrollbar { width: 10px; height: 10px; }

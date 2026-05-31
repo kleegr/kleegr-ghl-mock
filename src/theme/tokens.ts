@@ -3,13 +3,14 @@
  *
  * STRUCTURE reference: real GoHighLevel sub-account portal (dark navy left
  * rail + light content + dark "banner" strip behind the top-right action
- * cluster). BRAND layer: Kleegr's blue/violet identity.
+ * cluster). BRAND layer: Kleegr's violet→blue identity.
  *
- * ⚠️ BRAND COLORS ARE STILL UNVERIFIED. Public Kleegr brand assets
- * (kleegr.com / crm.kleegr.com) were not retrievable during research, so the
- * palette below is the established demo identity — the documented fallback.
- * When real assets are available, extract the palette (DevTools → computed
- * styles) and replace the values flagged `placeholder: true`.
+ * BRAND SOURCE: grounded in the official Kleegr logo (violet→blue wordmark,
+ * see public/kleegr-logo.svg) and the production GoHighLevel brand stylesheet
+ * (accent cyan #55bfe7, mid-blue #004882, deep navy #002d69). The blue half of
+ * the wordmark drives the primary/sidebar/accent palette; the violet half is
+ * retained as the secondary "AI" accent. Re-derive from those two assets if the
+ * brand changes — do not invent new hues here.
  *
  * To re-theme the entire app, change values here. They are injected as CSS
  * variables at runtime (see applyTheme) and consumed by Tailwind (see
@@ -28,16 +29,19 @@ export type ThemeTokens = {
 };
 
 export const kleegrTheme: ThemeTokens = {
-  placeholder: true,
+  placeholder: false,
   brandName: 'Kleegr',
   wordmark: 'Kleegr',
   // One confirmed line from public research (plan §13):
   tagline: 'Transform how you run your business.',
   colors: {
-    // Brand — placeholder blue. Replace with verified Kleegr primary.
-    brand: '31 111 235',
+    // Brand — azure drawn from the blue half of the Kleegr wordmark, sitting
+    // between the brand stylesheet's accent cyan (#55bfe7) and mid-blue
+    // (#004882). Readable with white text (~4.2:1). Drives primary buttons,
+    // links, active states and the focus ring.
+    brand: '26 127 201', // #1a7fc9
     'brand-fg': '255 255 255',
-    'brand-soft': '232 240 254',
+    'brand-soft': '226 240 251', // #e2f0fb — light azure tint (chips / active rows)
     // Text
     ink: '16 24 40',
     'ink-muted': '71 84 103',
@@ -47,28 +51,29 @@ export const kleegrTheme: ThemeTokens = {
     'surface-raised': '255 255 255',
     'surface-sunken': '247 248 250',
     line: '228 231 236',
-    // Sidebar — real GHL uses a flat DARK navy/slate rail with light text.
-    // The rail is rendered as a subtle top→bottom navy gradient driven by the
-    // three stop tokens below (consumed via arbitrary utilities in Sidebar.tsx).
-    sidebar: '12 31 58', // #0c1f3a — solid fallback (matches the gradient mid-tone)
-    'sidebar-fg': '226 232 240', // #e2e8f0 — light slate text
-    'sidebar-active': '31 111 235', // brand blue — active nav pill
-    'sidebar-from': '8 23 45', // #08172d — deep navy (top)
-    'sidebar-via': '12 31 58', // #0c1f3a
-    'sidebar-to': '16 40 72', // #102848 — only marginally lighter (flat, GHL-like)
+    // Sidebar — dark navy rail with light text, matching the brand stylesheet's
+    // deep navy (#002d69 / #004882). Rendered as a top→bottom navy→blue lift via
+    // the three stop tokens below (consumed via arbitrary utilities in Sidebar.tsx).
+    sidebar: '0 42 82', // #002a52 — solid fallback (navy, brand-stylesheet family)
+    'sidebar-fg': '219 231 243', // #dbe7f3 — light slate text
+    'sidebar-active': '26 127 201', // #1a7fc9 — brand azure, active nav pill
+    'sidebar-from': '0 37 74', // #00254a — deep navy (top)
+    'sidebar-via': '1 53 96', // #013560
+    'sidebar-to': '2 73 127', // #02497f — mid-blue lift toward #004882 (bottom)
     // Status
     good: '18 152 99',
     warn: '217 145 17',
     bad: '217 54 62',
-    // AI / wordmark accent — Kleegr's violet (logo + "Ask AI")
+    // AI / secondary accent — Kleegr's violet (the left half of the wordmark;
+    // also "Ask AI"). Kept as the brand's secondary hue.
     ai: '124 58 237',
     'ai-soft': '237 233 254',
-    // Top banner (dark navy strip with a cyan diagonal accent)
-    banner: '11 31 64',
-    'banner-accent': '56 189 248',
+    // Top banner (dark navy strip with the brand-stylesheet cyan diagonal accent)
+    banner: '0 35 68', // #002344
+    'banner-accent': '85 191 231', // #55bfe7 — brand-stylesheet accent cyan
   },
   fonts: {
-    // Placeholder. GHL itself leans on a neutral sans; swap for Kleegr's.
+    // Neutral geometric sans pairing the wordmark's clean lowercase forms.
     sans: "'Plus Jakarta Sans'",
     display: "'Plus Jakarta Sans'",
   },

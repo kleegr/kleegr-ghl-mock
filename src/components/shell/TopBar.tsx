@@ -151,6 +151,14 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
           <Menu size={20} />
         </button>
 
+        {/* Mobile brand mark (desktop shows it in the sidebar instead) */}
+        <img
+          src="/kleegr-logo.svg"
+          alt="Kleegr"
+          className="ml-0.5 mr-1 h-[18px] w-auto select-none lg:hidden"
+          draggable={false}
+        />
+
         {/* Left: demo chrome */}
         <div className="flex items-center gap-2">
           <div
