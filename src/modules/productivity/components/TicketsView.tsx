@@ -85,7 +85,7 @@ export function TicketsView({ onOpenTask }: { onOpenTask?: (taskId: string) => v
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tickets\u2026"
+            placeholder="Search tickets…"
             className={`${inputCls} pl-8`}
           />
         </div>

@@ -123,7 +123,7 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
         <div className="grid grid-cols-2 gap-3">
           <Field label="Assignee">
             <SelectInput value={assigneeId} onChange={setAssigneeId}>
-              <option value="">\u2014 Unassigned \u2014</option>
+              <option value="">— Unassigned —</option>
               {TEAM.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </SelectInput>
           </Field>
@@ -133,7 +133,7 @@ export function CreateTicketModal({ open, onClose }: { open: boolean; onClose: (
         </div>
 
         <p className="rounded-lg bg-surface-sunken px-3 py-2 text-[11px] text-ink-subtle">
-          Demo mode: tickets are stored in memory for this session only \u2014 no email, no backend, no real customer data.
+          Demo mode: tickets are stored in memory for this session only — no email, no backend, no real customer data.
         </p>
       </div>
     </Modal>
