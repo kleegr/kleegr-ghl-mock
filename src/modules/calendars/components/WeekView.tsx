@@ -90,12 +90,18 @@ export function WeekView({ anchor, appointments, calendars, onSelectAppt, onNavi
                   <button
                     key={a.id}
                     onClick={() => onSelectAppt(a)}
-                    className="w-full rounded-lg px-1.5 py-1.5 text-left text-[10px] font-medium hover:opacity-80 focus:outline-none"
+                    className={cx(
+                      'w-full rounded-lg px-1.5 py-1.5 text-left text-[10px] font-medium hover:opacity-80 focus:outline-none',
+                      a.status === 'cancelled' && 'opacity-50',
+                    )}
                     style={{ background: `${calColor(a.calendarId)}22` }}
                     aria-label={a.title}
                   >
                     <p
-                      className="truncate font-semibold leading-snug"
+                      className={cx(
+                        'truncate font-semibold leading-snug',
+                        a.status === 'cancelled' && 'line-through',
+                      )}
                       style={{ color: calColor(a.calendarId) }}
                     >
                       {a.title}

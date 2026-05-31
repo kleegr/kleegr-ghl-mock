@@ -3,23 +3,9 @@
  */
 import type { Appointment, Calendar, Contact } from '@/types';
 import { Badge, Avatar, EmptyState } from '@/components/ui/primitives';
-import type { BadgeProps } from '@/components/ui/primitives';
-import { fullName, clockTime } from '@/utils';
+import { fullName, clockTime, cx } from '@/utils';
 import { CalendarDays } from 'lucide-react';
-
-const STATUS_TONE: Record<Appointment['status'], BadgeProps['tone']> = {
-  confirmed: 'brand',
-  showed:    'good',
-  no_show:   'bad',
-  cancelled: 'neutral',
-};
-
-const STATUS_LABEL: Record<Appointment['status'], string> = {
-  confirmed: 'Confirmed',
-  showed:    'Showed',
-  no_show:   'No-show',
-  cancelled: 'Cancelled',
-};
+import { STATUS_TONE, STATUS_LABEL } from '../utils';
 
 interface Props {
   appointments: Appointment[];
@@ -118,7 +104,10 @@ export function AgendaView({ appointments, calendars, contacts, onSelectAppt }: 
 
                 {/* Content */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-ink line-clamp-1">
+                  <p className={cx(
+                    'text-sm font-semibold text-ink line-clamp-1',
+                    a.status === 'cancelled' && 'text-ink-muted line-through',
+                  )}>
                     {a.title}
                   </p>
                   <div className="mt-0.5 flex flex-wrap items-center gap-2">
