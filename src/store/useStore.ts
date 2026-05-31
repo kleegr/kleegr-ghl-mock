@@ -43,6 +43,10 @@ interface StoreState extends DemoData {
   searchOpen: boolean;
   toasts: Toast[];
 
+  // global dialer (foundation — opens from the topbar phone button; demo-safe)
+  dialerOpen: boolean;
+  dialerPrefill: string;
+
   // tutorial engine (Tutorial Mode — in-memory only)
   activeTutorialId: string | null;
   tutorialStep: number;
@@ -53,6 +57,8 @@ interface StoreState extends DemoData {
   setMode: (m: Mode) => void;
   toggleSidebar: () => void;
   setSearchOpen: (v: boolean) => void;
+  openDialer: (prefill?: string) => void;
+  closeDialer: () => void;
   pushToast: (t: Omit<Toast, 'id'>) => void;
   dismissToast: (id: number) => void;
 
@@ -90,6 +96,8 @@ export const useStore = create<StoreState>((set, get) => ({
   mode: 'demo',
   sidebarCollapsed: false,
   searchOpen: false,
+  dialerOpen: false,
+  dialerPrefill: '',
   toasts: [],
   activeTutorialId: null,
   tutorialStep: 0,
@@ -99,6 +107,8 @@ export const useStore = create<StoreState>((set, get) => ({
   setMode: (mode) => set({ mode }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setSearchOpen: (searchOpen) => set({ searchOpen }),
+  openDialer: (prefill = '') => set({ dialerOpen: true, dialerPrefill: prefill }),
+  closeDialer: () => set({ dialerOpen: false, dialerPrefill: '' }),
   pushToast: (t) => {
     const id = ++toastSeq;
     set((s) => ({ toasts: [...s.toasts, { ...t, id }] }));
@@ -106,7 +116,7 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
 
-  // ── Tutorial Mode (Arcade-style guided walkthroughs) ────────────────────────
+  // ── Tutorial Mode (Arcade-style guided walkthroughs) ────────────────────────────
   // All state is in-memory; resetDemo() clears it along with the seeded data.
   startTutorial: (id) =>
     set({ activeTutorialId: id, tutorialStep: 0, completionCardId: null, mode: 'tutorial' }),
