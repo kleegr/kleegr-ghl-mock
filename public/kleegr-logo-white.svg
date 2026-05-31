@@ -1,14 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1658.835205 547" role="img" aria-label="Kleegr">
   <title>Kleegr</title>
-  <defs>
-    <linearGradient id="kleegrGrad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#8b3df0"/>
-      <stop offset="0.45" stop-color="#7470de"/>
-      <stop offset="1" stop-color="#4a93d6"/>
-    </linearGradient>
-  </defs>
-<g transform="translate(-24.000000,571.000000) scale(0.100000,-0.100000)"
-fill="url(#kleegrGrad)" stroke="none">
+  <g transform="translate(-24.000000,571.000000) scale(0.100000,-0.100000)"
+fill="#ffffff" stroke="none">
 <path d="M240 3580 l0 -2130 395 0 395 0 0 750 c0 643 2 750 14 750 8 0 295
 -337 638 -750 l623 -750 508 0 c317 0 507 4 505 9 -1 6 -324 366 -716 802
 l-714 792 35 36 c25 26 1012 1122 1250 1389 l20 22 -484 0 -485 0 -582 -670

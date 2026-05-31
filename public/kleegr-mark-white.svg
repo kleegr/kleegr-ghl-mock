@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Kleegr">
+  <title>Kleegr</title>
+  <g fill="#ffffff">
+    <rect x="8.5" y="5" width="4.4" height="22" rx="0.5"/>
+    <polygon points="12.9,17.4 21.4,6 25.6,6 16.2,18.1"/>
+    <polygon points="16,16.2 25.7,27 21.4,27 12.9,17.6"/>
+  </g>
+</svg>
