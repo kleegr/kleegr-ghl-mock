@@ -5,10 +5,13 @@
  * rail + light content + dark "banner" strip behind the top-right action
  * cluster). BRAND layer: Kleegr's violet→blue identity.
  *
- * BRAND SOURCE: grounded in the official Kleegr logo (violet→blue wordmark,
- * see public/kleegr-logo.svg) and the production GoHighLevel brand stylesheet
- * (accent cyan #55bfe7, mid-blue #004882, deep navy #002d69). The blue half of
- * the wordmark drives the primary/sidebar/accent palette; the violet half is
+ * BRAND SOURCE: grounded in the official Kleegr logo (violet→blue wordmark — the
+ * raster master lives at the GHL company-photos URL referenced in Sidebar.tsx, and
+ * public/kleegr-logo.svg / kleegr-logo-white.svg are the vector forms of it) and
+ * the production GoHighLevel brand stylesheet (accent cyan #55bfe7→#55c7ee, mid-blue
+ * #004882, deep navy #002d69). The sidebar gradient and active-cyan pill, plus the
+ * top-bar wedge, are tuned to match the live GHL sub-account portal. The blue half
+ * of the wordmark drives the primary/sidebar/accent palette; the violet half is
  * retained as the secondary "AI" accent. Re-derive from those two assets if the
  * brand changes — do not invent new hues here.
  *
@@ -51,15 +54,17 @@ export const kleegrTheme: ThemeTokens = {
     'surface-raised': '255 255 255',
     'surface-sunken': '247 248 250',
     line: '228 231 236',
-    // Sidebar — dark navy rail with light text, matching the brand stylesheet's
-    // deep navy (#002d69 / #004882). Rendered as a top→bottom navy→blue lift via
-    // the three stop tokens below (consumed via arbitrary utilities in Sidebar.tsx).
-    sidebar: '0 42 82', // #002a52 — solid fallback (navy, brand-stylesheet family)
+    // Sidebar — deep-navy→rich-blue rail with light text, tuned to the live GHL
+    // sub-account portal: deep navy at the top lifting to a richer blue toward the
+    // bottom (top→bottom gradient via the three stop tokens below, consumed via
+    // arbitrary utilities in Sidebar.tsx). The active nav pill is the GHL accent
+    // cyan (not azure) so it reads like the real CRM's highlighted item.
+    sidebar: '7 59 122', // #073b7a — solid fallback (mid navy-blue, ≈ gradient midpoint)
     'sidebar-fg': '219 231 243', // #dbe7f3 — light slate text
-    'sidebar-active': '26 127 201', // #1a7fc9 — brand azure, active nav pill
-    'sidebar-from': '0 37 74', // #00254a — deep navy (top)
-    'sidebar-via': '1 53 96', // #013560
-    'sidebar-to': '2 73 127', // #02497f — mid-blue lift toward #004882 (bottom)
+    'sidebar-active': '73 191 232', // #49bfe8 — GHL accent cyan, active nav pill
+    'sidebar-from': '4 39 92', // #04275c — deep navy (top)
+    'sidebar-via': '7 59 122', // #073b7a — rich blue (middle)
+    'sidebar-to': '1 79 143', // #014f8f — blue depth lift (bottom)
     // Status
     good: '18 152 99',
     warn: '217 145 17',
@@ -68,9 +73,11 @@ export const kleegrTheme: ThemeTokens = {
     // also "Ask AI"). Kept as the brand's secondary hue.
     ai: '124 58 237',
     'ai-soft': '237 233 254',
-    // Top banner (dark navy strip with the brand-stylesheet cyan diagonal accent)
-    banner: '0 35 68', // #002344
-    'banner-accent': '85 191 231', // #55bfe7 — brand-stylesheet accent cyan
+    // Dark surface reused by modules for white-text strips (Opportunities header,
+    // Automations "Beta" badge). KEEP THIS DARK — the bright top-bar wedge lives in
+    // TopBar.tsx as a cyan→blue gradient, NOT in this token.
+    banner: '0 35 68', // #002344 — dark navy (white-text surface)
+    'banner-accent': '85 199 238', // #55c7ee — GHL accent cyan (wedge lead + active rail)
   },
   fonts: {
     // Neutral geometric sans pairing the wordmark's clean lowercase forms.

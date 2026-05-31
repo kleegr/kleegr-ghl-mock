@@ -233,18 +233,19 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
 
         <div className="flex-1" />
 
-        {/* Right: dark banner with diagonal cyan accent + action cluster */}
+        {/* Right: bright cyan→blue wedge + action cluster (matches the live GHL header) */}
         <div className="relative flex h-full items-center self-stretch">
-          {/* dark trapezoid background, bleeds to the right edge */}
+          {/* bright cyan→blue trapezoid, bleeds to the right edge; the right portion
+              settles to brand azure so the white action icons stay legible on it */}
           <div
             aria-hidden="true"
-            className="absolute inset-y-0 right-0 left-9 bg-banner"
+            className="absolute inset-y-0 right-0 left-9 bg-gradient-to-r from-[rgb(var(--banner-accent))] via-[rgb(var(--brand))] to-[rgb(var(--brand))]"
             style={{ clipPath: 'polygon(36px 0, 100% 0, 100% 100%, 0 100%)' }}
           />
-          {/* cyan accent slice */}
+          {/* bright leading-edge highlight that crisps up the diagonal */}
           <div
             aria-hidden="true"
-            className="absolute inset-y-0 left-9 w-12 bg-banner-accent/80"
+            className="absolute inset-y-0 left-9 w-12 bg-white/25"
             style={{ clipPath: 'polygon(36px 0, 52px 0, 16px 100%, 0 100%)' }}
           />
           <div className="relative z-10 flex items-center gap-1.5 pl-12 pr-3 sm:pr-4">
@@ -277,7 +278,7 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
               <Megaphone size={15} />
               <span
                 aria-hidden="true"
-                className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-amber-300 ring-2 ring-banner"
+                className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-amber-300 ring-2 ring-white/70"
               />
             </button>
 
