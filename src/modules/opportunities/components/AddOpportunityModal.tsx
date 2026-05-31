@@ -10,16 +10,12 @@ import { Overlay } from './Overlay';
  * AddOpportunityModal — GHL-style "Create Opportunity" drawer.
  *
  * Mirrors the look of the Edit Opportunity drawer (left intro rail + form) so
- * the primary "Add opportunity" button opens a believable creation surface
- * instead of firing a bare toast.
+ * the primary "Add opportunity" button opens a believable creation surface.
  *
- * DEMO-SAFE: the store currently exposes no `addOpportunity` action (only
- * `moveOpportunity`). Until Developer #38 ships one, submit is simulated with a
- * success toast and nothing is persisted. The form is otherwise fully real:
- * validation, pipeline→stage dependency, contact/owner pickers.
- *
- * NEEDS FROM DEVELOPER #38 (shared store): `addOpportunity(input)` so this can
- * persist in-memory like `addContact` / `bookAppointment` already do.
+ * Wired to the shared store's `addOpportunity(input)` action: submit creates a
+ * real in-memory opportunity (defaulted owner/activity, derived business name)
+ * that shows up immediately on the board and is cleared by Reset Demo. The form
+ * is fully real: validation, pipeline→stage dependency, contact/owner pickers.
  */
 
 interface Props {
@@ -57,7 +53,7 @@ function SelectInput({ value, onChange, children }: { value: string; onChange: (
 }
 
 export function AddOpportunityModal({ pipelines, contacts, users, initialPipelineId, onClose }: Props) {
-  const pushToast = useStore((s) => s.pushToast);
+  const addOpportunity = useStore((s) => s.addOpportunity);
 
   const [form, setForm] = useState({
     name: '',
@@ -84,11 +80,18 @@ export function AddOpportunityModal({ pipelines, contacts, users, initialPipelin
 
   const handleCreate = () => {
     if (!isValid) return;
-    pushToast({
-      title: 'Demo: Opportunity created',
-      description: `“${form.name.trim()}” would be added to ${pipeline?.name ?? 'the pipeline'}. (Demo only — not persisted.)`,
-      variant: 'info',
+    addOpportunity({
+      name: form.name,
+      contactId: form.contactId,
+      pipelineId: form.pipelineId,
+      stageId: effectiveStageId,
+      status: form.status,
+      monetaryValue: form.value ? Number(form.value) || 0 : 0,
+      ownerId: form.ownerId || undefined,
+      source: form.source.trim() || undefined,
+      tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
     });
+    // addOpportunity pushes its own success toast.
     onClose();
   };
 

@@ -83,6 +83,8 @@ function EmptyPanel({ icon, title, body, cta }: { icon: ReactNode; title: string
 export function OpportunityDetailModal({ opportunity: opp, contacts, users, onClose }: Props) {
   const pipelines = useStore((s) => s.pipelines);
   const moveOpportunity = useStore((s) => s.moveOpportunity);
+  const updateOpportunity = useStore((s) => s.updateOpportunity);
+  const removeOpportunity = useStore((s) => s.removeOpportunity);
   const pushToast = useStore((s) => s.pushToast);
 
   const contact = contacts.find((c) => c.id === opp.contactId);
@@ -108,6 +110,29 @@ export function OpportunityDetailModal({ opportunity: opp, contacts, users, onCl
   const handleStageChange = (stageId: string) => {
     set('stageId', stageId);
     if (stageId !== opp.stageId) moveOpportunity(opp.id, stageId); // real, persisted move
+  };
+
+  // Persist the editable fields back to the store (stage already moves live above).
+  const handleUpdate = () => {
+    updateOpportunity(opp.id, {
+      name: draft.name.trim() || opp.name,
+      status: draft.status,
+      monetaryValue: draft.value ? Number(draft.value) || 0 : 0,
+      ownerId: draft.ownerId,
+      source: draft.source.trim() || undefined,
+    });
+    pushToast({
+      title: 'Opportunity updated',
+      description: `Changes to “${draft.name.trim() || opp.name}” were saved (demo session).`,
+      variant: 'success',
+    });
+    onClose();
+  };
+
+  const handleDelete = () => {
+    removeOpportunity(opp.id);
+    pushToast({ title: 'Opportunity deleted', description: `“${opp.name}” was removed (demo session).`, variant: 'success' });
+    onClose();
   };
 
   const demo = (label: string) => {
@@ -294,20 +319,20 @@ export function OpportunityDetailModal({ opportunity: opp, contacts, users, onCl
       {/* Footer */}
       <div className="flex items-center justify-between gap-3 border-t border-line px-6 py-3.5">
         <p className="hidden text-xs text-ink-subtle sm:block">
-          Created By: <span className="font-medium text-brand">Workflow</span>
+          Created By: <span className="font-medium text-brand">{opp.createdBy}</span>
           <span className="mx-2 text-ink-subtle/60">·</span>
           Created On {dateLabel(opp.createdAt)}
         </p>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => demo('Delete Opportunity')}
+            onClick={handleDelete}
             className="grid h-9 w-9 place-items-center rounded-lg border border-line text-bad hover:bg-bad/5"
             aria-label="Delete opportunity"
           >
             <Trash2 size={16} />
           </button>
           <Button variant="secondary" size="md" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" size="md" onClick={() => demo('Update Opportunity')}>Update</Button>
+          <Button variant="primary" size="md" onClick={handleUpdate}>Update</Button>
         </div>
       </div>
     </Overlay>

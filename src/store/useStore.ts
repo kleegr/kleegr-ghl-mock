@@ -19,6 +19,24 @@ export interface Toast {
 
 type Mode = 'demo' | 'tutorial';
 
+/** Fields a caller may supply when creating an opportunity; the rest are defaulted. */
+export interface AddOpportunityInput {
+  name: string;
+  contactId: ID;
+  pipelineId: ID;
+  stageId: ID;
+  status?: Opportunity['status'];
+  monetaryValue?: number;
+  ownerId?: ID;
+  source?: string;
+  tags?: string[];
+  followers?: ID[];
+  businessName?: string;
+}
+
+/** Any subset of an opportunity may be patched (id is fixed). */
+export type OpportunityPatch = Partial<Omit<Opportunity, 'id'>>;
+
 interface StoreState extends DemoData {
   mode: Mode;
   sidebarCollapsed: boolean;
@@ -52,6 +70,14 @@ interface StoreState extends DemoData {
   sendMessage: (conversationId: ID, body: string) => void;
   markConversationRead: (conversationId: ID) => void;
   moveOpportunity: (opportunityId: ID, toStageId: ID) => void;
+
+  // opportunity CRUD (in-memory, session only)
+  addOpportunity: (input: AddOpportunityInput) => Opportunity;
+  updateOpportunity: (id: ID, patch: OpportunityPatch) => void;
+  removeOpportunity: (id: ID) => void;
+  removeOpportunities: (ids: ID[]) => void;
+  bulkUpdateOpportunities: (ids: ID[], patch: OpportunityPatch) => void;
+
   bookAppointment: (input: Pick<Appointment, 'calendarId' | 'contactId' | 'title' | 'startTime' | 'endTime' | 'location'>) => void;
   toggleTask: (taskId: ID) => void;
   markAllNotificationsRead: () => void;
@@ -80,7 +106,7 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
 
-  // ── Tutorial Mode (Arcade-style guided walkthroughs) ──────────────────────
+  // ── Tutorial Mode (Arcade-style guided walkthroughs) ────────────────────────
   // All state is in-memory; resetDemo() clears it along with the seeded data.
   startTutorial: (id) =>
     set({ activeTutorialId: id, tutorialStep: 0, completionCardId: null, mode: 'tutorial' }),
@@ -161,9 +187,70 @@ export const useStore = create<StoreState>((set, get) => ({
   moveOpportunity: (opportunityId, toStageId) =>
     set((s) => ({
       opportunities: s.opportunities.map((o: Opportunity) =>
-        o.id === opportunityId ? { ...o, stageId: toStageId, updatedAt: new Date().toISOString() } : o,
+        o.id === opportunityId
+          ? { ...o, stageId: toStageId, updatedAt: new Date().toISOString(), lastActivityAt: new Date().toISOString() }
+          : o,
       ),
     })),
+
+  addOpportunity: (input) => {
+    const nowIso = new Date().toISOString();
+    const state = get();
+    const contact = state.contacts.find((c) => c.id === input.contactId);
+    const company = contact?.companyId ? state.companies.find((co) => co.id === contact.companyId) : undefined;
+    const ownerId =
+      input.ownerId ??
+      state.users.find((u) => u.isCurrentUser)?.id ??
+      state.users[0]?.id ??
+      'u_me';
+    const opp: Opportunity = {
+      id: `opp_new_${Date.now()}`,
+      name: input.name.trim() || (contact ? `${contact.firstName} ${contact.lastName}` : 'New Opportunity'),
+      contactId: input.contactId,
+      businessName: input.businessName?.trim() || company?.name,
+      pipelineId: input.pipelineId,
+      stageId: input.stageId,
+      monetaryValue: input.monetaryValue ?? 0,
+      status: input.status ?? 'open',
+      ownerId,
+      followers: input.followers ?? [],
+      source: input.source?.trim() || undefined,
+      tags: input.tags ?? [],
+      activity: { calls: 0, sms: 0, emails: 0, notes: 0, tasks: 0, appointments: 0 },
+      lastActivityAt: nowIso,
+      createdBy: state.users.find((u) => u.id === ownerId)?.name ?? 'You',
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+    set((s) => ({ opportunities: [opp, ...s.opportunities] }));
+    get().pushToast({ title: 'Opportunity created', description: `“${opp.name}” was added (demo session).`, variant: 'success' });
+    return opp;
+  },
+
+  updateOpportunity: (id, patch) =>
+    set((s) => ({
+      opportunities: s.opportunities.map((o) =>
+        o.id === id ? { ...o, ...patch, id: o.id, updatedAt: new Date().toISOString() } : o,
+      ),
+    })),
+
+  removeOpportunity: (id) =>
+    set((s) => ({ opportunities: s.opportunities.filter((o) => o.id !== id) })),
+
+  removeOpportunities: (ids) => {
+    const target = new Set(ids);
+    set((s) => ({ opportunities: s.opportunities.filter((o) => !target.has(o.id)) }));
+  },
+
+  bulkUpdateOpportunities: (ids, patch) => {
+    const target = new Set(ids);
+    const nowIso = new Date().toISOString();
+    set((s) => ({
+      opportunities: s.opportunities.map((o) =>
+        target.has(o.id) ? { ...o, ...patch, id: o.id, updatedAt: nowIso } : o,
+      ),
+    }));
+  },
 
   bookAppointment: (input) => {
     const appt: Appointment = {

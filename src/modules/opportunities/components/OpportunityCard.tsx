@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Phone, MessageSquare, Tag, FileText, CheckSquare, Calendar, UserX, Check,
+  Phone, MessageSquare, Mail, FileText, CheckSquare, Calendar, UserX, Check,
 } from 'lucide-react';
-import type { Opportunity, Contact, User, Company } from '@/types';
+import type { Opportunity, OpportunityActivity, Contact, User, Company } from '@/types';
 import { moneyCents, fullName, cx } from '@/utils';
 import { Avatar } from '@/components/ui/primitives';
 
@@ -15,27 +15,19 @@ interface SharedProps {
   companies: Company[];
 }
 
-/** Stable pseudo-counts so each card shows the same little activity badges across renders. */
-function hash(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return h;
-}
-
-/** A muted activity affordance row (calls, sms, tags, notes, tasks, appts) — cosmetic, like GHL. */
-function ActivityRow({ id }: { id: string }) {
-  const h = hash(id);
-  const icons = [
-    { Icon: Phone, badge: 0 },
-    { Icon: MessageSquare, badge: 0 },
-    { Icon: Tag, badge: (h >> 2) % 3 === 0 ? ((h >> 3) % 3) + 1 : 0 },
-    { Icon: FileText, badge: (h >> 4) % 2 === 0 ? ((h >> 5) % 4) + 1 : 0 },
-    { Icon: CheckSquare, badge: (h >> 6) % 3 === 0 ? ((h >> 7) % 2) + 1 : 0 },
-    { Icon: Calendar, badge: 0 },
+/** Real activity affordance row (calls, sms, emails, notes, tasks, appts) — driven by the record. */
+function ActivityRow({ activity }: { activity: OpportunityActivity }) {
+  const items = [
+    { Icon: Phone, badge: activity.calls },
+    { Icon: MessageSquare, badge: activity.sms },
+    { Icon: Mail, badge: activity.emails },
+    { Icon: FileText, badge: activity.notes },
+    { Icon: CheckSquare, badge: activity.tasks },
+    { Icon: Calendar, badge: activity.appointments },
   ];
   return (
     <div className="mt-3 flex items-center gap-3 text-ink-subtle">
-      {icons.map(({ Icon, badge }, i) => (
+      {items.map(({ Icon, badge }, i) => (
         <span key={i} className="relative inline-flex">
           <Icon size={15} strokeWidth={1.8} />
           {badge > 0 && (
@@ -62,6 +54,7 @@ function CardBody({
   const company = contact?.companyId
     ? companies.find((co) => co.id === contact.companyId)
     : undefined;
+  const businessName = opp.businessName ?? company?.name;
 
   return (
     <div className="px-3.5 py-3">
@@ -81,10 +74,10 @@ function CardBody({
 
       {/* Field rows */}
       <dl className="mt-2.5 space-y-1.5 text-[12px]">
-        {company && (
+        {businessName && (
           <div className="flex items-baseline gap-2">
             <dt className="w-24 shrink-0 text-ink-subtle">Business Name:</dt>
-            <dd className="min-w-0 truncate text-ink-muted">{company.name}</dd>
+            <dd className="min-w-0 truncate text-ink-muted">{businessName}</dd>
           </div>
         )}
         {opp.source && (
@@ -99,7 +92,20 @@ function CardBody({
         </div>
       </dl>
 
-      <ActivityRow id={opp.id} />
+      {opp.tags.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1">
+          {opp.tags.slice(0, 3).map((t) => (
+            <span key={t} className="rounded-full bg-surface-sunken px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+              {t}
+            </span>
+          ))}
+          {opp.tags.length > 3 && (
+            <span className="self-center text-[10px] text-ink-subtle">+{opp.tags.length - 3}</span>
+          )}
+        </div>
+      )}
+
+      <ActivityRow activity={opp.activity} />
     </div>
   );
 }
