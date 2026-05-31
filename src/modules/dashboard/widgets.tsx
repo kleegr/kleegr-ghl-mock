@@ -69,7 +69,7 @@ function Spark({ data, color = 'rgb(var(--brand))' }: { data: { i: number; v: nu
   );
 }
 
-/* ── KPI tile ───────────────────────────────────────────────── */
+/* ──── KPI tile ──── */
 
 interface KpiSpec {
   value: React.ReactNode;
@@ -123,7 +123,7 @@ function KpiBody({ kind, ctx, icon }: { kind: WidgetKind; ctx: MetricsCtx; icon:
   );
 }
 
-/* ── Opportunity Status ────────────────────────────────────── */
+/* ──── Opportunity Status ──── */
 
 function OpportunityStatusBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   const m = ctx.pipelineMetric(pid);
@@ -151,7 +151,7 @@ function OpportunityStatusBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   );
 }
 
-/* ── Opportunity Value ─────────────────────────────────────── */
+/* ──── Opportunity Value ──── */
 
 function OpportunityValueBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   const m = ctx.pipelineMetric(pid);
@@ -168,7 +168,7 @@ function OpportunityValueBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   );
 }
 
-/* ── Conversion Rate (progress ring) ───────────────────────────── */
+/* ──── Conversion Rate (progress ring) ──── */
 
 function ConversionRateBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   const m = ctx.pipelineMetric(pid);
@@ -193,7 +193,7 @@ function ConversionRateBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   );
 }
 
-/* ── Funnel (descending bars) ─────────────────────────────────── */
+/* ──── Funnel (descending bars) ──── */
 
 function FunnelBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   const m = ctx.pipelineMetric(pid);
@@ -222,7 +222,7 @@ function FunnelBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   );
 }
 
-/* ── Stage Distribution (bar chart) ───────────────────────────── */
+/* ──── Stage Distribution (bar chart) ──── */
 
 function StageDistributionBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   const m = ctx.pipelineMetric(pid);
@@ -242,7 +242,7 @@ function StageDistributionBody({ ctx, pid }: { ctx: MetricsCtx; pid: string }) {
   );
 }
 
-/* ── Lead Sources (donut) ───────────────────────────────────── */
+/* ──── Lead Sources (donut) ──── */
 
 function LeadSourcesBody({ ctx }: { ctx: MetricsCtx }) {
   const sources = [...ctx.data.leadSources].sort((a, b) => b.value - a.value);
@@ -270,7 +270,7 @@ function LeadSourcesBody({ ctx }: { ctx: MetricsCtx }) {
   );
 }
 
-/* ── Revenue by month / Lead trend ────────────────────────────── */
+/* ──── Revenue by month / Lead trend ──── */
 
 function RevenueByMonthBody({ ctx }: { ctx: MetricsCtx }) {
   const rows = ctx.revenueByMonth;
@@ -304,7 +304,7 @@ function LeadTrendBody({ ctx }: { ctx: MetricsCtx }) {
   );
 }
 
-/* ── Lists ───────────────────────────────────────────────── */
+/* ──── Lists ──── */
 
 function ActivityRow({ item }: { item: ActivityItem }) {
   return (
@@ -370,7 +370,7 @@ function AppointmentsBody({ ctx }: { ctx: MetricsCtx }) {
   );
 }
 
-/* ── Dispatcher ─────────────────────────────────────────── */
+/* ──── Dispatcher ──── */
 
 export function WidgetBody({ widget, ctx, icon }: { widget: DashWidget; ctx: MetricsCtx; icon: React.ReactNode }) {
   const pid = widget.pipelineId ?? ctx.primaryPipelineId;
