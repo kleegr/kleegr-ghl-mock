@@ -14,6 +14,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
 import type { Message } from '@/types';
+import type { LocalNote } from './threadData';
 import { ConversationList } from './components/ConversationList';
 import { MessageThread } from './components/MessageThread';
 import { Composer } from './components/Composer';
@@ -34,7 +35,22 @@ export function Conversations() {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(conversations[0]?.id ?? null);
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
   const [newMsgOpen, setNewMsgOpen] = useState(false);
+  // Internal comments added via the composer, per conversation (in-memory).
+  const [threadNotes, setThreadNotes] = useState<Record<string, LocalNote[]>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const currentUserName = users.find((u) => u.isCurrentUser)?.name ?? 'Demo User';
+  const addInternalNote = (convId: string, body: string) =>
+    setThreadNotes((prev) => ({
+      ...prev,
+      [convId]: [
+        ...(prev[convId] ?? []),
+        { id: `inote_${Date.now()}`, at: new Date().toISOString(), author: currentUserName, body },
+      ],
+    }));
+
+  // The first few (most recent) threads render the full mixed timeline.
+  const richConvIds = useMemo(() => new Set(conversations.slice(0, 4).map((c) => c.id)), [conversations]);
 
   // last message + a trailing-inbound "unread count" per conversation
   const { lastMessageMap, unreadCountMap } = useMemo(() => {
@@ -68,7 +84,7 @@ export function Conversations() {
   const agentName =
     (selectedConv && users.find((u) => u.id === selectedConv.assignedTo)?.name) ||
     users.find((u) => u.isCurrentUser)?.name ||
-    'Jordan Avery';
+    'Demo User';
 
   const filteredConvs = useMemo(() => {
     if (activeFilter === 'unread') return conversations.filter((c) => c.unread);
@@ -156,10 +172,16 @@ export function Conversations() {
                 contact={selectedContact}
                 messages={threadMessages}
                 agentName={agentName}
+                rich={richConvIds.has(selectedConv.id)}
+                localNotes={threadNotes[selectedConv.id] ?? []}
                 scrollRef={scrollRef}
                 onBack={() => setMobileView('list')}
               />
-              <Composer conv={selectedConv} contact={selectedContact} />
+              <Composer
+                conv={selectedConv}
+                contact={selectedContact}
+                onAddInternalNote={(body) => addInternalNote(selectedConv.id, body)}
+              />
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-ink-subtle">
