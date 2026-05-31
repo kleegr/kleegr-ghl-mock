@@ -140,7 +140,7 @@ export function WidgetCard({
   );
 }
 
-/* ── Pipeline dropdown ────────────────────────────────────────── */
+/* ──── Pipeline dropdown ──── */
 
 function PipelineSelect({
   value, pipelines, allowAll, onChange,
@@ -187,7 +187,7 @@ function PipelineSelect({
   );
 }
 
-/* ── Per-widget "more" menu ───────────────────────────────────── */
+/* ──── Per-widget "more" menu ──── */
 
 function WidgetMenu({
   collapsed, editing, span, resizable,
