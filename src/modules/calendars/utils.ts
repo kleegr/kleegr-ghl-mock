@@ -1,5 +1,32 @@
 // Calendar-specific date utilities — no external dependencies.
 
+import type { Appointment } from '@/types';
+import type { BadgeProps } from '@/components/ui/primitives';
+
+/** Semantic badge tone for each appointment status. */
+export const STATUS_TONE: Record<Appointment['status'], BadgeProps['tone']> = {
+  confirmed: 'brand',
+  showed: 'good',
+  no_show: 'bad',
+  cancelled: 'neutral',
+};
+
+/** Human label for each appointment status. */
+export const STATUS_LABEL: Record<Appointment['status'], string> = {
+  confirmed: 'Confirmed',
+  showed: 'Showed',
+  no_show: 'No-show',
+  cancelled: 'Cancelled',
+};
+
+/** Selectable statuses (for the status menu in the detail/list views). */
+export const STATUS_OPTIONS: Appointment['status'][] = [
+  'confirmed',
+  'showed',
+  'no_show',
+  'cancelled',
+];
+
 export interface CalDay {
   date: Date;
   /** false = previous/next month overflow day */

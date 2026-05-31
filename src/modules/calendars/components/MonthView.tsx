@@ -121,7 +121,10 @@ export function MonthView({
                 {visible.map((a) => (
                   <button
                     key={a.id}
-                    className="flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[10px] font-medium hover:opacity-80 focus:outline-none"
+                    className={cx(
+                      'flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[10px] font-medium hover:opacity-80 focus:outline-none',
+                      a.status === 'cancelled' && 'opacity-50',
+                    )}
                     style={{ background: `${calColor(a.calendarId)}22` }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -135,7 +138,10 @@ export function MonthView({
                       style={{ background: calColor(a.calendarId) }}
                     />
                     <span
-                      className="min-w-0 flex-1 truncate"
+                      className={cx(
+                        'min-w-0 flex-1 truncate',
+                        a.status === 'cancelled' && 'line-through',
+                      )}
                       style={{ color: calColor(a.calendarId) }}
                     >
                       {a.title}
