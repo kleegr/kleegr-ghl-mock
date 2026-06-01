@@ -11,11 +11,11 @@ import { cx } from '@/utils';
 import {
   FOLDERS, CREATE_OPTIONS, TEMPLATES, demoTimestamps, demoActiveEnrolled,
 } from './automationData';
-import { isShowcaseWorkflow, workflowNodeCounts } from './workflowNodes';
+import { isShowcaseWorkflow, workflowNodeCounts } from './workflowTemplates';
 
 type ListTab = 'all' | 'review' | 'deleted';
 
-/* ── status pill (outline green / flat gray) ── */
+/* -- status pill (outline green / flat gray) -- */
 function StatusPill({ status }: { status: Workflow['status'] }) {
   if (status === 'published') {
     return <span className="inline-flex items-center rounded-full border border-good/40 bg-good/5 px-2.5 py-0.5 text-xs font-semibold text-good">Published</span>;
@@ -23,11 +23,11 @@ function StatusPill({ status }: { status: Workflow['status'] }) {
   return <span className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-semibold text-ink-muted">Draft</span>;
 }
 
-/* ── showcase badge (flagship demo workflow) ── */
+/* -- showcase badge (flagship demo workflow) -- */
 function ShowcaseBadge() {
   return (
     <span
-      title="Flagship showcase workflow — multi-trigger with nested branches"
+      title="Flagship showcase workflow - multi-trigger with nested branches"
       className="inline-flex items-center gap-1 rounded-full border border-ai/30 bg-ai-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ai"
     >
       <Sparkles size={10} /> Showcase
@@ -35,7 +35,7 @@ function ShowcaseBadge() {
   );
 }
 
-/* ── per-workflow node-count chips (triggers / actions / branches / waits) ── */
+/* -- per-workflow node-count chips (triggers / actions / branches / waits) -- */
 function StatChip({ value, label }: { value: number; label: string }) {
   return (
     <span title={`${value} ${label}`} className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] font-medium">
@@ -57,7 +57,7 @@ function WorkflowStats({ id, trigger }: { id: string; trigger: string }) {
   );
 }
 
-/* ── row action menu ── */
+/* -- row action menu -- */
 function RowMenu({ open, onOpen, onClose, onAction }: { open: boolean; onOpen: () => void; onClose: () => void; onAction: (a: string) => void }) {
   return (
     <div className="relative">
@@ -88,7 +88,7 @@ function RowMenu({ open, onOpen, onClose, onAction }: { open: boolean; onOpen: (
   );
 }
 
-/* ── New Workflow modal (template chooser, demo-safe) ── */
+/* -- New Workflow modal (template chooser, demo-safe) -- */
 function NewWorkflowModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [selected, setSelected] = useState<string | null>(null);
   const pushToast = useStore((s) => s.pushToast);
@@ -127,7 +127,7 @@ function NewWorkflowModal({ open, onClose }: { open: boolean; onClose: () => voi
   );
 }
 
-/* ── main list ── */
+/* -- main list -- */
 export function WorkflowsList({
   tab,
   onTabChange,
