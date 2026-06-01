@@ -32,6 +32,7 @@ export default function App() {
           <Route path="/marketing/email" element={<Marketing type="email" />} />
           <Route path="/marketing/sms" element={<Marketing type="sms" />} />
           <Route path="/automations" element={<Automations />} />
+          <Route path="/automations/workflow/:workflowId" element={<Automations />} />
           <Route path="/sites" element={<Sites />} />
           <Route path="/reputation" element={<Reputation />} />
           <Route path="/reporting" element={<Reporting />} />
