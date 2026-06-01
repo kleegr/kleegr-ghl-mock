@@ -47,24 +47,32 @@ export interface TourRegistryItem {
   tutorials: string[];
 }
 
-// ─── Required V1 tutorial IDs ─────────────────────────────────────────────
+// ─── Required V1 tutorial IDs ────────────────────────────────────────
 //
-// Preserved verbatim. These are the descriptive legacy IDs that map 1:1 onto
-// the runtime flow IDs (see LEGACY_REGISTRY_ALIASES in
-// scripts/check-tutorials.mjs, which lets the tutorial checker confirm the
-// registry enumerates exactly the same 10 tutorials the engine runs). Keep this
-// literal intact and first so the text-based checker can parse it.
+// The canonical list of onboarding tutorials, kept in sync with the runtime
+// flows in `@/tutorials/flows` (the tutorial checker asserts this set equals
+// the flow ids). These now use the runtime flow ids directly — the descriptive
+// legacy aliases (reply-to-conversation, move-pipeline-lead, view-outlook-inbox)
+// are gone, so LEGACY_REGISTRY_ALIASES in scripts/check-tutorials.mjs is a
+// harmless no-op kept only for backward compatibility. Keep this literal intact
+// and first so the text-based checker can parse it.
 export const REQUIRED_TUTORIAL_IDS = [
+  'tour-dashboard',
   'add-contact',
-  'reply-to-conversation',
-  'move-pipeline-lead',
+  'reply-conversation',
+  'check-missed-calls',
+  'move-pipeline',
   'book-appointment',
+  'create-invoice',
+  'review-document',
+  'send-review-request',
   'create-workflow',
   'view-campaign-performance',
-  'send-review-request',
-  'check-missed-calls',
-  'create-invoice',
-  'view-outlook-inbox',
+  'explore-reporting',
+  'productivity-tickets',
+  'configure-business-profile',
+  'invite-team-member',
+  'outlook-inbox',
 ] as const;
 
 export type RequiredTutorialId = (typeof REQUIRED_TUTORIAL_IDS)[number];

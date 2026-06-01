@@ -32,34 +32,34 @@ export interface LearningPath {
   tutorialIds: string[];
 }
 
-// ─── Planned (not-yet-built) tutorials ─────────────────────────────────────
+// ─── Planned (not-yet-built) tutorials ────────────────────────────────
 //
 // These are referenced by paths below but do not exist as runtime flows yet.
-// Developer 3 owns authoring them. Listing them here (a) documents intended
-// scope and (b) lets the tutorial checker distinguish "planned" from "broken"
-// when validating path references. Keep this literal first so the text-based
-// checker can parse it.
+// (`configure-business-profile` and `invite-team-member` graduated to real
+// flows in this wave and are no longer planned.) Listing the remainder here
+// (a) documents intended scope and (b) lets the tutorial checker distinguish
+// "planned" from "broken" when validating path references. Keep this literal
+// first so the text-based checker can parse it.
 export const PLANNED_TUTORIAL_IDS = [
-  'configure-business-profile',
-  'invite-team-member',
   'upload-brand-assets',
   'build-first-funnel',
 ] as const;
 
 export type PlannedTutorialId = (typeof PLANNED_TUTORIAL_IDS)[number];
 
-// ─── Paths ─────────────────────────────────────────────────────────────────
+// ─── Paths ─────────────────────────────────────────────────────
 //
-// The first four paths are composed entirely of tutorials that exist today, so
-// they are fully runnable. "admin-setup" is intentionally forward-looking: it
-// stitches together one-time account setup, most of which Developer 3 still
-// needs to build (see PLANNED_TUTORIAL_IDS).
+// Five paths are composed entirely of tutorials that exist today, so they are
+// fully runnable. "admin-setup" is intentionally forward-looking: it stitches
+// together one-time account setup, two steps of which (upload-brand-assets,
+// build-first-funnel) are still planned (see PLANNED_TUTORIAL_IDS). Every
+// runtime flow appears in at least one path.
 export const LEARNING_PATHS: LearningPath[] = [
   {
     id: 'first-session',
     title: 'Get started in Kleegr',
-    description: 'Your first few minutes: add a lead, reply to an incoming message, and clear today’s missed calls so nothing slips through.',
-    tutorialIds: ['add-contact', 'reply-conversation', 'check-missed-calls'],
+    description: 'Your first few minutes: get oriented, add a lead, reply to an incoming message, and clear today\u2019s missed calls so nothing slips through.',
+    tutorialIds: ['tour-dashboard', 'add-contact', 'reply-conversation', 'check-missed-calls'],
   },
   {
     id: 'lead-conversion',
@@ -70,24 +70,30 @@ export const LEARNING_PATHS: LearningPath[] = [
   {
     id: 'appointments-payments',
     title: 'Appointments and payments',
-    description: 'Run the booking-to-paid loop: schedule an appointment, collect payment with an invoice, then ask the happy customer for a review.',
-    tutorialIds: ['book-appointment', 'create-invoice', 'send-review-request'],
+    description: 'Run the booking-to-paid loop: schedule an appointment, send the invoice, review the contract, then ask the happy customer for a review.',
+    tutorialIds: ['book-appointment', 'create-invoice', 'review-document', 'send-review-request'],
   },
   {
     id: 'automation-setup',
-    title: 'Automate your follow-up',
-    description: 'Stop doing repetitive work by hand: build a workflow that follows up automatically, then check how your campaigns are performing.',
-    tutorialIds: ['create-workflow', 'view-campaign-performance'],
+    title: 'Automate and measure',
+    description: 'Stop doing repetitive work by hand: build a workflow that follows up automatically, then check how your campaigns and reports are performing.',
+    tutorialIds: ['create-workflow', 'view-campaign-performance', 'explore-reporting'],
+  },
+  {
+    id: 'daily-operations',
+    title: 'Run your day',
+    description: 'Stay on top of the work: get oriented on your dashboard, work your support tickets and tasks, and clear missed calls so nothing gets dropped.',
+    tutorialIds: ['tour-dashboard', 'productivity-tickets', 'check-missed-calls'],
   },
   {
     id: 'admin-setup',
     title: 'Set up your workspace',
-    description: 'One-time account setup for a new workspace: configure your business profile, invite your team, connect your inbox, upload your branding, and stand up your first funnel. Several of these tutorials are planned and will activate as they are built.',
+    description: 'One-time account setup for a new workspace: configure your business profile, invite your team, connect your inbox, upload your branding, and stand up your first funnel. The last two tutorials are planned and will activate as they are built.',
     tutorialIds: ['configure-business-profile', 'invite-team-member', 'outlook-inbox', 'upload-brand-assets', 'build-first-funnel'],
   },
 ];
 
-// ─── Derived lookups ───────────────────────────────────────────────────────
+// ─── Derived lookups ───────────────────────────────────────────
 
 /** All learning paths keyed by id. */
 export const learningPathById: Readonly<Record<string, LearningPath>> = Object.fromEntries(
