@@ -8,12 +8,13 @@ import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
 
 /**
- * Official Kleegr logo (raster master) as uploaded to the GHL company profile —
- * this is the exact asset the live CRM renders, so the expanded sidebar uses it
- * directly. public/kleegr-logo-white.svg is the vector fallback if it fails to load.
+ * Expanded-sidebar wordmark. We render the in-repo vector wordmark
+ * (public/kleegr-logo-white.svg) directly rather than hotlinking the hosted
+ * raster master: a committed asset is reliable, renders offline, and never
+ * leaves a broken logo if the remote storage URL changes or is unreachable.
+ * Collapsed rail uses the square mark (public/kleegr-mark-white.svg).
  */
-const KLEEGR_LOGO_URL =
-  'https://msgsndr-private.storage.googleapis.com/companyPhotos/0ea2d330-0413-48f4-8c31-0fbd53e43fe1.png';
+const KLEEGR_WORDMARK = '/kleegr-logo-white.svg';
 
 /**
  * Core CRM paths — visual emphasis only (rendered slightly darker).
@@ -27,12 +28,10 @@ const CORE_CRM_PATHS = new Set([
   '/payments',
 ]);
 
-/** Cosmetic demo sub-accounts (account switching is visual-only in demo mode). */
+/** Single demo sub-account. The live portal can list many locations; the demo
+ *  intentionally surfaces only the current one so the switcher stays clean. */
 const DEMO_ACCOUNTS = [
-  { id: 'a1', name: 'Demo Business', region: 'Demo Location' },
-  { id: 'a2', name: 'Northwind Trading Co', region: 'Austin, Texas' },
-  { id: 'a3', name: 'Riverside Group', region: 'San Diego, California' },
-  { id: 'a4', name: 'Summit Studio', region: 'Denver, Colorado' },
+  { id: 'a1', name: 'Demo Business', region: 'Demo City, NY' },
 ];
 
 interface SidebarProps {
@@ -87,14 +86,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           />
         ) : (
           <img
-            src={KLEEGR_LOGO_URL}
+            src={KLEEGR_WORDMARK}
             alt="Kleegr"
             className="h-[26px] w-auto max-w-[180px] select-none object-contain object-left"
             draggable={false}
             onError={(e) => {
-              // Fall back to the in-repo white wordmark if the hosted asset fails.
+              // Fall back to the in-repo square mark if the wordmark fails.
               e.currentTarget.onerror = null;
-              e.currentTarget.src = '/kleegr-logo-white.svg';
+              e.currentTarget.src = '/kleegr-mark-white.svg';
             }}
           />
         )}
@@ -131,7 +130,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 role="listbox"
               >
                 <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-ink-subtle">
-                  Demo Sub-Accounts
+                  Current Sub-Account
                 </p>
                 {DEMO_ACCOUNTS.map((a) => {
                   const isActive = a.id === selectedAcct.id;
