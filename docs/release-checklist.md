@@ -46,7 +46,7 @@ to the route smoke test.)
 ## Tutorial checklist
 
 - [ ] `npm run check:tutorials` passes (runs in CI after smoke).
-- [ ] Exactly 10 executable flows (`TUTORIAL_FLOWS`) and 10 guide defs (`TUTORIALS`).
+- [ ] Exactly 16 executable flows (`TUTORIAL_FLOWS`) and 16 guide defs (`TUTORIALS`, derived from the flows).
 - [ ] Flow IDs, guide def IDs, and `REQUIRED_TUTORIAL_IDS` are all in sync.
 - [ ] Every flow step `target` has a rendered `data-tour` attribute in the DOM.
 - [ ] Every flow step `route` and every guide def `module` hint is a real `App.tsx` route.
