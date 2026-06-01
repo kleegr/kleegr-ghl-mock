@@ -11,6 +11,7 @@ import { cx } from '@/utils';
 import {
   FOLDERS, CREATE_OPTIONS, TEMPLATES, demoTimestamps, demoActiveEnrolled,
 } from './automationData';
+import { isShowcaseWorkflow, workflowNodeCounts } from './workflowNodes';
 
 type ListTab = 'all' | 'review' | 'deleted';
 
@@ -20,6 +21,40 @@ function StatusPill({ status }: { status: Workflow['status'] }) {
     return <span className="inline-flex items-center rounded-full border border-good/40 bg-good/5 px-2.5 py-0.5 text-xs font-semibold text-good">Published</span>;
   }
   return <span className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-semibold text-ink-muted">Draft</span>;
+}
+
+/* ── showcase badge (flagship demo workflow) ── */
+function ShowcaseBadge() {
+  return (
+    <span
+      title="Flagship showcase workflow — multi-trigger with nested branches"
+      className="inline-flex items-center gap-1 rounded-full border border-ai/30 bg-ai-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ai"
+    >
+      <Sparkles size={10} /> Showcase
+    </span>
+  );
+}
+
+/* ── per-workflow node-count chips (triggers / actions / branches / waits) ── */
+function StatChip({ value, label }: { value: number; label: string }) {
+  return (
+    <span title={`${value} ${label}`} className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] font-medium">
+      <span className="font-semibold text-ink">{value}</span>
+      <span className="text-ink-subtle">{label}</span>
+    </span>
+  );
+}
+
+function WorkflowStats({ id, trigger }: { id: string; trigger: string }) {
+  const c = workflowNodeCounts(id, trigger);
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <StatChip value={c.triggers} label={c.triggers === 1 ? 'trigger' : 'triggers'} />
+      <StatChip value={c.actions} label={c.actions === 1 ? 'action' : 'actions'} />
+      {c.branches > 0 && <StatChip value={c.branches} label="branches" />}
+      {c.waits > 0 && <StatChip value={c.waits} label={c.waits === 1 ? 'wait' : 'waits'} />}
+    </div>
+  );
 }
 
 /* ── row action menu ── */
@@ -258,10 +293,14 @@ export function WorkflowsList({
                 <tr key={wf.id} data-tour="automations.row" className="group border-b border-line/70 hover:bg-surface-sunken">
                   <td className="px-4 py-4"><input type="checkbox" className="h-4 w-4 rounded border-line" aria-label={`Select ${wf.name}`} onChange={() => cosmetic('Selected', 'Demo only.')} /></td>
                   <td className="px-4 py-4">
-                    <button onClick={() => onOpenWorkflow(wf)} className="flex items-center gap-1.5 text-left">
-                      <span className="font-medium text-ink group-hover:text-brand">{wf.name}</span>
-                      <ExternalLink size={13} className="shrink-0 text-ink-subtle" />
-                    </button>
+                    <div className="flex flex-col gap-1">
+                      <button onClick={() => onOpenWorkflow(wf)} className="flex items-center gap-1.5 text-left">
+                        <span className="font-medium text-ink group-hover:text-brand">{wf.name}</span>
+                        <ExternalLink size={13} className="shrink-0 text-ink-subtle" />
+                        {isShowcaseWorkflow(wf.id) && <ShowcaseBadge />}
+                      </button>
+                      {wf.category && <span className="text-xs text-ink-subtle">{wf.category}</span>}
+                    </div>
                   </td>
                   <td className="px-4 py-4"><StatusPill status={wf.status} /></td>
                   <td className="px-4 py-4">
@@ -270,7 +309,7 @@ export function WorkflowsList({
                   <td className="px-4 py-4 text-ink-muted">{active}</td>
                   <td className="whitespace-nowrap px-4 py-4 text-ink-muted">{updated}</td>
                   <td className="whitespace-nowrap px-4 py-4 text-ink-muted">{created}</td>
-                  <td className="px-4 py-4" />
+                  <td className="px-4 py-4"><WorkflowStats id={wf.id} trigger={wf.trigger} /></td>
                   <td className="px-4 py-4">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => onOpenWorkflow(wf)} className="grid h-7 w-7 place-items-center rounded-lg text-ink-subtle hover:bg-surface hover:text-brand" aria-label={`Open ${wf.name}`}>
