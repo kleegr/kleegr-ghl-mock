@@ -1,5 +1,5 @@
 /**
- * types.ts — shared, frontend-only type foundation for the Automations /
+ * types.ts - shared, frontend-only type foundation for the Automations /
  * Workflows module.
  *
  * WHY THIS FILE EXISTS
@@ -12,31 +12,31 @@
  * adopted incrementally without breaking anything that exists today.
  *
  * DESIGN RULES (read before editing)
- *   • Frontend-only. No backend/runtime assumptions, no API shapes.
- *   • Additive. Nothing here replaces or mutates an existing export elsewhere.
- *   • Two node "kind" vocabularies, on purpose:
- *       - `WorkflowRenderKind`  — the 4 shapes the CURRENT canvas can draw.
- *                                 `WorkflowDisplayNode.type` uses this. The
- *                                 builder keys exhaustive `Record<…>` maps on it,
- *                                 so it must stay exactly these four members.
- *       - `WorkflowNodeKind`    — the broad semantic grouping the NEXT builder
- *                                 will categorise the catalog by (adds internal,
- *                                 communication, payment, webhook, ai). Use this
- *                                 on the forward-looking `WorkflowNode`.
- *   • `WorkflowDisplayNode` here is the single source of truth for the bridge
- *     shape; `workflowNodes.ts` re-exports it so both stay identical.
+ * - Frontend-only. No backend/runtime assumptions, no API shapes.
+ * - Additive. Nothing here replaces or mutates an existing export elsewhere.
+ * - Two node "kind" vocabularies, on purpose:
+ * - `WorkflowRenderKind` - the 4 shapes the CURRENT canvas can draw.
+ * `WorkflowDisplayNode.type` uses this. The
+ * builder keys exhaustive `Record<...>` maps on it,
+ * so it must stay exactly these four members.
+ * - `WorkflowNodeKind` - the broad semantic grouping the NEXT builder
+ * will categorise the catalog by (adds internal,
+ * communication, payment, webhook, ai). Use this
+ * on the forward-looking `WorkflowNode`.
+ * - `WorkflowDisplayNode` here is the single source of truth for the bridge
+ * shape; `workflowNodes.ts` re-exports it so both stay identical.
  *
  * Nothing in this file ever fires a real automation.
  */
 
-/* ── Identifiers ──────────────────────────────────────────── */
+/* -- Identifiers -- */
 
 export type WorkflowId = string;
 export type WorkflowNodeId = string;
 export type WorkflowBranchId = string;
 export type WorkflowTemplateId = string;
 
-/* ── Category / status ──────────────────────────────────────── */
+/* -- Category / status -- */
 
 /**
  * Demo workflow categories. Kept open-ended with a trailing `string` so the
@@ -60,12 +60,12 @@ export type WorkflowCategory =
 /** Matches the runtime `Workflow.status` plus forward-looking lifecycle states. */
 export type WorkflowStatus = 'draft' | 'published' | 'paused' | 'needs-review' | 'archived';
 
-/* ── Node kinds ───────────────────────────────────────────── */
+/* -- Node kinds -- */
 
 /**
  * The four node shapes the CURRENT builder canvas knows how to draw. The
- * builder keys exhaustive `Record<WorkflowRenderKind, …>` style maps on this,
- * so adding members here is a breaking change — don't, unless the canvas grows
+ * builder keys exhaustive `Record<WorkflowRenderKind, ...>` style maps on this,
+ * so adding members here is a breaking change - don't, unless the canvas grows
  * a genuinely new visual primitive.
  */
 export type WorkflowRenderKind = 'trigger' | 'action' | 'condition' | 'wait';
@@ -113,7 +113,7 @@ export function renderKindFor(kind: WorkflowNodeKind): WorkflowRenderKind {
 export const isRenderKind = (v: string): v is WorkflowRenderKind =>
   (WORKFLOW_RENDER_KINDS as readonly string[]).includes(v);
 
-/* ── Picker catalog items ─────────────────────────────────────── */
+/* -- Picker catalog items -- */
 
 export type CatalogItemKind = 'trigger' | 'action';
 
@@ -133,7 +133,7 @@ export interface CatalogItem {
   desc?: string;
   /** Example use case shown in the picker. */
   example?: string;
-  /** Trigger vs action — optional so existing icon-bearing items stay assignable. */
+  /** Trigger vs action - optional so existing icon-bearing items stay assignable. */
   kind?: CatalogItemKind;
   /** Icon component (kept opaque here to avoid a lucide dependency). */
   icon?: unknown;
@@ -149,7 +149,7 @@ export interface ActionItem extends CatalogItem {
   kind?: 'action';
 }
 
-/* ── Per-node configuration ──────────────────────────────────── */
+/* -- Per-node configuration -- */
 
 export type WorkflowNodeConfigValue =
   | string
@@ -161,20 +161,20 @@ export type WorkflowNodeConfigValue =
 
 /**
  * Free-form, JSON-serialisable settings bag for a node (channel, template id,
- * wait duration, filter rules, …). Intentionally permissive: the deeper builder
+ * wait duration, filter rules, ...). Intentionally permissive: the deeper builder
  * will narrow this per node `type` with discriminated configs later.
  */
 export interface WorkflowNodeConfig {
   [key: string]: WorkflowNodeConfigValue | undefined;
 }
 
-/* ── Branch / condition model ─────────────────────────────────── */
+/* -- Branch / condition model -- */
 
 export type WorkflowBranchLane = 'yes' | 'no' | 'else';
 
 /**
  * One lane out of a condition node. `nodes` is itself a list of `WorkflowNode`s,
- * and any of those nodes may carry its own `branches` — that recursion is how
+ * and any of those nodes may carry its own `branches` - that recursion is how
  * the model supports nested branching.
  */
 export interface WorkflowBranch {
@@ -189,13 +189,13 @@ export interface WorkflowBranch {
   nodes: WorkflowNode[];
 }
 
-/* ── Forward-looking node model (what Developer 6 migrates the canvas to) ── */
+/* -- Forward-looking node model (what Developer 6 migrates the canvas to) -- */
 
 export interface WorkflowNode {
   id: WorkflowNodeId;
   /** Catalog subtype id, e.g. "send_sms", "if_else", "wait", "form_submitted". */
   type: string;
-  /** Broad semantic family — see `WorkflowNodeKind`. */
+  /** Broad semantic family - see `WorkflowNodeKind`. */
   kind: WorkflowNodeKind;
   label: string;
   /** Short technical config line shown on the node card. */
@@ -217,12 +217,12 @@ export interface WorkflowNode {
 /** A trigger is just a node whose `kind` is `'trigger'`. */
 export type WorkflowTrigger = WorkflowNode & { kind: 'trigger' };
 
-/* ── Bridge: the exact shape the CURRENT builder renders today ───────── */
+/* -- Bridge: the exact shape the CURRENT builder renders today -- */
 
 /**
  * Display-only node consumed by WorkflowBuilder.tsx via `getNodesForWorkflow`.
  * `workflowNodes.ts` re-exports this so the builder and this module never drift.
- * Keep this identical to the historical interface — the builder depends on it.
+ * Keep this identical to the historical interface - the builder depends on it.
  */
 export interface WorkflowDisplayNode {
   id: string;
@@ -235,11 +235,11 @@ export interface WorkflowDisplayNode {
   note?: string;
   /** Example message text or detailed settings (inspector). */
   example?: string;
-  /** Branch metadata for `condition` nodes — drives the YES / NO fork. */
+  /** Branch metadata for `condition` nodes - drives the YES / NO fork. */
   branch?: { yesLabel: string; noLabel: string; noTerminal: string };
 }
 
-/* ── Templates (showcase flows + starter chains) ──────────────────── */
+/* -- Templates (showcase flows + starter chains) -- */
 
 /**
  * A complete, multi-trigger workflow definition in the rich model. Unlike the
@@ -254,7 +254,7 @@ export interface WorkflowTemplate {
   description: string;
   category: WorkflowCategory;
   status?: WorkflowStatus;
-  /** One or more entry points — the next builder renders these as trigger lanes. */
+  /** One or more entry points - the next builder renders these as trigger lanes. */
   triggers: WorkflowNode[];
   /** Main step trunk after the trigger(s). */
   nodes: WorkflowNode[];
@@ -262,7 +262,7 @@ export interface WorkflowTemplate {
   showcase?: boolean;
 }
 
-/* ── AI starter chains ──────────────────────────────────────── */
+/* -- AI starter chains -- */
 
 /** Common AI-composer intents that map to a ready-made starter chain. */
 export type StarterChainIntent =
@@ -287,7 +287,7 @@ export interface StarterChainTemplate extends WorkflowTemplate {
   promptExamples: string[];
 }
 
-/** Lightweight prompt → template index for the AI composer to consume. */
+/** Lightweight prompt -> template index for the AI composer to consume. */
 export interface AiStarterPromptMapping {
   intent: StarterChainIntent;
   templateId: WorkflowTemplateId;
@@ -296,7 +296,7 @@ export interface AiStarterPromptMapping {
   keywords: string[];
 }
 
-/* ── Adapter / factory signatures (implemented in workflowNodes.ts) ─────── */
+/* -- Adapter / factory signatures (implemented in workflowNodes.ts) -- */
 
 /** Builds a display node from a picked catalog item (used by the builder). */
 export type WorkflowNodeFactory = (item: CatalogItem, kind: WorkflowRenderKind) => WorkflowDisplayNode;
