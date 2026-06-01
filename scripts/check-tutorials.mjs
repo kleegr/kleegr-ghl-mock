@@ -8,8 +8,8 @@
  * consistent, so CI can gate on it.
  *
  * It verifies:
- *   1. Exactly 10 executable flows in   src/tutorials/flows.ts            (TUTORIAL_FLOWS)
- *   2. Exactly 10 guide defs in         src/modules/guides/tutorialDefs.ts (TUTORIALS)
+ *   1. Exactly 16 executable flows in   src/tutorials/flows.ts            (TUTORIAL_FLOWS)
+ *   2. Exactly 16 guide defs in         src/modules/guides/tutorialDefs.ts (TUTORIALS)
  *   3. Flow IDs === guide def IDs       (1:1, no orphans on either side)
  *   4. REQUIRED_TUTORIAL_IDS (registry) === flow IDs (registry stays in sync)
  *   5. Every flow step `route` is a real <Route> path in src/App.tsx
@@ -107,7 +107,7 @@ function allMatches(block, re) {
 const setEq = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
 const diff = (a, b) => [...a].filter((x) => !b.has(x));
 
-// ── Gather rendered data-tour attributes by walking src/ ───────────────────────────
+// ── Gather rendered data-tour attributes by walking src/ ────────────────────────
 function collectRenderedTours(dir) {
   const found = new Set();
   for (const entry of readdirSync(dir)) {
@@ -149,12 +149,19 @@ const flows = flowBlocks.map((b) => ({
   completionBody: firstMatch(b, /completionBody:\s*'([^']*)'/),
 }));
 
-// Parse guide defs
-const defBlocks = objectBlocks(arrayBody(defsSrc, 'TUTORIALS'));
-const defs = defBlocks.map((b) => ({
-  id: firstMatch(b, /id:\s*'([^']+)'/),
-  module: firstMatch(b, /module:\s*'([^']+)'/),
-}));
+// Parse guide defs. tutorialDefs.ts is now a runtime projection of the flows
+// (single source of truth — Option A in the architecture plan):
+// `TUTORIALS = TUTORIAL_FLOWS.map(...)`. When derived, each def's id IS the
+// flow id and its module hint IS the flow's first routed step, by construction,
+// so derive the check inputs from the already-parsed flows rather than from a
+// literal array. A hand-written literal is still supported for backward compat.
+const defsAreDerived = /TUTORIAL_FLOWS\s*\.\s*map\s*\(/.test(defsSrc);
+const defs = defsAreDerived
+  ? flows.map((f) => ({ id: f.id, module: f.routes[0] ?? null }))
+  : objectBlocks(arrayBody(defsSrc, 'TUTORIALS')).map((b) => ({
+      id: firstMatch(b, /id:\s*'([^']+)'/),
+      module: firstMatch(b, /module:\s*'([^']+)'/),
+    }));
 
 // Parse registry required IDs
 const reqBody = (() => {
@@ -178,21 +185,26 @@ const requiredIds = allMatches(reqBody, /'([^']+)'/g).map(
 
 const renderedTours = collectRenderedTours(resolve(repoRoot, 'src'));
 
-// ── Check 1: 10 flows ────────────────────────────────────────────────────
+// ── Check 1: flow count ─────────────────────────────────────────────
+// Bumped from 10 to 16 when the guided tutorials were rewritten and expanded
+// (rewrote the original 10 and added tour-dashboard, review-document,
+// explore-reporting, productivity-tickets, configure-business-profile, and
+// invite-team-member). Keep this in sync when flows are added or removed.
+const EXPECTED_TUTORIAL_COUNT = 16;
 console.log('[1] Executable flow count (flows.ts)');
-flows.length === 10
-  ? pass(`TUTORIAL_FLOWS has 10 flows`)
-  : fail(`expected 10 flows, found ${flows.length}`);
+flows.length === EXPECTED_TUTORIAL_COUNT
+  ? pass(`TUTORIAL_FLOWS has ${EXPECTED_TUTORIAL_COUNT} flows`)
+  : fail(`expected ${EXPECTED_TUTORIAL_COUNT} flows, found ${flows.length}`);
 console.log('');
 
-// ── Check 2: 10 guide defs ──────────────────────────────────────────────
+// ── Check 2: guide def count ───────────────────────────────────────
 console.log('[2] Guide definition count (tutorialDefs.ts)');
-defs.length === 10
-  ? pass(`TUTORIALS has 10 defs`)
-  : fail(`expected 10 guide defs, found ${defs.length}`);
+defs.length === EXPECTED_TUTORIAL_COUNT
+  ? pass(`TUTORIALS has ${EXPECTED_TUTORIAL_COUNT} defs`)
+  : fail(`expected ${EXPECTED_TUTORIAL_COUNT} guide defs, found ${defs.length}`);
 console.log('');
 
-// ── Check 3: flow IDs === def IDs ─────────────────────────────────────────
+// ── Check 3: flow IDs === def IDs ───────────────────────────────────
 console.log('[3] Flow IDs match guide def IDs (1:1)');
 const flowIds = new Set(flows.map((f) => f.id));
 const defIds = new Set(defs.map((d) => d.id));
@@ -206,7 +218,7 @@ if (setEq(flowIds, defIds)) {
 }
 console.log('');
 
-// ── Check 4: registry REQUIRED_TUTORIAL_IDS === flow IDs ───────────────────────
+// ── Check 4: registry REQUIRED_TUTORIAL_IDS === flow IDs ────────────────────
 console.log('[4] Registry REQUIRED_TUTORIAL_IDS in sync with flows');
 const reqSet = new Set(requiredIds);
 if (setEq(reqSet, flowIds)) {
@@ -219,7 +231,7 @@ if (setEq(reqSet, flowIds)) {
 }
 console.log('');
 
-// ── Check 5: flow routes exist in App.tsx ───────────────────────────────────
+// ── Check 5: flow routes exist in App.tsx ────────────────────────────
 console.log('[5] Flow step routes are declared in App.tsx');
 {
   let ok = 0;
@@ -233,7 +245,7 @@ console.log('[5] Flow step routes are declared in App.tsx');
 }
 console.log('');
 
-// ── Check 6: flow targets are actually rendered ───────────────────────────────
+// ── Check 6: flow targets are actually rendered ──────────────────────────
 console.log('[6] Flow step targets have a rendered data-tour attribute');
 {
   let ok = 0;
@@ -247,7 +259,7 @@ console.log('[6] Flow step targets have a rendered data-tour attribute');
 }
 console.log('');
 
-// ── Check 7: completion title + body present ─────────────────────────────────
+// ── Check 7: completion title + body present ───────────────────────────
 console.log('[7] Every flow has completion title + body');
 {
   let ok = 0;
@@ -262,7 +274,7 @@ console.log('[7] Every flow has completion title + body');
 }
 console.log('');
 
-// ── Check 8: guide def module hints are real routes ────────────────────────────
+// ── Check 8: guide def module hints are real routes ────────────────────────
 console.log('[8] Guide def module route hints resolve to real routes');
 {
   let ok = 0;
@@ -275,14 +287,14 @@ console.log('[8] Guide def module route hints resolve to real routes');
 }
 console.log('');
 
-// ═════════════════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════════
 // Help content model checks (foundation for the new "What is this?" system).
 //
 // These prepare for contextual help without blocking the repo before anchors
 // are instrumented. Structural checks on the help model itself are HARD (this
 // PR owns that data); checks that depend on app-wide instrumentation Developer
 // 5 has not done yet are WARN-only for now.
-// ════════════════════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════════
 const helpSrc = read('src/help/helpContent.ts');
 const pathsSrc = read('src/tutorials/paths.ts');
 
@@ -315,7 +327,7 @@ const knownAreas = (() => {
 const flowTargets = new Set();
 for (const f of flows) for (const t of f.targets) flowTargets.add(t);
 
-// ── Check 9: help content model exists & parses ──────────────────────────────
+// ── Check 9: help content model exists & parses ──────────────────────────
 console.log('[9] Help content model exists and parses (src/help/helpContent.ts)');
 if (helpSrc && helpEntries.length) {
   pass(`helpContent.ts parsed — ${helpEntries.length} help entries`);
@@ -341,7 +353,7 @@ console.log('[10] Help entries have non-empty key, area, tier, label, help');
 }
 console.log('');
 
-// ── Check 11: no duplicate help keys ───────────────────────────────────────
+// ── Check 11: no duplicate help keys ─────────────────────────────────
 console.log('[11] Help keys are unique');
 {
   const keys = helpEntries.map((e) => e.key).filter(Boolean);
@@ -351,7 +363,7 @@ console.log('[11] Help keys are unique');
 }
 console.log('');
 
-// ── Check 12: help areas are within the known set (WARN) ──────────────────────
+// ── Check 12: help areas are within the known set (WARN) ────────────────────
 console.log('[12] Help entry areas are within the known HELP_AREAS set');
 {
   const unknown = [...new Set(helpEntries.map((e) => e.area).filter((a) => a && !knownAreas.has(a)))];
@@ -441,7 +453,7 @@ console.log('[15] Required-for-V1 help keys are rendered as data-tour (instrumen
 }
 console.log('');
 
-// ── Summary ───────────────────────────────────────────────────────────
+// ── Summary ─────────────────────────────────────────
 if (warnings > 0) {
   console.warn(`Note: ${warnings} non-blocking warning(s) — help instrumentation is still in progress.`);
 }

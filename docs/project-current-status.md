@@ -30,7 +30,7 @@ all declared in `src/App.tsx`:
 - **Automations** (`/automations`) — workflow list + visual builder + educational picker.
 - **Sites, Reputation, Reporting, Payments, Phone, Tasks, Integrations, Media, Settings** —
   starter modules with realistic seeded data and empty/populated states.
-- **Guides** (`/guides`) — launcher for the 10 core tutorials.
+- **Guides** (`/guides`) — launcher for the guided tutorials (16 today), grouped into learning paths.
 
 ## Automations (workflows)
 
@@ -47,15 +47,18 @@ controls. Display data lives in `src/modules/automations/automationData.ts` and
 Tutorial Mode is an in-app, Arcade-style walkthrough engine (`TutorialOverlay`) driven by
 two parallel, ID-aligned sources:
 
-- `src/tutorials/flows.ts` — `TUTORIAL_FLOWS`: 10 executable flows (route + `data-tour`
-  target + step copy + completion screen).
-- `src/modules/guides/tutorialDefs.ts` — `TUTORIALS`: 10 guide definitions (catalog cards).
+- `src/tutorials/flows.ts` — `TUTORIAL_FLOWS`: 16 executable flows (route + `data-tour`
+  target + step copy + completion screen). Single source of truth for Tutorial Mode.
+- `src/modules/guides/tutorialDefs.ts` — `TUTORIALS`: 16 guide definitions (catalog cards),
+  now derived from `TUTORIAL_FLOWS` rather than hand-maintained.
 - `src/tutorials/registry.ts` — the single source of truth for `data-tour` keys and the
   `REQUIRED_TUTORIAL_IDS` list, kept in sync with the flows.
 
-The 10 flows: add-contact, reply-conversation, move-pipeline, book-appointment,
-create-workflow, view-campaign-performance, send-review-request, check-missed-calls,
-create-invoice, outlook-inbox. Consistency is enforced by `npm run check:tutorials`.
+The 16 flows: tour-dashboard, add-contact, reply-conversation, check-missed-calls,
+move-pipeline, book-appointment, create-invoice, review-document, send-review-request,
+create-workflow, view-campaign-performance, explore-reporting, productivity-tickets,
+configure-business-profile, invite-team-member, outlook-inbox. They are grouped into six
+learning paths in `src/tutorials/paths.ts`. Consistency is enforced by `npm run check:tutorials`.
 
 ## Prompt library
 
@@ -74,7 +77,7 @@ Static, dependency-free checks gate every release (and run in CI):
   previous single ~1.1 MB bundle and its 500 kB warning are resolved).
 - `npm run smoke` (`scripts/smoke-routes.mjs`) — every expected route is declared in
   `App.tsx`, `vercel.json` has the SPA rewrite, and no forbidden route is linked.
-- `npm run check:tutorials` (`scripts/check-tutorials.mjs`) — 10 flows / 10 defs, IDs and
+- `npm run check:tutorials` (`scripts/check-tutorials.mjs`) — 16 flows / 16 defs, IDs and
   registry in sync, every flow route is real, every flow target is a rendered `data-tour`,
   every flow has completion copy, and every guide module hint is a real route.
 - `npm run verify` — runs lint + smoke + check:tutorials together.
@@ -88,5 +91,5 @@ PR and on pushes to `main`.
   "send", "charge", "connect", and "call" is cosmetic.
 - **In-memory state.** All edits reset on refresh or via the **Reset Demo** button.
 - **Placeholder branding.** Palette, font, and logo in `src/theme/tokens.ts` are
-  placeholders pending Kleegr's verified brand tokens.
+  placeholders pending Kleegr’s verified brand tokens.
 - **Seed data is illustrative.** Generated via the `prompts/` templates; no real PII.
