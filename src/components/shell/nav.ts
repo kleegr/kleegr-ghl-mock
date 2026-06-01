@@ -1,7 +1,6 @@
 import {
-  Rocket, LayoutDashboard, MessagesSquare, Calendar, Users, Filter, CreditCard,
-  KanbanSquare, Megaphone, Workflow, LayoutTemplate, MonitorPlay, Star, BarChart3,
-  Phone, FolderOpen, Plug, Bot, Wand2, Sparkles, Link as LinkIcon, GraduationCap,
+  LayoutDashboard, MessagesSquare, Calendar, Users, Filter, CreditCard,
+  KanbanSquare, Megaphone, Workflow, Star, BarChart3, Bot, GraduationCap,
   Settings, type LucideIcon,
 } from 'lucide-react';
 
@@ -22,39 +21,33 @@ export interface NavItem {
  * separators between logical clusters. Every `path` maps to a real route, so
  * there are no dead links or silent redirects. Settings is intentionally NOT in
  * this list — it is pinned to the bottom of the sidebar via SETTINGS_NAV.
+ *
+ * Trimmed for the demo: low-value / not-yet-built areas (Launchpad, Sites,
+ * Memberships, Phone, Media Storage, App Marketplace, AI Studio, Ask AI, URLs)
+ * are intentionally NOT surfaced here. Their routes still exist in App.tsx for
+ * deep-link / smoke-test compatibility — they are simply hidden from the rail.
+ * AI Agents is promoted up into the primary work cluster (it used to sit buried
+ * at the very bottom of the old AI block).
  */
 export const NAV: NavItem[] = [
-  // Core CRM
-  { label: 'Launchpad', path: '/launchpad', icon: Rocket, tour: 'nav.launchpad' },
+  // Core CRM / day-to-day work
   { label: 'Dashboard', path: '/', icon: LayoutDashboard, tour: 'nav.dashboard' },
   { label: 'Conversations', path: '/conversations', icon: MessagesSquare, tour: 'nav.conversations' },
   { label: 'Calendars', path: '/calendars', icon: Calendar, tour: 'nav.calendars' },
   { label: 'Contacts', path: '/contacts', icon: Users, tour: 'nav.contacts' },
   { label: 'Opportunities', path: '/opportunities', icon: Filter, tour: 'nav.opportunities' },
   { label: 'Payments', path: '/payments', icon: CreditCard, tour: 'nav.payments' },
-  // Tasks & Projects are no longer separate sidebar entries — they live inside
-  // the Productivity hub (Tasks / Projects tabs). The /tasks route is kept as a
-  // hidden compatibility redirect to /productivity (see App.tsx).
+  // Tasks & Projects live inside the Productivity hub (Tasks / Projects tabs).
+  // The /tasks route is kept as a hidden compatibility redirect (see App.tsx).
   { label: 'Productivity', path: '/productivity', icon: KanbanSquare, tour: 'productivity.nav' },
+  // AI Agents — promoted into the primary work cluster (no longer buried).
+  { label: 'AI Agents', path: '/ai-agents', icon: Bot, tour: 'nav.aiAgents' },
 
   // Marketing & growth
   { label: 'Marketing', path: '/marketing/email', icon: Megaphone, tour: 'nav.marketing', dividerBefore: true },
   { label: 'Automation', path: '/automations', icon: Workflow, tour: 'nav.automations' },
-  { label: 'Sites', path: '/sites', icon: LayoutTemplate, tour: 'nav.sites' },
-  { label: 'Memberships', path: '/memberships', icon: MonitorPlay, tour: 'nav.memberships' },
   { label: 'Reputation', path: '/reputation', icon: Star, tour: 'nav.reputation' },
   { label: 'Reporting', path: '/reporting', icon: BarChart3, tour: 'nav.reporting' },
-
-  // Comms & storage
-  { label: 'Phone', path: '/phone', icon: Phone, tour: 'nav.phone', dividerBefore: true },
-  { label: 'Media Storage', path: '/media', icon: FolderOpen, tour: 'nav.media' },
-  { label: 'App Marketplace', path: '/integrations', icon: Plug, tour: 'nav.integrations' },
-
-  // AI suite (2026)
-  { label: 'AI Agents', path: '/ai-agents', icon: Bot, tour: 'nav.aiAgents', dividerBefore: true },
-  { label: 'AI Studio', path: '/ai-studio', icon: Wand2, tour: 'nav.aiStudio' },
-  { label: 'Ask AI', path: '/ask-ai', icon: Sparkles, tour: 'nav.askAi' },
-  { label: 'URLs', path: '/urls', icon: LinkIcon, tour: 'nav.urls' },
 
   // Learning
   { label: 'Guides', path: '/guides', icon: GraduationCap, tour: 'nav.guides', dividerBefore: true },
