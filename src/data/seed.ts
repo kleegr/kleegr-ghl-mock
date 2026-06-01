@@ -423,13 +423,16 @@ export function generateDemoData(): DemoData {
   appointments.sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime));
 
   /*
-   * Five flagship demo workflows - deliberately small so the Automations
-   * module reads like a real, well-run account rather than dozens of shallow
-   * fakes. Enrollment numbers are fixed (not PRNG-drawn) so the totals stay
-   * coherent with the Overview dashboard: 5 workflows, 4 published, and a
-   * combined ~312 lifetime enrollments (matching the trigger-match funnel).
-   * Drafts carry 0 enrollments because they are not live yet. wf_3 carries a
-   * needsReview flag whose lastError matches OVERVIEW_ERRORS in automationData.
+   * Flagship demo workflows - deliberately small so the Automations module
+   * reads like a real, well-run account rather than dozens of shallow fakes.
+   * Enrollment numbers are fixed (not PRNG-drawn) so the totals stay coherent
+   * with the Overview dashboard: 5 live-style workflows (4 published) carry a
+   * combined ~312 lifetime enrollments (matching the trigger-match funnel),
+   * plus one showcase draft (wf_6) that adds 0 enrollments so every dashboard
+   * number stays unchanged. Drafts carry 0 enrollments because they are not
+   * live yet. wf_3 carries a needsReview flag whose lastError matches
+   * OVERVIEW_ERRORS in automationData. wf_6 is the multi-trigger / nested-branch
+   * showcase whose rich template lives in workflowNodes.ts (SHOWCASE_TEMPLATE).
    */
   const workflows: Workflow[] = [
     {
@@ -493,6 +496,18 @@ export function generateDemoData(): DemoData {
       explanation: 'Keeps deals moving when they enter the Follow-Up stage: sends a follow-up message, notifies the owner, and adds a second touch two days later.',
       createdAt: 'Apr 27 2026, 3:08 PM',
       lastUpdatedAt: 'May 28 2026, 9:52 AM',
+    },
+    {
+      id: 'wf_6',
+      name: 'VIP Lead -> Consult -> Revenue Engine',
+      status: 'draft',
+      enrolled: 0,
+      activeEnrolled: 0,
+      trigger: 'Form Submitted + Opportunity Created (multi-trigger)',
+      category: 'Showcase',
+      explanation: 'Flagship showcase flow: two triggers, an instant welcome, a consult check that branches, a full revenue path on YES, and a multi-step nurture drip with a nested re-engagement check on NO. Built as a draft to demonstrate the deeper builder vision.',
+      createdAt: 'May 30 2026, 10:00 AM',
+      lastUpdatedAt: 'May 31 2026, 4:20 PM',
     },
   ];
 
