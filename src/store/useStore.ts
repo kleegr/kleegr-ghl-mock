@@ -83,6 +83,12 @@ interface StoreState extends DemoData {
   completedTutorials: string[];
   completionCardId: string | null;
 
+  // contextual help ("What is this?") — additive, in-memory only.
+  // helpMode toggles the question-mark/explain affordance; activeHelpKey is the
+  // catalog key currently being explained (see src/help/helpContent.ts).
+  helpMode: boolean;
+  activeHelpKey: string | null;
+
   // ui
   setMode: (m: Mode) => void;
   toggleSidebar: () => void;
@@ -99,6 +105,11 @@ interface StoreState extends DemoData {
   exitTutorial: () => void;
   completeTutorial: (id: string) => void;
   dismissCompletion: () => void;
+
+  // contextual help actions
+  toggleHelpMode: () => void;
+  openHelp: (key: string) => void;
+  closeHelp: () => void;
 
   // mutations (all in-memory, session only)
   resetDemo: () => void;
@@ -139,6 +150,8 @@ export const useStore = create<StoreState>((set, get) => ({
   tutorialStep: 0,
   completedTutorials: [],
   completionCardId: null,
+  helpMode: false,
+  activeHelpKey: null,
 
   setMode: (mode) => set({ mode }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -152,7 +165,7 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
 
-  // ── Tutorial Mode (Arcade-style guided walkthroughs) ────────────────────────────
+  // ── Tutorial Mode (Arcade-style guided walkthroughs) ───────────────────────────────
   // All state is in-memory; resetDemo() clears it along with the seeded data.
   startTutorial: (id) =>
     set({ activeTutorialId: id, tutorialStep: 0, completionCardId: null, mode: 'tutorial' }),
@@ -170,6 +183,14 @@ export const useStore = create<StoreState>((set, get) => ({
     })),
   dismissCompletion: () => set({ completionCardId: null }),
 
+  // ── Contextual help ("What is this?") ──────────────────────────────────────
+  // Additive slice for the future help popover (Developer 2). Turning help mode
+  // off also clears any open explanation so the two never get out of sync.
+  toggleHelpMode: () =>
+    set((s) => (s.helpMode ? { helpMode: false, activeHelpKey: null } : { helpMode: true })),
+  openHelp: (key) => set({ activeHelpKey: key }),
+  closeHelp: () => set({ activeHelpKey: null }),
+
   resetDemo: () => {
     set({
       ...fresh(),
@@ -177,6 +198,8 @@ export const useStore = create<StoreState>((set, get) => ({
       tutorialStep: 0,
       completedTutorials: [],
       completionCardId: null,
+      helpMode: false,
+      activeHelpKey: null,
     });
     get().pushToast({ title: 'Demo reset', description: 'All data restored to the original seed.', variant: 'success' });
   },
