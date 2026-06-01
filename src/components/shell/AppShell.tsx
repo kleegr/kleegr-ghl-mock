@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { SettingsSidebar } from '@/modules/settings/SettingsSidebar';
 import { TopBar } from './TopBar';
+import { DemoDisclaimer } from './DemoDisclaimer';
 import { Toaster } from '@/components/ui/Modal';
 import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
 import { HelpProvider } from '@/components/help';
@@ -34,6 +35,7 @@ export function AppShell() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar onOpenMobileNav={() => setMobileNav(true)} />
+        <DemoDisclaimer />
         <main className="flex-1 overflow-y-auto bg-surface-sunken">
           <Outlet />
         </main>
