@@ -5,6 +5,7 @@ import { SettingsSidebar } from '@/modules/settings/SettingsSidebar';
 import { TopBar } from './TopBar';
 import { Toaster } from '@/components/ui/Modal';
 import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
+import { HelpProvider } from '@/components/help';
 import { GlobalDialer } from './GlobalDialer';
 import { cx } from '@/utils';
 
@@ -39,6 +40,7 @@ export function AppShell() {
       </div>
       <Toaster />
       <TutorialOverlay />
+      <HelpProvider />
       <GlobalDialer />
     </div>
   );

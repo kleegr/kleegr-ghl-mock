@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Menu, Search, Bell, RotateCcw, X, User, LogOut, Settings,
   Plus, UserPlus, Calendar, Briefcase, FileText, CheckSquare, Check,
-  Phone, Sparkles, Megaphone, HelpCircle, BookOpen,
+  Phone, Sparkles, Megaphone, HelpCircle, BookOpen, MessageCircleQuestion,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
@@ -50,6 +50,8 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
   const searchOpen = useStore((s) => s.searchOpen);
   const setSearchOpen = useStore((s) => s.setSearchOpen);
   const openDialer = useStore((s) => s.openDialer);
+  const helpMode = useStore((s) => s.helpMode);
+  const toggleHelpMode = useStore((s) => s.toggleHelpMode);
   const notifications = useStore((s) => s.notifications);
   const markAllRead = useStore((s) => s.markAllNotificationsRead);
   const pushToast = useStore((s) => s.pushToast);
@@ -341,6 +343,24 @@ export function TopBar({ onOpenMobileNav }: TopBarProps) {
                 </div>
               )}
             </div>
+
+            {/* Help mode → contextual "what is this?" badges + popovers.
+                Distinct from the guides button below (which opens the tutorial
+                library). Reflects helpMode from the store and toggles it. */}
+            <button
+              onClick={toggleHelpMode}
+              className={cx(
+                'grid h-8 w-8 place-items-center rounded-full transition-colors',
+                helpMode
+                  ? 'bg-white/20 text-white ring-1 ring-white/40'
+                  : 'text-white/90 hover:bg-white/10',
+              )}
+              aria-label="Toggle help mode"
+              aria-pressed={helpMode}
+              title={helpMode ? 'Turn off help mode' : 'What is this? Turn on help mode'}
+            >
+              <MessageCircleQuestion size={17} />
+            </button>
 
             {/* Help → guides */}
             <button
