@@ -9,6 +9,8 @@ interface PickerProps {
   onSelect: (item: CatalogItem) => void;
   /** Open the full-screen catalog (the drawer's expand button). */
   onExpand: () => void;
+  /** Where a picked node will land (e.g. "Inserts at step 3 of the YES branch"). */
+  context?: string;
 }
 
 /**
@@ -16,7 +18,7 @@ interface PickerProps {
  * Selecting an item adds a real (demo-only) node to the canvas via onSelect;
  * the expand button opens the full-screen searchable catalog via onExpand.
  */
-export function BuilderPicker({ kind, onClose, onSelect, onExpand }: PickerProps) {
+export function BuilderPicker({ kind, onClose, onSelect, onExpand, context }: PickerProps) {
   const isTrigger = kind === 'trigger';
   const groups = isTrigger ? TRIGGER_GROUPS : ACTION_GROUPS;
   const [query, setQuery] = useState('');
@@ -56,6 +58,13 @@ export function BuilderPicker({ kind, onClose, onSelect, onExpand }: PickerProps
           </button>
         </div>
       </div>
+
+      {/* Insertion context (so the picker knows where the node will land) */}
+      {context && (
+        <div className="mx-5 mb-1 flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand-soft/40 px-3 py-1.5 text-xs font-semibold text-brand">
+          <ChevronRight size={14} className="shrink-0" /> {context}
+        </div>
+      )}
 
       {/* Search */}
       <div className="flex items-center gap-2 px-5">
