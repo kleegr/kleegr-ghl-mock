@@ -17,6 +17,14 @@ import { Media } from '@/modules/media/Media';
 import { Settings } from '@/modules/settings/Settings';
 import { Guides } from '@/modules/guides/Guides';
 import { Productivity } from '@/modules/productivity/Productivity';
+import { AIAgents } from '@/modules/ai/AIAgents';
+import { AIStudio } from '@/modules/ai/AIStudio';
+import { AskAI } from '@/modules/ai/AskAI';
+import { Onboardings } from '@/modules/onboardings/Onboardings';
+import { UrlRedirects } from '@/modules/urls/UrlRedirects';
+import { Launchpad } from '@/modules/launchpad/Launchpad';
+import { Memberships } from '@/modules/memberships/Memberships';
+import { MobileApp } from '@/modules/mobile/MobileApp';
 import { Placeholder } from '@/modules/placeholder/Placeholder';
 
 export default function App() {
@@ -49,15 +57,15 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/:section" element={<Settings />} />
           <Route path="/guides" element={<Guides />} />
-          {/* New GHL nav areas — illustrative demo placeholders (no dead links). */}
-          <Route path="/launchpad" element={<Placeholder />} />
-          <Route path="/memberships" element={<Placeholder />} />
-          <Route path="/ai-agents" element={<Placeholder />} />
-          <Route path="/ai-studio" element={<Placeholder />} />
-          <Route path="/ask-ai" element={<Placeholder />} />
-          <Route path="/urls" element={<Placeholder />} />
-          <Route path="/onboardings" element={<Placeholder />} />
-          <Route path="/mobile-app" element={<Placeholder />} />
+          {/* Kleegr workspaces reproduced with fictional, demo-safe content. */}
+          <Route path="/launchpad" element={<Launchpad />} />
+          <Route path="/memberships" element={<Memberships />} />
+          <Route path="/ai-agents" element={<AIAgents />} />
+          <Route path="/ai-studio" element={<AIStudio />} />
+          <Route path="/ask-ai" element={<AskAI />} />
+          <Route path="/urls" element={<UrlRedirects />} />
+          <Route path="/onboardings" element={<Onboardings />} />
+          <Route path="/mobile-app" element={<MobileApp />} />
           {/* Foundation routes for upcoming module workstreams (polished placeholders). */}
           <Route path="/companies" element={<Placeholder />} />
           <Route path="/documents" element={<Payments />} />
