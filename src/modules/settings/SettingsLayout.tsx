@@ -39,7 +39,7 @@ export function SettingsLayout() {
   const activeSection = params.section ?? 'business';
 
   return (
-    <div data-tour="settings.page" className="min-w-0 px-5 py-5 pb-10">
+    <div data-tour="settings.page" className="min-h-[calc(100vh-50px)] min-w-0 bg-[#f4f5f7] px-5 py-5 pb-10">
       <SectionContent section={activeSection} />
     </div>
   );

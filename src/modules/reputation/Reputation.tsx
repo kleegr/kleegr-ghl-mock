@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Star, MessageSquareReply, Send } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { PageHeader, Button, Badge, Card, Tabs } from '@/components/ui/primitives';
+import { Button, Badge, Card, Tabs } from '@/components/ui/primitives';
+import { ModuleHeader, type ModuleHeaderTab } from '@/components/shell/ModuleHeader';
 import { MiniStat } from '@/components/tables/SimpleTable';
 import { Modal } from '@/components/ui/Modal';
 import { relativeTime, fullName, cx } from '@/utils';
@@ -10,6 +11,17 @@ import type { Review } from '@/types';
 type RatingFilter = 'all' | '5' | '4' | '3' | '2' | '1';
 type SourceFilter = 'all' | 'google' | 'facebook';
 type ReplyFilter = 'all' | 'replied' | 'unreplied';
+
+const REPUTATION_TABS: ModuleHeaderTab[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'requests', label: 'Requests' },
+  { id: 'reviews', label: 'Reviews' },
+  { id: 'testimonials', label: 'Video Testimonials' },
+  { id: 'widgets', label: 'Widgets' },
+  { id: 'listings', label: 'Listings' },
+  { id: 'gbp', label: 'GBP Optimization' },
+  { id: 'settings', label: 'Settings' },
+];
 
 function Stars({ n, size = 14 }: { n: number; size?: number }) {
   return (
@@ -35,6 +47,8 @@ export function Reputation() {
   const reviews = useStore((s) => s.reviews);
   const contacts = useStore((s) => s.contacts);
   const pushToast = useStore((s) => s.pushToast);
+  const [primaryTab, setPrimaryTab] = useState('overview');
+  const [overviewTab, setOverviewTab] = useState('my-stats');
 
   // Filters
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('all');
@@ -118,18 +132,29 @@ export function Reputation() {
 
   return (
     <div data-tour="reputation.page">
-      <PageHeader
+      <ModuleHeader
         title="Reputation"
-        subtitle="Monitor reviews, send review requests, and manage your online reputation"
-        actions={
-          <Button data-tour="reputation.requestButton" onClick={() => setRequestOpen(true)}>
-            <Send size={15} />
-            Send Review Request
-          </Button>
-        }
+        tabs={REPUTATION_TABS}
+        activeTab={primaryTab}
+        onTabChange={setPrimaryTab}
       />
 
-      <div className="space-y-4 px-5 pb-8 pt-4">
+      <div className="flex min-h-[58px] items-center justify-between border-b border-line bg-surface px-5">
+        <div className="flex h-full items-center gap-6">
+          {['overview', 'my-stats', 'competitors'].map((id) => (
+            <button key={id} onClick={() => setOverviewTab(id)} className={cx('h-[58px] border-b-2 px-1 text-xs font-semibold', overviewTab === id ? 'border-brand text-brand' : 'border-transparent text-ink-muted')}>
+              {id === 'overview' ? 'Overview' : id === 'my-stats' ? 'My Stats' : 'Competitor Analysis'}
+            </button>
+          ))}
+        </div>
+        <Button data-tour="reputation.requestButton" onClick={() => setRequestOpen(true)}><Send size={15} /> Send Review Request</Button>
+      </div>
+
+      <div className="min-h-[calc(100vh-148px)] space-y-4 bg-[#f4f5f7] px-5 pb-8 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-3">
+          <button className="rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted">Sources · All</button>
+          <div className="flex gap-2"><button className="rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted">Sections</button><button className="rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted">Aug 8, 2026 → Sep 6, 2026</button></div>
+        </div>
         {/* Summary cards */}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-4" data-tour="reputation.summary">
           <Card className="flex items-center gap-4 p-5">

@@ -10,11 +10,11 @@ import {
   AlertTriangle,
   ArrowRight,
   CalendarClock,
+  CheckCircle2,
   FolderKanban,
   Inbox,
   ListChecks,
   Plus,
-  Ticket as TicketIcon,
 } from 'lucide-react';
 import { Button, Card } from '@/components/ui/primitives';
 import { cx, dateLabel, relativeTime } from '@/utils';
@@ -111,19 +111,24 @@ export function ProductivityOverview({ onNavigate }: { onNavigate: (tab: string)
 
   return (
     <div className="h-full overflow-y-auto" data-tour="productivity.overview">
-      {/* Quick actions */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => setCreateTicket(true)}><Plus size={15} /> Create Ticket</Button>
-        <Button size="sm" variant="secondary" onClick={() => setCreateTask(true)}><Plus size={15} /> Create Task</Button>
-        <Button size="sm" variant="ghost" onClick={() => onNavigate('docs')}><Plus size={15} /> New Doc</Button>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[27px] font-semibold tracking-tight text-ink">Good evening, Demo Team</h1>
+          <div className="mt-1.5 flex items-center gap-2 text-xs text-ink-muted"><span>Sunday, September 6</span><span className="h-1 w-1 rounded-full bg-line"/><span className="font-semibold text-bad">72 overdue</span></div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={() => setCreateTicket(true)}><Plus size={15} /> Create Ticket</Button>
+          <Button size="sm" variant="secondary" onClick={() => setCreateTask(true)}><Plus size={15} /> Create Task</Button>
+          <Button size="sm" variant="ghost" onClick={() => onNavigate('docs')}><Plus size={15} /> New Doc</Button>
+        </div>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<TicketIcon size={18} />} label="Open tickets" value={stats.openTickets} sub={`${stats.unread} unread`} accent="#2563eb" onClick={() => onNavigate('tickets')} />
-        <StatCard icon={<CalendarClock size={18} />} label="Tasks due today" value={stats.tasksDueToday} sub="assigned across team" accent="#7c3aed" onClick={() => onNavigate('tasks')} />
-        <StatCard icon={<FolderKanban size={18} />} label="Active projects" value={stats.activeProjects} sub={`${stats.totalProjects} total`} accent="#12895f" onClick={() => onNavigate('projects')} />
-        <StatCard icon={<AlertTriangle size={18} />} label="Overdue items" value={stats.overdue} sub="tickets + tasks" accent="#dc2626" onClick={() => onNavigate('calendar')} />
+        <StatCard icon={<CalendarClock size={18} />} label="Open Tasks" value={135} sub={`${stats.tasksDueToday} due today`} accent="#2563eb" onClick={() => onNavigate('tasks')} />
+        <StatCard icon={<FolderKanban size={18} />} label="Projects" value={18} sub={`${stats.activeProjects} active in this demo`} accent="#7c3aed" onClick={() => onNavigate('projects')} />
+        <StatCard icon={<AlertTriangle size={18} />} label="Overdue" value={72} sub={`${stats.overdue} need attention now`} accent="#dc2626" onClick={() => onNavigate('calendar')} />
+        <StatCard icon={<CheckCircle2 size={18} />} label="Done" value={23} sub="percent this month" accent="#12895f" onClick={() => onNavigate('tasks')} />
       </div>
 
       {/* Main grid */}

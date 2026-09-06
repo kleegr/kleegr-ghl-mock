@@ -22,13 +22,8 @@
 
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import {
-  Receipt, Repeat, FileText, LayoutTemplate, Package,
-  ArrowLeftRight, Link2, RefreshCw, Settings as SettingsIcon,
-  type LucideIcon,
-} from 'lucide-react';
-import { PageHeader } from '@/components/ui/primitives';
-import { cx } from '@/utils';
+import { CreditCard, Gift, Receipt, ShoppingBag } from 'lucide-react';
+import { ModuleHeader, type ModuleHeaderTab } from '@/components/shell/ModuleHeader';
 import { InvoicesView } from './components/InvoicesView';
 import { RecurringInvoicesView } from './components/RecurringInvoicesView';
 import { InvoiceTemplatesView } from './components/InvoiceTemplatesView';
@@ -52,21 +47,52 @@ type SectionId =
   | 'subscriptions'
   | 'settings';
 
-const NAV: { id: SectionId; label: string; icon: LucideIcon }[] = [
-  { id: 'invoices', label: 'Invoices & Estimates', icon: Receipt },
-  { id: 'recurring', label: 'Recurring Invoices', icon: Repeat },
-  { id: 'documents', label: 'Documents & Contracts', icon: FileText },
-  { id: 'templates', label: 'Templates', icon: LayoutTemplate },
-  { id: 'products', label: 'Products', icon: Package },
-  { id: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { id: 'links', label: 'Payment Links', icon: Link2 },
-  { id: 'subscriptions', label: 'Subscriptions', icon: RefreshCw },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
+type PrimarySection = SectionId | 'orders' | 'coupons' | 'gift-cards' | 'integrations';
+
+const NAV: ModuleHeaderTab[] = [
+  { id: 'invoices', label: 'Invoices & Estimates' },
+  { id: 'documents', label: 'Documents & Contracts' },
+  { id: 'orders', label: 'Orders' },
+  { id: 'subscriptions', label: 'Subscriptions' },
+  { id: 'links', label: 'Payment Links' },
+  { id: 'transactions', label: 'Transactions' },
+  { id: 'products', label: 'Products' },
+  { id: 'coupons', label: 'Coupons' },
+  { id: 'gift-cards', label: 'Gift Cards' },
+  { id: 'settings', label: 'Settings' },
+  { id: 'integrations', label: 'Integrations' },
 ];
+
+const PLACEHOLDER_META: Record<'orders' | 'coupons' | 'gift-cards' | 'integrations', { title: string; copy: string; icon: typeof Receipt; rows: string[] }> = {
+  orders: { title: 'Orders', copy: 'Track every checkout and order from one place.', icon: ShoppingBag, rows: ['ORD-1048 · Website package · $1,850.00', 'ORD-1047 · Strategy session · $295.00', 'ORD-1046 · Monthly care plan · $425.00'] },
+  coupons: { title: 'Coupons', copy: 'Create and manage promotional discounts.', icon: Receipt, rows: ['WELCOME20 · 20% off · Active', 'SPRING150 · $150 off · Active', 'LOYAL10 · 10% off · Scheduled'] },
+  'gift-cards': { title: 'Gift Cards', copy: 'Issue and monitor customer gift cards.', icon: Gift, rows: ['$250 Digital Gift Card · 8 sold', '$100 Digital Gift Card · 17 sold', '$50 Digital Gift Card · 24 sold'] },
+  integrations: { title: 'Payment Integrations', copy: 'Connect the providers used to collect payments.', icon: CreditCard, rows: ['Stripe · Connected', 'PayPal · Available', 'Authorize.net · Available'] },
+};
+
+function PaymentPlaceholder({ section }: { section: keyof typeof PLACEHOLDER_META }) {
+  const meta = PLACEHOLDER_META[section];
+  const Icon = meta.icon;
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-[29px] font-medium tracking-tight text-ink">{meta.title}</h2>
+        <p className="mt-1 text-sm text-ink-muted">{meta.copy}</p>
+      </div>
+      <div className="overflow-hidden rounded-lg border border-line bg-surface">
+        <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink"><Icon size={16} className="text-brand" /> {meta.title}</div>
+          <button className="rounded-md bg-brand px-3 py-2 text-xs font-semibold text-white">+ New</button>
+        </div>
+        {meta.rows.map((row) => <div key={row} className="border-b border-line/70 px-4 py-3 text-sm text-ink-muted last:border-0">{row}</div>)}
+      </div>
+    </div>
+  );
+}
 
 export function Payments() {
   const location = useLocation();
-  const [section, setSection] = useState<SectionId>(
+  const [section, setSection] = useState<PrimarySection>(
     location.pathname.startsWith('/documents') ? 'documents' : 'invoices',
   );
 
@@ -81,37 +107,17 @@ export function Payments() {
 
   return (
     <div data-tour="payments.page">
-      <PageHeader title="Payments" subtitle="Invoices, documents, and everything you bill for." />
-
-      {/* sub-navigation */}
-      <div className="border-b border-line bg-surface">
-        <div data-tour="payments.tabs" className="flex gap-1 overflow-x-auto px-3">
-          {NAV.map((item) => {
-            const Icon = item.icon;
-            const active = section === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setSection(item.id)}
-                aria-current={active ? 'page' : undefined}
-                className={cx(
-                  'flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold transition-colors',
-                  active
-                    ? 'border-brand text-brand'
-                    : 'border-transparent text-ink-muted hover:text-ink',
-                )}
-              >
-                <Icon size={15} />
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <ModuleHeader
+        title="Payments"
+        tabs={NAV}
+        activeTab={NAV.some((item) => item.id === section) ? section : 'invoices'}
+        onTabChange={(id) => setSection(id as PrimarySection)}
+        data-tour="payments.tabs"
+      />
 
       {/* section body */}
-      <div className="px-5 py-6">
-        {section === 'invoices' && <InvoicesView onNavigate={(s) => setSection(s as SectionId)} />}
+      <div className="min-h-[calc(100vh-90px)] bg-[#f4f5f7] px-5 py-5">
+        {section === 'invoices' && <InvoicesView onNavigate={(s) => setSection(s as PrimarySection)} />}
         {section === 'recurring' && <RecurringInvoicesView />}
         {section === 'documents' && <DocumentsView />}
         {section === 'templates' && <InvoiceTemplatesView />}
@@ -120,6 +126,7 @@ export function Payments() {
         {section === 'links' && <PaymentLinksView />}
         {section === 'subscriptions' && <SubscriptionsView />}
         {section === 'settings' && <PaymentsSettingsView />}
+        {(section === 'orders' || section === 'coupons' || section === 'gift-cards' || section === 'integrations') && <PaymentPlaceholder section={section} />}
       </div>
     </div>
   );

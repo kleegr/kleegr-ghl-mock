@@ -8,10 +8,10 @@
  *   marketing.campaignWizard, marketing.campaignSubmit
  */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Mail, MessageSquare, Plus, Send, Copy } from 'lucide-react';
+import { Mail, MessageSquare, Plus, Send, Copy, CalendarDays, Filter, Search, Settings2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { PageHeader, Button, Badge, Tabs } from '@/components/ui/primitives';
+import { Button, Badge, Tabs } from '@/components/ui/primitives';
+import { ModuleHeader, type ModuleHeaderTab } from '@/components/shell/ModuleHeader';
 import { SimpleTable, MiniStat } from '@/components/tables/SimpleTable';
 import type { Column } from '@/components/tables/SimpleTable';
 import { Modal } from '@/components/ui/Modal';
@@ -19,10 +19,22 @@ import { dateLabel, pct } from '@/utils';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import type { Campaign } from '@/types';
 
-const CAMPAIGN_TABS = [
-  { id: 'email',     label: 'Email Campaigns' },
-  { id: 'sms',       label: 'SMS Campaigns'   },
-  { id: 'templates', label: 'Templates'       },
+const MARKETING_TABS: ModuleHeaderTab[] = [
+  { id: 'social', label: 'Social Planner' },
+  { id: 'emails', label: 'Emails' },
+  { id: 'snippets', label: 'Snippets' },
+  { id: 'timers', label: 'Countdown Timers' },
+  { id: 'trigger-links', label: 'Trigger Links' },
+  { id: 'sales-tracker', label: 'Sales Tracker' },
+  { id: 'brands', label: 'Brand Boards' },
+  { id: 'ads', label: 'Ad Manager' },
+  { id: 'prospecting', label: 'Prospecting' },
+];
+
+const EMAIL_TABS = [
+  { id: 'statistics', label: 'Statistics' },
+  { id: 'campaigns', label: 'Campaigns' },
+  { id: 'templates', label: 'Templates' },
 ];
 
 // --- Wizard ---
@@ -191,15 +203,14 @@ function TemplatesTab() {
 const STATUS_FILTERS = [{id:'all',label:'All'},{id:'sent',label:'Sent'},{id:'scheduled',label:'Scheduled'},{id:'draft',label:'Draft'}];
 
 export function Marketing({ type }: { type: 'email'|'sms' }) {
-  const navigate       = useNavigate();
   const pushToast      = useStore(s => s.pushToast);
   const allCampaigns   = useStore(s => s.campaigns);
-  const [tabOverride, setTabOverride] = useState<string|null>(null);
+  const [primary, setPrimary] = useState('emails');
+  const [emailView, setEmailView] = useState('statistics');
   const [statusFilter, setStatusFilter] = useState('all');
   const [preview, setPreview] = useState<Campaign|null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
 
-  const activeTab      = tabOverride ?? type;
   const emailCampaigns = allCampaigns.filter(c => c.type==='email');
   const smsCampaigns   = allCampaigns.filter(c => c.type==='sms');
   const campaigns      = type==='email' ? emailCampaigns : smsCampaigns;
@@ -209,11 +220,11 @@ export function Marketing({ type }: { type: 'email'|'sms' }) {
   const avgOpen        = sent.length ? sent.reduce((s,c) => s+(type==='email'?(c.metrics.openRate??0):(c.metrics.replyRate??0)),0)/sent.length : 0;
   const avgClick       = sent.length ? sent.reduce((s,c) => s+(c.metrics.clickRate??0),0)/sent.length : 0;
 
-  const handleTab = (id: string) => {
-    if (id==='templates') { setTabOverride('templates'); return; }
-    setTabOverride(null);
-    navigate(`/marketing/${id}`);
-  };
+  const chartData = sent.map((campaign) => ({
+    name: campaign.name.length > 18 ? `${campaign.name.slice(0, 18)}…` : campaign.name,
+    engagement: Math.round((type === 'email' ? campaign.metrics.openRate ?? 0 : campaign.metrics.replyRate ?? 0) * 100),
+    clicks: Math.round((campaign.metrics.clickRate ?? 0) * 100),
+  }));
 
   const columns: Column<Campaign>[] = [
     { key:'name', header:'Campaign', render:(c) => (
@@ -231,44 +242,89 @@ export function Marketing({ type }: { type: 'email'|'sms' }) {
 
   return (
     <div data-tour="marketing.page">
-      <PageHeader
+      <ModuleHeader
         title="Marketing"
-        subtitle="Email and SMS campaigns, performance, and audience management"
-        actions={<Button data-tour="marketing.newCampaign" onClick={() => setWizardOpen(true)}><Plus size={16}/> New Campaign</Button>}
+        tabs={MARKETING_TABS}
+        activeTab={primary}
+        onTabChange={setPrimary}
+        data-tour="marketing.tabs"
       />
-      <div className="space-y-4 px-5 pb-8 pt-4">
-        <div data-tour="marketing.summary" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <MiniStat label="Total campaigns" value={allCampaigns.length}/>
-          <MiniStat label="Sent" value={sent.length}/>
-          <MiniStat label="Scheduled" value={scheduled.length}/>
-          <MiniStat label={type==='email'?'Avg open rate':'Avg reply rate'} value={pct(avgOpen)}/>
-          {type==='email' && <MiniStat label="Avg click rate" value={pct(avgClick)}/>}
-        </div>
-        <div data-tour="marketing.tabs">
-          <Tabs
-            tabs={CAMPAIGN_TABS.map(t => ({ ...t, count: t.id==='email'?emailCampaigns.length:t.id==='sms'?smsCampaigns.length:undefined }))}
-            active={activeTab}
-            onChange={handleTab}
-          />
-        </div>
-        {activeTab==='templates' ? (
-          <TemplatesTab/>
-        ) : (
-          <>
-            <div className="flex flex-wrap gap-2">
-              {STATUS_FILTERS.map(f => (
-                <button key={f.id} onClick={() => setStatusFilter(f.id)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${statusFilter===f.id?'bg-brand text-brand-fg':'border border-line bg-surface-sunken text-ink-muted hover:text-ink'}`}>
-                  {f.label}
-                </button>
-              ))}
+      {primary === 'emails' ? (
+        <div className="min-h-[calc(100vh-90px)] bg-[#f4f5f7]">
+          <div className="flex min-h-[58px] items-center justify-between border-b border-line bg-surface px-5">
+            <div className="flex items-center gap-7">
+              <h2 className="text-[15px] font-semibold text-ink">Email Marketing</h2>
+              <Tabs tabs={EMAIL_TABS} active={emailView} onChange={setEmailView} />
             </div>
-            <div data-tour="marketing.campaignList" className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-              <SimpleTable columns={columns} rows={filtered} onRowClick={setPreview} empty={`No ${type} campaigns match the filter.`}/>
+            <div className="flex items-center gap-2">
+              <button aria-label="Email settings" className="grid h-9 w-9 place-items-center rounded-lg border border-line text-ink-muted"><Settings2 size={15}/></button>
+              <Button data-tour="marketing.newCampaign" onClick={() => setWizardOpen(true)}><Plus size={16}/> Create campaign</Button>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+          <div className="space-y-4 px-5 pb-8 pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#6e9fff] bg-[#f4f8ff] px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-ink">Explore email marketing with sample data</p>
+                <p className="text-xs text-ink-muted">These fictional campaigns show how a populated Kleegr account looks.</p>
+              </div>
+              <div className="flex gap-2"><Button variant="secondary" size="sm">Clear sample data</Button><Button size="sm" onClick={() => setWizardOpen(true)}><Plus size={14}/> Create campaign</Button></div>
+            </div>
+
+            {emailView === 'templates' ? <TemplatesTab/> : emailView === 'statistics' ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-xs font-medium text-ink-muted">All Campaigns</button>
+                  <button className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-xs font-medium text-ink-muted"><CalendarDays size={14}/> Aug 8, 2026 → Sep 6, 2026</button>
+                </div>
+                <div data-tour="marketing.summary" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                  <MiniStat label="Total campaigns" value={allCampaigns.length}/>
+                  <MiniStat label="Sent" value={sent.length}/>
+                  <MiniStat label="Scheduled" value={scheduled.length}/>
+                  <MiniStat label={type==='email'?'Avg open rate':'Avg reply rate'} value={pct(avgOpen)}/>
+                  <MiniStat label="Avg click rate" value={pct(avgClick)}/>
+                </div>
+                <div className="rounded-lg border border-line bg-surface p-5">
+                  <div className="mb-4"><h3 className="text-base font-semibold text-ink">Engagement summary</h3><p className="text-xs text-ink-muted">Campaign engagement over the selected period</p></div>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ left: -15, right: 8 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e9edf2" vertical={false}/>
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#7b8494' }} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{ fontSize: 10, fill: '#7b8494' }} axisLine={false} tickLine={false}/>
+                        <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #dfe3e8', fontSize: 12 }}/>
+                        <Bar dataKey="engagement" name="Engagement %" fill="#54bfe5" radius={[3,3,0,0]}/>
+                        <Bar dataKey="clicks" name="Clicks %" fill="#173b78" radius={[3,3,0,0]}/>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex gap-2">{STATUS_FILTERS.map(f => <button key={f.id} onClick={() => setStatusFilter(f.id)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${statusFilter===f.id?'bg-brand text-white':'border border-line bg-surface text-ink-muted'}`}>{f.label}</button>)}</div>
+                  <div className="flex gap-2"><button className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-xs text-ink-muted"><Filter size={14}/> Filters</button><button className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-xs text-ink-muted"><Search size={14}/> Search campaigns</button></div>
+                </div>
+                <div data-tour="marketing.campaignList" className="overflow-hidden rounded-lg border border-line bg-surface"><SimpleTable columns={columns} rows={filtered} onRowClick={setPreview} empty={`No ${type} campaigns match the filter.`}/></div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="min-h-[calc(100vh-90px)] bg-[#f4f5f7]">
+          <div className="flex min-h-[58px] items-center justify-between border-b border-line bg-surface px-5">
+            <div className="flex items-center gap-6"><h2 className="text-[15px] font-semibold text-ink">{MARKETING_TABS.find((tab) => tab.id === primary)?.label}</h2><span className="border-b-2 border-brand py-5 text-xs font-semibold text-brand">Overview</span><span className="py-5 text-xs text-ink-muted">Content</span><span className="py-5 text-xs text-ink-muted">Statistics</span></div>
+            <Button><Plus size={15}/> {primary === 'social' ? 'New Post' : 'Create'}</Button>
+          </div>
+          <div className="p-5">
+            <div className="overflow-hidden rounded-lg border border-line bg-surface">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4"><div className="flex gap-2"><button className="rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted">All</button><button className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted"><Filter size={14}/> Filters</button><button className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted"><CalendarDays size={14}/> This month</button></div><button className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs text-ink-muted"><Search size={14}/> Search</button></div>
+              <div className="grid grid-cols-[2fr_1fr_1fr_1fr] border-b border-line bg-[#fafbfc] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle"><span>Name</span><span>Status</span><span>Updated</span><span>Owner</span></div>
+              {['Kleegr Growth Campaign', 'Customer Welcome Series', 'Monthly Promotion'].map((name, index) => <div key={name} className="grid grid-cols-[2fr_1fr_1fr_1fr] items-center border-b border-line/70 px-4 py-3 text-sm last:border-0"><span className="font-medium text-ink">{name}</span><span className="w-fit rounded-full bg-good/10 px-2 py-1 text-[11px] font-semibold text-good">Active</span><span className="text-xs text-ink-muted">{index + 1}d ago</span><span className="text-xs text-ink-muted">Demo Team</span></div>)}
+            </div>
+          </div>
+        </div>
+      )}
       <CampaignDetail campaign={preview} onClose={() => setPreview(null)}/>
       <CampaignWizard open={wizardOpen} onClose={() => setWizardOpen(false)} pushToast={pushToast}/>
     </div>

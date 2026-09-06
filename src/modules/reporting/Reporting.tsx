@@ -8,9 +8,10 @@
  *   reporting.export, reporting.aiSummary
  */
 import { useState } from 'react';
-import { Download, Sparkles } from 'lucide-react';
+import { Download, FileBarChart2, Gauge, LayoutDashboard, Plus, Sparkles, Users2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { PageHeader, Button, Badge, Card, CardHeader, Tabs } from '@/components/ui/primitives';
+import { Button, Badge, Card, CardHeader } from '@/components/ui/primitives';
+import { ModuleHeader, type ModuleHeaderTab } from '@/components/shell/ModuleHeader';
 import { MiniStat } from '@/components/tables/SimpleTable';
 import { money, pct } from '@/utils';
 import {
@@ -47,14 +48,39 @@ const AGENT_DATA = [
   {id:'u_4', name:'Dana Cole',   leads:16,won:5, revenue:13400},
 ];
 const PIE_COLORS = ['#1f6feb','#12986a','#d99111','#7c3aed','#d9363e','#0891b2','#db2777','#65a30d'];
-const REPORT_TABS = [
-  {id:'attribution',label:'Attribution'},{id:'appointments',label:'Appointments'},
-  {id:'calls',label:'Calls'},{id:'campaigns',label:'Campaigns'},
-  {id:'revenue',label:'Revenue'},{id:'agents',label:'Agents'},
+const REPORT_TABS: ModuleHeaderTab[] = [
+  {id:'custom',label:'Custom reports'},{id:'google',label:'Google Ads'},
+  {id:'meta',label:'Meta Ads (Facebook Ads)'},{id:'attribution',label:'Attribution report'},
+  {id:'calls',label:'Call report'},{id:'agents',label:'Agent report'},
+  {id:'appointments',label:'Appointment report'},{id:'local',label:'Local Marketing Audit'},
 ];
+const REPORT_VIEW: Record<string, string> = { google:'campaigns', meta:'revenue', attribution:'attribution', calls:'calls', agents:'agents', appointments:'appointments', local:'attribution' };
+const REPORT_TITLE: Record<string, string> = { google:'Google Ads reporting', meta:'Meta Ads reporting', attribution:'Attribution reporting', calls:'Call reporting', agents:'Agent reporting', appointments:'Appointment reporting', local:'Local Marketing Audit' };
 const DATE_RANGES = [{id:'last7',label:'Last 7d'},{id:'last30',label:'Last 30d'},{id:'last90',label:'Last 90d'},{id:'allTime',label:'All time'}];
 const TT = { borderRadius:10, border:'1px solid #e4e7ec', fontSize:12 };
 const TICK = { fontSize:11, fill:'#98a2b3' };
+
+function CustomReportsWelcome({ onCreate }: { onCreate: () => void }) {
+  const benefits = [
+    { icon: LayoutDashboard, title: 'Build your own view', copy: 'Choose the metrics, tables, and charts that matter to your team.' },
+    { icon: Gauge, title: 'Monitor performance', copy: 'Keep sales, marketing, and service results in one report.' },
+    { icon: Users2, title: 'Share with your team', copy: 'Make the same clear picture available to every stakeholder.' },
+  ];
+  return (
+    <div className="min-h-[calc(100vh-90px)] bg-[#f4f5f7] p-5">
+      <div className="mb-5 flex items-center justify-between"><h2 className="text-[29px] font-medium tracking-tight text-ink">Custom Reports</h2><Button onClick={onCreate}><Plus size={15}/> Create report</Button></div>
+      <div className="rounded-lg border border-line bg-surface px-6 py-12 text-center">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-soft text-brand"><FileBarChart2 size={30}/></span>
+        <h3 className="mt-5 text-xl font-semibold text-ink">Turn your data into insights that drive growth</h3>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink-muted">Create focused reports using the fictional activity in this demo. Arrange the information your team needs and see progress at a glance.</p>
+        <Button className="mt-5" onClick={onCreate}><Plus size={15}/> Create your first report</Button>
+        <div className="mx-auto mt-10 grid max-w-4xl gap-4 text-left md:grid-cols-3">
+          {benefits.map(({ icon: Icon, title, copy }) => <div key={title} className="rounded-lg border border-line bg-[#fafbfc] p-4"><Icon size={20} className="text-brand"/><p className="mt-3 text-sm font-semibold text-ink">{title}</p><p className="mt-1 text-xs leading-5 text-ink-muted">{copy}</p></div>)}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function Reporting() {
   const opps         = useStore(s => s.opportunities);
@@ -66,8 +92,9 @@ export function Reporting() {
   const reviews      = useStore(s => s.reviews);
   const leadSources  = useStore(s => s.leadSources);
   const pushToast    = useStore(s => s.pushToast);
-  const [activeTab, setActiveTab] = useState('attribution');
+  const [activeTab, setActiveTab] = useState('custom');
   const [dateRange, setDateRange] = useState('last30');
+  const viewTab = REPORT_VIEW[activeTab] ?? 'attribution';
 
   const won          = opps.filter(o => o.status==='won');
   const winRate      = opps.length ? Math.round(won.length/opps.length*100) : 0;
@@ -94,27 +121,28 @@ export function Reporting() {
 
   return (
     <div data-tour="reporting.page">
-      <PageHeader
+      <ModuleHeader
         title="Reporting"
-        subtitle="Performance across attribution, appointments, calls, campaigns, and revenue"
-        actions={
+        tabs={REPORT_TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        data-tour="reporting.tabs"
+      />
+      {activeTab === 'custom' ? (
+        <CustomReportsWelcome onCreate={() => pushToast({ title: 'Report builder opened', description: 'This demo keeps changes in your current session.', variant: 'info' })}/>
+      ) : (
+      <div className="min-h-[calc(100vh-90px)] space-y-4 bg-[#f4f5f7] px-5 pb-8 pt-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[29px] font-medium tracking-tight text-ink">{REPORT_TITLE[activeTab]}</h2>
           <div className="flex items-center gap-2">
             <div data-tour="reporting.dateRange" className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1">
               {DATE_RANGES.map(d => (
-                <button key={d.id} onClick={() => setDateRange(d.id)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${dateRange===d.id?'bg-brand text-brand-fg':'text-ink-muted hover:text-ink'}`}>
-                  {d.label}
-                </button>
+                <button key={d.id} onClick={() => setDateRange(d.id)} className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${dateRange===d.id?'bg-brand text-brand-fg':'text-ink-muted hover:text-ink'}`}>{d.label}</button>
               ))}
             </div>
-            <Button variant="secondary" size="sm" data-tour="reporting.export"
-              onClick={() => pushToast({ title:'Demo: export', description:'CSV would download here (demo only).', variant:'info' })}>
-              <Download size={14}/> Export
-            </Button>
+            <Button variant="secondary" size="sm" data-tour="reporting.export" onClick={() => pushToast({ title:'Demo: export', description:'CSV would download here (demo only).', variant:'info' })}><Download size={14}/> Export</Button>
           </div>
-        }
-      />
-      <div className="space-y-4 px-5 pb-8 pt-4">
+        </div>
         <div data-tour="reporting.kpis" className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
           {kpis.map(k => <MiniStat key={k.label} label={k.label} value={k.value} sub={k.sub}/>)}
         </div>
@@ -129,10 +157,9 @@ export function Reporting() {
             </div>
           </div>
         </Card>
-        <div data-tour="reporting.tabs"><Tabs tabs={REPORT_TABS} active={activeTab} onChange={setActiveTab}/></div>
         <div data-tour="reporting.charts">
 
-          {activeTab==='attribution' && (
+          {viewTab==='attribution' && (
             <div data-tour="reporting.attribution" className="space-y-4">
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Card>
@@ -192,7 +219,7 @@ export function Reporting() {
             </div>
           )}
 
-          {activeTab==='appointments' && (
+          {viewTab==='appointments' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Card>
@@ -232,7 +259,7 @@ export function Reporting() {
             </div>
           )}
 
-          {activeTab==='calls' && (
+          {viewTab==='calls' && (
             <div className="space-y-4">
               <Card>
                 <CardHeader title="Call volume" subtitle="6-month trend"/>
@@ -265,7 +292,7 @@ export function Reporting() {
             </div>
           )}
 
-          {activeTab==='campaigns' && (
+          {viewTab==='campaigns' && (
             <div className="space-y-4">
               <Card>
                 <CardHeader title="Campaign engagement" subtitle="Email open/click & SMS reply trends (%)"/>
@@ -308,7 +335,7 @@ export function Reporting() {
             </div>
           )}
 
-          {activeTab==='revenue' && (
+          {viewTab==='revenue' && (
             <div className="space-y-4">
               <Card>
                 <CardHeader title="Won vs lost revenue" subtitle="Last 6 months"/>
@@ -334,7 +361,7 @@ export function Reporting() {
             </div>
           )}
 
-          {activeTab==='agents' && (
+          {viewTab==='agents' && (
             <Card><CardHeader title="Agent performance"/>
               <div data-tour="reporting.table" className="overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
@@ -358,6 +385,7 @@ export function Reporting() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

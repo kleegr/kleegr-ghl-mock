@@ -103,8 +103,8 @@ export function BusinessProfile() {
     <div data-tour="settings.businessProfile" className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-bold text-ink">Business Profile</p>
-          <p className="mt-0.5 text-xs text-ink-muted">How your business appears across the account.</p>
+          <h1 className="text-[29px] font-medium tracking-[-0.025em] text-ink">Business Profile Settings</h1>
+          <p className="mt-1 text-sm text-ink-muted">Manage your business details, contact information, and platform preferences.</p>
         </div>
         {!editing ? (
           <Button variant="secondary" size="sm" onClick={startEdit}>Edit profile</Button>

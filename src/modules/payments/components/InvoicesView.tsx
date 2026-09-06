@@ -14,7 +14,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Plus, FileText, Send, Download, CheckCircle2, Upload } from 'lucide-react';
+import { Plus, FileText, Send, Download, CheckCircle2, Upload, CalendarDays, Filter, History, Settings2 } from 'lucide-react';
 import { Button, Tabs } from '@/components/ui/primitives';
 import { Modal } from '@/components/ui/Modal';
 import { SimpleTable, type Column } from '@/components/tables/SimpleTable';
@@ -59,8 +59,6 @@ export function InvoicesView({ onNavigate }: { onNavigate?: (section: string) =>
   const sumBy = (st: Invoice['status']) =>
     invoices.filter((i) => i.status === st).reduce((a, i) => a + i.total, 0);
   const countBy = (st: Invoice['status']) => invoices.filter((i) => i.status === st).length;
-  const grandTotal = invoices.reduce((a, i) => a + i.total, 0);
-
   function openBuilder(mode: 'invoice' | 'estimate') {
     setBuilderMode(mode);
     setBuilderOpen(true);
@@ -156,29 +154,16 @@ export function InvoicesView({ onNavigate }: { onNavigate?: (section: string) =>
 
   return (
     <div className="space-y-5">
-      {/* summary cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5" data-tour="payments.summary">
-        <SummaryCard label="Draft" value={money(sumBy('draft'))} sub={`${countBy('draft')} invoices`} accent="neutral" active={statusFilter === 'draft'} onClick={() => { setSeg('invoices'); setStatusFilter('draft'); }} />
-        <SummaryCard label="Due" value={money(sumBy('sent'))} sub={`${countBy('sent')} awaiting payment`} accent="warn" active={statusFilter === 'sent'} onClick={() => { setSeg('invoices'); setStatusFilter('sent'); }} />
-        <SummaryCard label="Received" value={money(sumBy('paid'))} sub={`${countBy('paid')} paid`} accent="good" active={statusFilter === 'paid'} onClick={() => { setSeg('invoices'); setStatusFilter('paid'); }} />
-        <SummaryCard label="Overdue" value={money(sumBy('overdue'))} sub={`${countBy('overdue')} past due`} accent="bad" active={statusFilter === 'overdue'} onClick={() => { setSeg('invoices'); setStatusFilter('overdue'); }} />
-        <SummaryCard label="Total billed" value={money(grandTotal)} sub={`${invoices.length} invoices`} accent="brand" active={statusFilter === 'all'} onClick={() => { setSeg('invoices'); setStatusFilter('all'); }} />
-      </div>
-
-      {/* toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Segmented<Seg>
-          options={[{ id: 'invoices', label: 'Invoices' }, { id: 'estimates', label: 'Estimates' }]}
-          value={seg}
-          onChange={(v) => { setSeg(v); setStatusFilter('all'); }}
-        />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-[30px] font-medium leading-tight tracking-[-0.025em] text-ink">Invoices</h2>
+          <p className="mt-1 text-sm text-ink-muted">Create and manage all invoices generated for your business</p>
+        </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder={seg === 'invoices' ? 'Search invoices…' : 'Search estimates…'} className="w-56" />
-          {/* split "New" — primary opens the builder directly (tutorial anchor),
-              the caret opens the full create menu */}
+          <Button variant="secondary" size="sm" onClick={() => onNavigate?.('settings')}><Settings2 size={15} /> Settings</Button>
           <div className="inline-flex">
             <Button data-tour="payments.createInvoice" className="rounded-r-none" onClick={() => openBuilder('invoice')}>
-              <Plus size={15} /> New Invoice
+              <Plus size={15} /> New
             </Button>
             <Dropdown
               align="right"
@@ -199,16 +184,39 @@ export function InvoicesView({ onNavigate }: { onNavigate?: (section: string) =>
         </div>
       </div>
 
-      {/* status filter tabs */}
-      <Tabs
-        variant="pill"
-        tabs={seg === 'invoices' ? invoiceTabs : estTabs}
-        active={statusFilter}
-        onChange={setStatusFilter}
-      />
+      {/* summary cards */}
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" data-tour="payments.summary">
+        <SummaryCard label={`${countBy('draft')} Invoice(s) in Draft`} value={money(sumBy('draft'))} accent="neutral" active={statusFilter === 'draft'} onClick={() => { setSeg('invoices'); setStatusFilter('draft'); }} />
+        <SummaryCard label={`${countBy('sent')} Invoice(s) in Due`} value={money(sumBy('sent'))} accent="warn" active={statusFilter === 'sent'} onClick={() => { setSeg('invoices'); setStatusFilter('sent'); }} />
+        <SummaryCard label={`${countBy('paid')} Invoice(s) received`} value={money(sumBy('paid'))} accent="good" active={statusFilter === 'paid'} onClick={() => { setSeg('invoices'); setStatusFilter('paid'); }} />
+        <SummaryCard label={`${countBy('overdue')} Invoice(s) Overdue`} value={money(sumBy('overdue'))} accent="bad" active={statusFilter === 'overdue'} onClick={() => { setSeg('invoices'); setStatusFilter('overdue'); }} />
+      </div>
 
-      {/* table */}
-      <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card" data-tour="payments.invoiceList">
+      {/* filters and table */}
+      <div className="overflow-hidden rounded-lg border border-line bg-surface" data-tour="payments.invoiceList">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Segmented<Seg>
+              options={[{ id: 'invoices', label: 'Invoices' }, { id: 'estimates', label: 'Estimates' }]}
+              value={seg}
+              onChange={(v) => { setSeg(v); setStatusFilter('all'); }}
+            />
+            <button className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-xs font-medium text-ink-muted"><CalendarDays size={14} /> Start Date <span className="text-ink-subtle">→</span> End Date</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <SearchInput value={q} onChange={setQ} placeholder={seg === 'invoices' ? 'Search invoices' : 'Search estimates'} className="w-56" />
+            <button className="flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-xs font-semibold text-ink-muted"><Filter size={14} /> Filters</button>
+            <button aria-label="Recent activity" className="grid h-9 w-9 place-items-center rounded-lg border border-line text-ink-muted"><History size={15} /></button>
+          </div>
+        </div>
+        <div className="border-b border-line px-4 py-2.5">
+          <Tabs
+            variant="pill"
+            tabs={seg === 'invoices' ? invoiceTabs : estTabs}
+            active={statusFilter}
+            onChange={setStatusFilter}
+          />
+        </div>
         {seg === 'invoices' ? (
           <SimpleTable<Invoice> columns={invoiceCols} rows={filteredInvoices} onRowClick={(r) => setDetail(r)} empty="No invoices match your filters." />
         ) : (
