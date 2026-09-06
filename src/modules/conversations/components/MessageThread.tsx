@@ -1,9 +1,10 @@
 /**
  * MessageThread — center pane: thread header (action icons) and a day-grouped
  * stream that interleaves message bubbles, completed-call cards (audio player +
- * transcript), and inline system-event rows. The stream is derived in-memory
- * from the seed via `buildThreadItems` (messages + the contact's calls +
- * opportunity-driven events), so Reset Demo restores it exactly.
+ * transcript) and inline system-event rows, plus — for showcase threads —
+ * internal notes (distinct styling + @mention), collapsed email cards, and
+ * appointment / opportunity / task event cards. The stream is derived in-memory
+ * from the seed via `buildThreadItems`, so Reset Demo restores it exactly.
  */
 import { Fragment, useMemo, useState } from 'react';
 import {
@@ -13,10 +14,12 @@ import {
   PhoneOutgoing,
   PhoneMissed,
   FolderInput,
+  Pencil,
   Star,
   MailOpen,
   Trash2,
   ChevronDown,
+  ChevronRight,
   Play,
   Volume2,
   RotateCcw,
@@ -25,13 +28,19 @@ import {
   CheckCheck,
   CornerDownRight,
   FileText,
+  Lock,
+  Mail,
+  CalendarCheck,
+  TrendingUp,
+  CheckSquare,
 } from 'lucide-react';
-import { Avatar } from '@/components/ui/primitives';
+import { Avatar, Badge, Button } from '@/components/ui/primitives';
+import { Modal } from '@/components/ui/Modal';
 import { useStore } from '@/store/useStore';
-import { cx, fullName, clockTime, initials, relativeTime } from '@/utils';
+import { cx, fullName, clockTime, initials, relativeTime, money } from '@/utils';
 import type { Conversation, Contact, Call, Message } from '@/types';
 import { CHANNEL_META, threadDayLabel, dayKey } from '../utils';
-import { buildThreadItems, formatCallDuration, type ThreadItem } from '../threadModel';
+import { buildThreadItems, formatCallDuration, type ThreadItem, type LocalNote } from '../threadModel';
 
 // --- Thread header ---------------------------------------------------------
 
@@ -60,11 +69,21 @@ function HeaderAction({
   );
 }
 
-function ThreadHeader({ contact, onBack }: { contact: Contact; onBack?: () => void }) {
+function ThreadHeader({ conv, contact, onBack, onDeleted }: { conv: Conversation; contact: Contact; onBack?: () => void; onDeleted: () => void }) {
   const pushToast = useStore((s) => s.pushToast);
-  const demo = (title: string) =>
-    pushToast({ title, description: 'This action is cosmetic in the demo.', variant: 'info' });
+  const openDialer = useStore((s) => s.openDialer);
+  const toggleStar = useStore((s) => s.toggleConversationStar);
+  const setUnread = useStore((s) => s.setConversationUnread);
+  const removeConversation = useStore((s) => s.removeConversation);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const name = fullName(contact);
+
+  const remove = () => {
+    removeConversation(conv.id);
+    setDeleteOpen(false);
+    onDeleted();
+    pushToast({ title: 'Conversation deleted', description: 'Removed from this demo session only.', variant: 'success' });
+  };
 
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
@@ -79,15 +98,33 @@ function ThreadHeader({ contact, onBack }: { contact: Contact; onBack?: () => vo
         </button>
       )}
       <Avatar name={name} size="sm" />
-      <p className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink">{name}</p>
+      <p className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink" title={name}>{name}</p>
       <div className="flex shrink-0 items-center gap-0.5">
-        <HeaderAction Icon={Reply} label="Reply channel" withChevron onClick={() => demo('Channel')} />
-        <HeaderAction Icon={Phone} label="Call contact" withChevron onClick={() => demo('Call')} />
-        <HeaderAction Icon={FolderInput} label="Move conversation" onClick={() => demo('Move to folder')} />
-        <HeaderAction Icon={Star} label="Star conversation" onClick={() => demo('Star')} />
-        <HeaderAction Icon={MailOpen} label="Mark as unread" onClick={() => demo('Mark unread')} />
-        <HeaderAction Icon={Trash2} label="Delete conversation" onClick={() => demo('Delete')} />
+        <span className="hidden 2xl:contents"><HeaderAction Icon={Reply} label="Focus reply composer" onClick={() => document.querySelector<HTMLTextAreaElement>('[data-tour="conversations.composer"] textarea')?.focus()} /></span>
+        <HeaderAction Icon={Phone} label="Call contact" withChevron onClick={() => openDialer(contact.phone)} />
+        <span className="hidden 2xl:contents"><HeaderAction Icon={FolderInput} label="Move conversation" onClick={() => pushToast({ title: 'Moved to Team Inbox', description: 'Inbox placement updated for this demo session.', variant: 'success' })} /></span>
+        <button
+          type="button"
+          title={conv.starred ? 'Remove star' : 'Star conversation'}
+          aria-label={conv.starred ? 'Remove star' : 'Star conversation'}
+          onClick={() => toggleStar(conv.id)}
+          className={cx('flex h-8 items-center rounded-md px-1.5 transition-colors hover:bg-surface-sunken', conv.starred ? 'text-warn' : 'text-ink-muted hover:text-ink')}
+        >
+          <Star size={17} className={conv.starred ? 'fill-warn' : ''} aria-hidden />
+        </button>
+        <HeaderAction Icon={MailOpen} label="Mark as unread" onClick={() => { setUnread(conv.id, true); pushToast({ title: 'Marked unread', variant: 'success' }); }} />
+        <HeaderAction Icon={Trash2} label="Delete conversation" onClick={() => setDeleteOpen(true)} />
       </div>
+
+      <Modal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete conversation?"
+        size="sm"
+        footer={<><Button variant="secondary" onClick={() => setDeleteOpen(false)}>Cancel</Button><Button variant="danger" onClick={remove}>Delete</Button></>}
+      >
+        <p className="text-sm text-ink-muted">This removes the thread with {name} from the current demo session. No real contact data is affected.</p>
+      </Modal>
     </div>
   );
 }
@@ -239,7 +276,10 @@ function MessageRow({ msg, contactName, agentName }: { msg: Message; contactName
               : 'rounded-bl-sm bg-surface text-ink shadow-sm ring-1 ring-line',
           )}
         >
+          {msg.subject && <p className="mb-1 border-b border-current/10 pb-1 font-semibold">{msg.subject}</p>}
+          {(msg.cc?.length || msg.bcc?.length) ? <p className="mb-1 text-[10px] text-ink-muted">{msg.cc?.length ? `CC: ${msg.cc.join(', ')}` : ''}{msg.cc?.length && msg.bcc?.length ? ' · ' : ''}{msg.bcc?.length ? `BCC: ${msg.bcc.join(', ')}` : ''}</p> : null}
           <p className="whitespace-pre-wrap">{msg.body}</p>
+          {msg.attachments?.length ? <div className="mt-2 space-y-1">{msg.attachments.map((name) => <span key={name} className="flex items-center gap-1.5 rounded-lg bg-surface/70 px-2 py-1 text-[11px] font-medium"><FileText size={12} />{name}</span>)}</div> : null}
         </div>
         <div className={cx('mt-1 flex items-center gap-1 text-[10px] text-ink-subtle', isOut ? 'justify-end' : 'justify-start')}>
           <span>{clockTime(msg.createdAt)}</span>
@@ -255,12 +295,166 @@ function MessageRow({ msg, contactName, agentName }: { msg: Message; contactName
   );
 }
 
+// --- Internal note (distinct styling + @mention) ---------------------------
+
+function renderWithMentions(body: string) {
+  return body.split(/(@[A-Za-z][\w-]*)/g).map((part, i) =>
+    part.startsWith('@') ? (
+      <span key={i} className="rounded bg-ai-soft px-1 font-semibold text-ai">{part}</span>
+    ) : (
+      <Fragment key={i}>{part}</Fragment>
+    ),
+  );
+}
+
+function NoteRow({ author, body, iso, onEdit, onDelete }: { author: string; body: string; iso: string; onEdit?: () => void; onDelete?: () => void }) {
+  return (
+    <div className="flex justify-center">
+      <div className="w-full max-w-[78%] rounded-xl border-l-4 border-warn bg-warn/10 px-3.5 py-2.5 shadow-sm">
+        <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-warn">
+          <Lock size={11} aria-hidden /> Internal note
+          <span className="ml-auto font-medium normal-case text-ink-subtle">
+            {author} · {clockTime(iso)}
+          </span>
+          {onEdit && <button type="button" onClick={onEdit} className="grid h-6 w-6 place-items-center rounded text-ink-subtle hover:bg-warn/15 hover:text-ink" aria-label="Edit internal note"><Pencil size={12} /></button>}
+          {onDelete && <button type="button" onClick={onDelete} className="grid h-6 w-6 place-items-center rounded text-ink-subtle hover:bg-bad/10 hover:text-bad" aria-label="Delete internal note"><Trash2 size={12} /></button>}
+        </div>
+        <p className="whitespace-pre-wrap text-[13px] leading-snug text-ink">{renderWithMentions(body)}</p>
+      </div>
+    </div>
+  );
+}
+
+// --- Collapsed email card --------------------------------------------------
+
+function EmailCard({
+  direction, from, to, subject, body, iso,
+}: { direction: 'inbound' | 'outbound'; from: string; to: string; subject: string; body: string; iso: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex justify-start">
+      <div className="w-full max-w-[560px] overflow-hidden rounded-xl bg-surface shadow-sm ring-1 ring-line">
+        <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-surface-sunken">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#eef2f6] text-[#5b6b7c]">
+            <Mail size={14} aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold text-ink">{subject}</p>
+            <p className="truncate text-[11px] text-ink-muted">
+              {direction === 'inbound' ? `From ${from}` : `To ${to}`} · {clockTime(iso)}
+            </p>
+          </div>
+          <Badge tone="neutral">{direction === 'inbound' ? 'Received' : 'Sent'}</Badge>
+          {open ? <ChevronDown size={15} className="text-ink-subtle" aria-hidden /> : <ChevronRight size={15} className="text-ink-subtle" aria-hidden />}
+        </button>
+        {open && (
+          <div className="border-t border-line px-3.5 py-3 text-[13px] leading-relaxed text-ink">
+            <p className="mb-1 text-[11px] text-ink-subtle">From: {from} &nbsp;·&nbsp; To: {to}</p>
+            <p className="whitespace-pre-wrap">{body}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Event cards (appointment / opportunity / task) ------------------------
+
+function EventCard({
+  Icon, tone, eyebrow, title, meta, badge, iso, onOpen,
+}: {
+  Icon: React.ElementType;
+  tone: string;
+  eyebrow: string;
+  title: string;
+  meta?: string;
+  badge?: React.ReactNode;
+  iso: string;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="flex justify-start">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex w-full max-w-[460px] items-start gap-3 rounded-xl bg-surface px-3.5 py-3 text-left shadow-sm ring-1 ring-line transition-colors hover:bg-surface-sunken"
+      >
+        <span className={cx('grid h-8 w-8 shrink-0 place-items-center rounded-full', tone)}>
+          <Icon size={15} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-ink-subtle">{eyebrow}</p>
+          <p className="truncate text-[13px] font-semibold text-ink">{title}</p>
+          {meta && <p className="mt-0.5 truncate text-[12px] text-ink-muted">{meta}</p>}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {badge}
+          <span className="text-[10px] text-ink-subtle">{clockTime(iso)}</span>
+        </div>
+      </button>
+    </div>
+  );
+}
+
 // --- One thread item -------------------------------------------------------
 
-function ThreadItemRow({ item, contactName, agentName }: { item: ThreadItem; contactName: string; agentName: string }) {
-  if (item.kind === 'message') return <MessageRow msg={item.message} contactName={contactName} agentName={agentName} />;
-  if (item.kind === 'call') return <CallCard call={item.call} agentName={agentName} />;
-  return <SystemEventRow title={item.title} detail={item.detail} iso={item.iso} />;
+function ThreadItemRow({ item, contactName, agentName, onEditNote, onDeleteNote }: { item: ThreadItem; contactName: string; agentName: string; onEditNote: (id: string) => void; onDeleteNote: (id: string) => void }) {
+  const pushToast = useStore((s) => s.pushToast);
+  const open = (title: string) => pushToast({ title, description: 'Opens the related record (demo).', variant: 'info' });
+
+  switch (item.kind) {
+    case 'message':
+      return <MessageRow msg={item.message} contactName={contactName} agentName={agentName} />;
+    case 'call':
+      return <CallCard call={item.call} agentName={agentName} />;
+    case 'event':
+      return <SystemEventRow title={item.title} detail={item.detail} iso={item.iso} />;
+    case 'note':
+      return <NoteRow author={item.author} body={item.body} iso={item.iso} onEdit={item.localNoteId ? () => onEditNote(item.localNoteId!) : undefined} onDelete={item.localNoteId ? () => onDeleteNote(item.localNoteId!) : undefined} />;
+    case 'email':
+      return <EmailCard direction={item.direction} from={item.from} to={item.to} subject={item.subject} body={item.body} iso={item.iso} />;
+    case 'appointment':
+      return (
+        <EventCard
+          Icon={CalendarCheck}
+          tone="bg-good/15 text-good"
+          eyebrow="Appointment"
+          title={item.title}
+          meta={new Date(item.startTime).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          badge={<Badge tone={item.status === 'confirmed' ? 'good' : item.status === 'cancelled' ? 'bad' : 'neutral'}>{item.status}</Badge>}
+          iso={item.iso}
+          onOpen={() => open('Appointment')}
+        />
+      );
+    case 'opportunity':
+      return (
+        <EventCard
+          Icon={TrendingUp}
+          tone="bg-brand/15 text-brand"
+          eyebrow="Opportunity"
+          title={item.title}
+          meta={`${money(item.value)} · ${item.stage}`}
+          badge={<Badge tone={item.status === 'won' ? 'good' : item.status === 'lost' ? 'bad' : 'brand'}>{item.status}</Badge>}
+          iso={item.iso}
+          onOpen={() => open('Opportunity')}
+        />
+      );
+    case 'task':
+      return (
+        <EventCard
+          Icon={CheckSquare}
+          tone="bg-ai-soft text-ai"
+          eyebrow="Task"
+          title={item.title}
+          meta={`Due ${new Date(item.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+          badge={<Badge tone={item.done ? 'good' : 'neutral'}>{item.done ? 'completed' : 'open'}</Badge>}
+          iso={item.iso}
+          onOpen={() => open('Task')}
+        />
+      );
+    default:
+      return null;
+  }
 }
 
 // --- Thread body -----------------------------------------------------------
@@ -270,34 +464,50 @@ interface ThreadProps {
   contact: Contact;
   messages: Message[];
   agentName: string;
+  rich: boolean;
+  localNotes: LocalNote[];
+  typing?: boolean;
   scrollRef: React.RefObject<HTMLDivElement>;
   onBack?: () => void;
+  onDeleted: () => void;
+  onUpdateLocalNote: (id: string, body: string) => void;
+  onDeleteLocalNote: (id: string) => void;
 }
 
-export function MessageThread({ conv, contact, messages, agentName, scrollRef, onBack }: ThreadProps) {
+export function MessageThread({ conv, contact, messages, agentName, rich, localNotes, typing = false, scrollRef, onBack, onDeleted, onUpdateLocalNote, onDeleteLocalNote }: ThreadProps) {
   const contactName = fullName(contact);
   const meta = CHANNEL_META[conv.channel];
+  const [editingNote, setEditingNote] = useState<LocalNote | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [deletingNote, setDeletingNote] = useState<LocalNote | null>(null);
 
   const calls = useStore((s) => s.calls);
   const opportunities = useStore((s) => s.opportunities);
+  const appointments = useStore((s) => s.appointments);
+  const tasks = useStore((s) => s.tasks);
+  const users = useStore((s) => s.users);
   const pipelines = useStore((s) => s.pipelines);
 
-  // Build the interleaved item stream (messages + this contact's calls +
-  // opportunity-driven system events), derived from the in-memory store.
+  // Build the interleaved item stream (messages + the contact's calls +
+  // opportunity-driven events + showcase demo items), derived from the store.
   const items = useMemo(() => {
     const stageName = new Map<string, string>();
     pipelines.forEach((p) => p.stages.forEach((st) => stageName.set(st.id, st.name)));
-    const contactCalls = calls.filter((c) => c.contactId === contact.id);
-    const contactOpps = opportunities.filter((o) => o.contactId === contact.id);
     return buildThreadItems({
       conv,
       contact,
       messages,
-      calls: contactCalls,
-      opportunities: contactOpps,
+      calls: calls.filter((c) => c.contactId === contact.id),
+      opportunities: opportunities.filter((o) => o.contactId === contact.id),
+      appointments: appointments.filter((a) => a.contactId === contact.id),
+      tasks: tasks.filter((t) => t.contactId === contact.id),
       stageNameOf: (opp) => stageName.get(opp.stageId),
+      agentName,
+      teamFirstNames: users.map((u) => u.name.split(' ')[0]),
+      rich,
+      localNotes,
     });
-  }, [conv, contact, messages, calls, opportunities, pipelines]);
+  }, [conv, contact, messages, calls, opportunities, appointments, tasks, users, pipelines, agentName, rich, localNotes]);
 
   // Group items by calendar day for the separator pills.
   const groups: { key: string; label: string; items: ThreadItem[] }[] = [];
@@ -310,7 +520,7 @@ export function MessageThread({ conv, contact, messages, agentName, scrollRef, o
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ThreadHeader contact={contact} onBack={onBack} />
+      <ThreadHeader conv={conv} contact={contact} onBack={onBack} onDeleted={onDeleted} />
 
       <div
         data-tour="conversations.thread"
@@ -327,14 +537,50 @@ export function MessageThread({ conv, contact, messages, agentName, scrollRef, o
               <DateSeparator label={g.label} />
               <div className="space-y-2.5">
                 {g.items.map((it) => (
-                  <ThreadItemRow key={it.key} item={it} contactName={contactName} agentName={agentName} />
+                  <ThreadItemRow
+                    key={it.key}
+                    item={it}
+                    contactName={contactName}
+                    agentName={agentName}
+                    onEditNote={(id) => {
+                      const note = localNotes.find((value) => value.id === id);
+                      if (!note) return;
+                      setEditingNote(note);
+                      setNoteDraft(note.body);
+                    }}
+                    onDeleteNote={(id) => {
+                      const note = localNotes.find((value) => value.id === id);
+                      if (note) setDeletingNote(note);
+                    }}
+                  />
                 ))}
               </div>
             </Fragment>
           ))
         )}
+        {typing && (
+          <div className="mt-3 flex items-end gap-2" aria-live="polite">
+            <Avatar name={contactName} size="xs" />
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-surface px-3 py-2.5 shadow-sm ring-1 ring-line" aria-label={`${contactName} is typing`}>
+              {[0, 1, 2].map((i) => <span key={i} className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink-subtle" style={{ animationDelay: `${i * 140}ms` }} />)}
+            </div>
+          </div>
+        )}
         <div ref={scrollRef} />
       </div>
+
+      <Modal open={editingNote !== null} title="Edit internal note" onClose={() => setEditingNote(null)} size="sm">
+        <form onSubmit={(event) => { event.preventDefault(); if (!editingNote || !noteDraft.trim()) return; onUpdateLocalNote(editingNote.id, noteDraft.trim()); setEditingNote(null); }}>
+          <label className="block text-[12px] font-semibold text-ink-muted" htmlFor="internal-note-edit">Comment</label>
+          <textarea id="internal-note-edit" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} rows={5} autoFocus className="mt-1.5 w-full resize-y rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-ink outline-none focus:border-brand focus:ring-1 focus:ring-brand/20" />
+          <div className="mt-4 flex justify-end gap-2"><Button variant="secondary" onClick={() => setEditingNote(null)}>Cancel</Button><Button type="submit" disabled={!noteDraft.trim()}>Save changes</Button></div>
+        </form>
+      </Modal>
+
+      <Modal open={deletingNote !== null} title="Delete internal note?" onClose={() => setDeletingNote(null)} size="sm">
+        <p className="text-[13px] text-ink-muted">This removes the comment from the current demo session.</p>
+        <div className="mt-4 flex justify-end gap-2"><Button variant="secondary" onClick={() => setDeletingNote(null)}>Cancel</Button><Button variant="danger" onClick={() => { if (deletingNote) onDeleteLocalNote(deletingNote.id); setDeletingNote(null); }}>Delete</Button></div>
+      </Modal>
     </div>
   );
 }

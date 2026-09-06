@@ -146,30 +146,91 @@ export function generateDemoData(): DemoData {
     contacts.push(c);
   }
 
-  const channels: Conversation['channel'][] = ['sms','email','webchat','facebook','instagram','whatsapp'];
-  const SNIPPETS_IN = [
-    'Hi! I saw your ad - do you have any openings this week?',
-    'Is the consultation free?','What are your prices?','Can we reschedule to Friday?',
-    'Thanks, that works for me!','Do you offer financing?','Still interested, sorry for the delay.',
-    'Can you send more details?','Perfect, see you then.','What time do you open?',
-    'Do you have availability next Monday?','How long does the process take?',
-    'My friend referred me - is there a referral discount?','Just confirming our appointment tomorrow.',
-    'I have a question about the invoice I received.','Can I bring someone with me?',
+  const channels: Conversation['channel'][] = [
+    'sms',
+    'email',
+    'whatsapp',
+    'telegram',
+    'instagram',
+    'facebook',
+    'webchat',
   ];
-  const SNIPPETS_OUT = [
-    'Absolutely! We have a few slots open. Want me to book you in?',
-    'Yes - the first consult is completely free.','Happy to help! Let me send over our options.',
-    'No problem, I moved you to Friday at 2pm.','Great, you are all set!',
-    'We do! I can send a quick breakdown.','No worries at all - whenever works for you.',
-    'Just sent it to your email. Let me know if it lands.','See you then - text if anything changes.',
-    'We open at 9am Mon-Sat.','Monday works - I just booked you for 10am.',
-    'Typically 45-60 minutes from start to finish.','Absolutely - we will apply the discount!',
-    'Confirmed! See you tomorrow at your scheduled time.','Happy to look into that for you.',
-    'Of course, guests are always welcome.',
+  // Coherent, channel-friendly exchanges make each inbox row feel like a real
+  // customer story instead of a shuffled collection of unrelated phrases.
+  const CONVERSATION_SCRIPTS: Array<{ subject: string; turns: Array<{ direction: Message['direction']; body: string }> }> = [
+    { subject: 'Appointment availability', turns: [
+      { direction: 'inbound', body: 'Hi! I saw your ad. Do you have any openings this week?' },
+      { direction: 'outbound', body: 'Absolutely — Thursday at 2:00 or Friday at 10:30 are both open.' },
+      { direction: 'inbound', body: 'Thursday at 2:00 would be perfect. Is the first consultation free?' },
+      { direction: 'outbound', body: 'Yes, the consultation is completely free and usually takes about 30 minutes.' },
+      { direction: 'inbound', body: 'Great. Can you send me the address and anything I should bring?' },
+      { direction: 'outbound', body: 'You’re booked. I just sent the confirmation with the address and preparation notes.' },
+      { direction: 'inbound', body: 'Got it — thank you! I’ll see you Thursday.' },
+    ] },
+    { subject: 'Proposal and implementation timeline', turns: [
+      { direction: 'inbound', body: 'Thanks for yesterday’s call. Could you send the proposal and implementation timeline?' },
+      { direction: 'outbound', body: 'Of course. I’ve attached the recommended plan with a four-week rollout schedule.' },
+      { direction: 'inbound', body: 'The plan looks good. Does the price include team training?' },
+      { direction: 'outbound', body: 'It does — two live training sessions and recordings are included.' },
+      { direction: 'inbound', body: 'Perfect. Our operations lead will review it this afternoon.' },
+      { direction: 'outbound', body: 'Excellent. I can hold the proposed kickoff date through Friday.' },
+      { direction: 'inbound', body: 'Please do. I should have approval for you tomorrow.' },
+    ] },
+    { subject: 'Pricing options', turns: [
+      { direction: 'inbound', body: 'Hi, can you send a quick breakdown of your pricing options?' },
+      { direction: 'outbound', body: 'Happy to. Most teams choose the Growth plan, and I can tailor it to your usage.' },
+      { direction: 'inbound', body: 'We have six users today but may add four more this year.' },
+      { direction: 'outbound', body: 'That fits well. The plan lets you add seats without changing your setup.' },
+      { direction: 'inbound', body: 'Do you offer monthly billing or is it annual only?' },
+      { direction: 'outbound', body: 'Both are available. Annual billing includes a 12% discount.' },
+      { direction: 'inbound', body: 'Nice — send the annual option and I’ll review it with my partner.' },
+    ] },
+    { subject: 'Messaging integration', turns: [
+      { direction: 'inbound', body: 'Can your platform keep our customer messages in one inbox?' },
+      { direction: 'outbound', body: 'Yes. Your team can manage text, email, social messages, WhatsApp, and Telegram together.' },
+      { direction: 'inbound', body: 'Can different reps own separate conversations?' },
+      { direction: 'outbound', body: 'Exactly — you can assign owners, filter team inboxes, and leave private notes.' },
+      { direction: 'inbound', body: 'That would solve a big handoff problem for us.' },
+      { direction: 'outbound', body: 'I can show you the full workflow in a short demo.' },
+      { direction: 'inbound', body: 'Let’s do it. Tuesday afternoon is open.' },
+    ] },
+    { subject: 'Instagram service question', turns: [
+      { direction: 'inbound', body: 'Hi! I found you through the before-and-after post. How long does the process take?' },
+      { direction: 'outbound', body: 'Thanks for reaching out! Most appointments take 45–60 minutes.' },
+      { direction: 'inbound', body: 'Do I need to book far in advance?' },
+      { direction: 'outbound', body: 'Usually a few days is enough. We still have two openings this weekend.' },
+      { direction: 'inbound', body: 'Saturday morning would be ideal.' },
+      { direction: 'outbound', body: 'I can reserve 10:00 AM for you and send the details here.' },
+      { direction: 'inbound', body: 'Yes please — 10:00 works!' },
+    ] },
+    { subject: 'Referral offer', turns: [
+      { direction: 'inbound', body: 'My friend Jordan referred me. Is the referral offer still available?' },
+      { direction: 'outbound', body: 'It is! I can apply the referral credit to your first service.' },
+      { direction: 'inbound', body: 'Great. I’m interested in the premium package.' },
+      { direction: 'outbound', body: 'That package includes the consultation, setup, and 30-day follow-up.' },
+      { direction: 'inbound', body: 'Could I bring my business partner to the consultation?' },
+      { direction: 'outbound', body: 'Absolutely — guests are always welcome.' },
+      { direction: 'inbound', body: 'Perfect. What times are available next Monday?' },
+    ] },
+    { subject: 'Website chat', turns: [
+      { direction: 'inbound', body: 'Hello — I’m comparing providers and have a couple of questions.' },
+      { direction: 'outbound', body: 'Welcome! Tell me what you’re looking for and I’ll point you in the right direction.' },
+      { direction: 'inbound', body: 'Fast setup and good support are the main priorities.' },
+      { direction: 'outbound', body: 'Our guided setup takes about a week, and support is available seven days a week.' },
+      { direction: 'inbound', body: 'Is there a contract?' },
+      { direction: 'outbound', body: 'Monthly plans are flexible, while annual plans include a discount.' },
+      { direction: 'inbound', body: 'That sounds promising. Can someone call me after 3:00 today?' },
+    ] },
   ];
 
   const conversations: Conversation[] = [];
   const messages: Message[] = [];
+  // Conversations use their own random stream so richer message scripts do not
+  // reshuffle seeded opportunities, appointments, tasks, calls, or invoices.
+  const conversationRandom = rng(20260906);
+  const conversationInt = (min: number, max: number) => Math.floor(conversationRandom() * (max - min + 1)) + min;
+  const conversationChance = (probability: number) => conversationRandom() < probability;
+  const conversationPick = <T>(values: T[]) => values[Math.floor(conversationRandom() * values.length)];
   const contactPool = [...contacts];
   const convContacts: Contact[] = [];
   const usedForConv = new Set<string>();
@@ -182,34 +243,54 @@ export function generateDemoData(): DemoData {
     }
   }
   convContacts.forEach((contact, i) => {
-    const channel = pick(channels);
+    // Preserve the original seed generator's random-state consumption so data
+    // owned by the other demo modules remains stable across this enhancement.
+    r(); // original channel pick
+    const originalTurnCount = int(8, 15);
+    int(0, 6);
+    int(0, 8);
+    for (let turn = 0; turn < originalTurnCount; turn += 1) {
+      r(); // original message-snippet pick
+      int(2, 90);
+    }
+    chance(0.38);
+    chance(0.15);
+    pick(ownerIds);
+
+    // Cycle deterministically so every connected demo channel is visible after
+    // every reset instead of relying on the PRNG to happen to cover them all.
+    const channel = channels[i % channels.length];
     const convId = `conv_${i + 1}`;
-    const turns = int(8, 15);
+    const script = CONVERSATION_SCRIPTS[i % CONVERSATION_SCRIPTS.length];
     const msgIds: ID[] = [];
-    let t = now() - int(0, 6) * DAY - int(0, 8) * HOUR;
-    for (let m = 0; m < turns; m++) {
-      const inbound = m % 2 === 0;
+    // Leave enough room for the exchange so the final message never lands in
+    // the future on same-day threads.
+    let t = now() - conversationInt(0, 6) * DAY - conversationInt(12, 20) * HOUR;
+    let lastMessageAt = t;
+    script.turns.forEach((turn, m) => {
       const msgId = `msg_${convId}_${m}`;
       messages.push({
         id: msgId,
         conversationId: convId,
-        direction: inbound ? 'inbound' : 'outbound',
+        direction: turn.direction,
         channel,
-        body: inbound ? pick(SNIPPETS_IN) : pick(SNIPPETS_OUT),
+        subject: channel === 'email' ? (m === 0 ? script.subject : `Re: ${script.subject}`) : undefined,
+        body: turn.body,
         createdAt: iso(t),
-        status: inbound ? undefined : 'delivered',
+        status: turn.direction === 'inbound' ? undefined : m < script.turns.length - 2 ? 'read' : 'delivered',
       });
       msgIds.push(msgId);
-      t += int(2, 90) * 60000;
-    }
+      lastMessageAt = t;
+      t += conversationInt(2, 90) * 60000;
+    });
     conversations.push({
       id: convId,
       contactId: contact.id,
       channel,
-      unread: chance(0.38),
-      starred: chance(0.15),
-      lastMessageAt: iso(t),
-      assignedTo: pick(ownerIds),
+      unread: i === 0 || i === 5,
+      starred: conversationChance(0.15),
+      lastMessageAt: iso(lastMessageAt),
+      assignedTo: conversationPick(ownerIds),
       messageIds: msgIds,
     });
   });
