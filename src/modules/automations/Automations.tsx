@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { BellRing, Settings, Sparkles } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import type { Workflow } from '@/types';
 import { cx } from '@/utils';
@@ -23,41 +23,50 @@ function SubNav({
   onSettings: () => void;
 }) {
   return (
-    <div className="flex items-center gap-8 border-b border-line bg-surface px-6">
-      <span className="py-4 font-display text-lg font-bold text-ink">Automation</span>
+    <div className="flex h-10 shrink-0 items-center gap-7 bg-banner px-5 text-white">
+      <span className="shrink-0 font-display text-[18px] font-semibold tracking-[-0.01em]">Automation</span>
+      <div className="flex h-10 flex-1 items-end gap-6">
+        <nav className="flex h-10 items-end gap-7" aria-label="Automation sections">
+          <button
+            onClick={() => onView('workflows')}
+            className={cx(
+              'relative flex h-10 items-center text-[12px] font-medium transition-colors',
+              view === 'workflows' ? 'text-white' : 'text-white/60 hover:text-white/90',
+            )}
+          >
+            Workflows
+            {view === 'workflows' && <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-t bg-banner-accent" />}
+          </button>
 
-      <nav className="flex items-end gap-7 self-stretch">
+          <button
+            onClick={() => onView('overview')}
+            className={cx(
+              'relative flex h-10 items-center gap-1.5 text-[12px] font-medium transition-colors',
+              view === 'overview' ? 'text-white' : 'text-white/60 hover:text-white/90',
+            )}
+          >
+            Overview
+            <span className="-mt-4 rounded-[3px] bg-amber-300 px-1 py-0.5 text-[8px] font-bold uppercase leading-none tracking-wide text-amber-950">Beta</span>
+            {view === 'overview' && <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-t bg-banner-accent" />}
+          </button>
+        </nav>
+
+        <span aria-hidden className="mb-2.5 h-5 w-px bg-white/20" />
         <button
-          onClick={() => onView('workflows')}
-          className={cx(
-            'relative flex items-center py-4 text-sm font-semibold transition-colors',
-            view === 'workflows' ? 'text-brand' : 'text-ink-muted hover:text-ink',
-          )}
+          onClick={onSettings}
+          className="flex h-10 items-center gap-1.5 text-[12px] font-medium text-white/60 transition-colors hover:text-white"
         >
-          Workflows
-          {view === 'workflows' && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand" />}
+          <Settings size={14} />
+          Global Workflow Settings
         </button>
-
         <button
           onClick={() => onView('overview')}
-          className={cx(
-            'relative flex items-start gap-1 py-4 text-sm font-semibold transition-colors',
-            view === 'overview' ? 'text-brand' : 'text-ink-muted hover:text-ink',
-          )}
+          className="ml-auto mb-1.5 hidden h-7 items-center gap-1.5 rounded-full border border-banner-accent/35 bg-banner-accent/10 px-3 text-[10px] font-semibold text-banner-accent hover:bg-banner-accent/20 lg:flex"
         >
-          Overview
-          <span className="rounded bg-banner px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-white">Beta</span>
-          {view === 'overview' && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand" />}
+          <BellRing size={12} /> What's new · Automation updates
         </button>
-      </nav>
-
-      <button
-        onClick={onSettings}
-        className="ml-2 flex items-center gap-2 py-4 text-sm font-medium text-ink-muted transition-colors hover:text-ink"
-      >
-        <Settings size={16} />
-        Global Workflow Settings
-      </button>
+        <Sparkles size={14} className="mb-3 ml-auto text-banner-accent/60 lg:hidden" />
+      </div>
     </div>
   );
 }

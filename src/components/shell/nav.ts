@@ -1,7 +1,8 @@
 import {
   LayoutDashboard, MessagesSquare, Calendar, Users, Filter, CreditCard,
   KanbanSquare, Megaphone, Workflow, Star, BarChart3, Bot, GraduationCap,
-  Settings, type LucideIcon,
+  Settings, Rocket, PanelsTopLeft, UserRoundCheck, Store, FolderOpen,
+  Link2, ClipboardList, TicketCheck, WandSparkles, Smartphone, type LucideIcon,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -30,27 +31,30 @@ export interface NavItem {
  * at the very bottom of the old AI block).
  */
 export const NAV: NavItem[] = [
-  // Core CRM / day-to-day work
+  // Order follows the live Kleegr sub-account rail.
+  { label: 'Launchpad', path: '/launchpad', icon: Rocket, tour: 'nav.launchpad' },
   { label: 'Dashboard', path: '/', icon: LayoutDashboard, tour: 'nav.dashboard' },
   { label: 'Conversations', path: '/conversations', icon: MessagesSquare, tour: 'nav.conversations' },
   { label: 'Calendars', path: '/calendars', icon: Calendar, tour: 'nav.calendars' },
   { label: 'Contacts', path: '/contacts', icon: Users, tour: 'nav.contacts' },
   { label: 'Opportunities', path: '/opportunities', icon: Filter, tour: 'nav.opportunities' },
+  { label: 'URL Redirects', path: '/urls', icon: Link2, tour: 'nav.urls' },
+  { label: 'Onboardings', path: '/onboardings', icon: ClipboardList, tour: 'nav.onboardings' },
   { label: 'Payments', path: '/payments', icon: CreditCard, tour: 'nav.payments' },
-  // Tasks & Projects live inside the Productivity hub (Tasks / Projects tabs).
-  // The /tasks route is kept as a hidden compatibility redirect (see App.tsx).
-  { label: 'Productivity', path: '/productivity', icon: KanbanSquare, tour: 'productivity.nav' },
-  // AI Agents — promoted into the primary work cluster (no longer buried).
+  { label: 'Tasks & Projects', path: '/productivity', icon: KanbanSquare, tour: 'productivity.nav' },
+  { label: 'Tickets', path: '/tickets', icon: TicketCheck, tour: 'nav.tickets' },
+  { label: 'AI Studio', path: '/ai-studio', icon: WandSparkles, tour: 'nav.aiStudio', dividerBefore: true },
   { label: 'AI Agents', path: '/ai-agents', icon: Bot, tour: 'nav.aiAgents' },
-
-  // Marketing & growth
-  { label: 'Marketing', path: '/marketing/email', icon: Megaphone, tour: 'nav.marketing', dividerBefore: true },
+  { label: 'Marketing', path: '/marketing/email', icon: Megaphone, tour: 'nav.marketing' },
   { label: 'Automation', path: '/automations', icon: Workflow, tour: 'nav.automations' },
+  { label: 'Sites', path: '/sites', icon: PanelsTopLeft, tour: 'nav.sites' },
+  { label: 'Memberships', path: '/memberships', icon: UserRoundCheck, tour: 'nav.memberships' },
+  { label: 'Media Storage', path: '/media', icon: FolderOpen, tour: 'nav.media' },
   { label: 'Reputation', path: '/reputation', icon: Star, tour: 'nav.reputation' },
   { label: 'Reporting', path: '/reporting', icon: BarChart3, tour: 'nav.reporting' },
-
-  // Learning
-  { label: 'Guides', path: '/guides', icon: GraduationCap, tour: 'nav.guides', dividerBefore: true },
+  { label: 'App Marketplace', path: '/integrations', icon: Store, tour: 'nav.integrations' },
+  { label: 'Mobile App', path: '/mobile-app', icon: Smartphone, tour: 'nav.mobileApp' },
+  { label: 'Guides', path: '/guides', icon: GraduationCap, tour: 'nav.guides' },
 ];
 
 /** Pinned to the bottom of the sidebar (GHL keeps Settings docked there). */

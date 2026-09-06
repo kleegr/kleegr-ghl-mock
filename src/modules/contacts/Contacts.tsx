@@ -1,4 +1,3 @@
-import { PageHeader } from '@/components/ui/primitives';
 import { ContactsModuleProvider, useContactsModule } from './context';
 import { SecondaryNav } from './components/SecondaryNav';
 import { ContactsView } from './components/ContactsView';
@@ -21,12 +20,11 @@ import { ContactWorkspace } from './components/ContactWorkspace';
 function ContactsBody() {
   const { view } = useContactsModule();
   return (
-    <div data-tour="contacts.page" className="flex h-full flex-col">
-      <PageHeader
-        title="Contacts"
-        subtitle="CRM database — saved views, companies, bulk actions, and imports"
-      />
-      <SecondaryNav />
+    <div data-tour="contacts.page" className="flex h-full min-h-[640px] flex-col bg-[#f3f5f8]">
+      <div className="h-[90px] shrink-0 bg-[#102a43] px-5 pt-4 text-white">
+        <h1 className="font-display text-[21px] font-semibold leading-7 tracking-[-0.01em]">Contacts</h1>
+        <SecondaryNav />
+      </div>
       <div className="min-h-0 flex-1">
         {view === 'contacts' && <ContactsView />}
         {view === 'smart-lists' && <SmartListsView />}

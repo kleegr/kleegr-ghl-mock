@@ -1,42 +1,46 @@
-import { Building2 } from 'lucide-react';
+import { Building2, Mail, MessageSquare, Phone } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { fullName, dateLabel, relativeTime, userById, cx } from '@/utils';
-import { Avatar, Badge, EmptyState } from '@/components/ui/primitives';
+import { fullName, userById, cx } from '@/utils';
+import { Avatar, EmptyState } from '@/components/ui/primitives';
 import type { Contact } from '@/types';
 import { RowMenu, type MenuItem } from './RowMenu';
 
-/**
- * Toggleable columns for the contacts table. `Name` and the row checkbox/menu
- * are always rendered; everything here can be turned on/off from the
- * "Columns" (Manage Fields) menu in the toolbar.
- */
+/** Default columns mirror the live Kleegr Smart Lists table. */
 export const CONTACT_COLUMNS: { id: string; label: string }[] = [
-  { id: 'email', label: 'Email' },
   { id: 'phone', label: 'Phone' },
-  { id: 'company', label: 'Company' },
+  { id: 'email', label: 'Email' },
+  { id: 'company', label: 'Business name' },
+  { id: 'created', label: 'Created (EDT)' },
+  { id: 'lastActivity', label: 'Last activity (EDT)' },
   { id: 'tags', label: 'Tags' },
   { id: 'source', label: 'Source' },
   { id: 'status', label: 'Status' },
   { id: 'owner', label: 'Owner' },
-  { id: 'lastActivity', label: 'Last Activity' },
-  { id: 'created', label: 'Created' },
 ];
 
-function sourceTone(source: string): 'brand' | 'good' | 'warn' | 'neutral' {
-  const s = source.toLowerCase();
-  if (s.includes('google')) return 'brand';
-  if (s.includes('facebook') || s.includes('instagram')) return 'warn';
-  if (s.includes('referral')) return 'good';
-  return 'neutral';
+function contactStatus(contact: Contact): string {
+  if (contact.tags.some((tag) => tag === 'vip' || tag === 'past-client')) return 'Customer';
+  if (contact.tags.some((tag) => tag === 'hot' || tag === 'consult-booked')) return 'Hot Lead';
+  if (contact.tags.includes('lead')) return 'Lead';
+  return 'Contact';
 }
 
-/** Derive a lightweight CRM status from a contact's tags (demo heuristic). */
-function statusOf(contact: Contact): { label: string; tone: 'good' | 'brand' | 'warn' | 'neutral' } {
-  if (contact.tags.some((t) => t === 'vip' || t === 'past-client')) return { label: 'Customer', tone: 'good' };
-  if (contact.tags.includes('hot') || contact.tags.includes('consult-booked')) return { label: 'Hot Lead', tone: 'warn' };
-  if (contact.tags.includes('lead')) return { label: 'Lead', tone: 'brand' };
-  return { label: 'Contact', tone: 'neutral' };
+const EASTERN_DATE_TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+function easternDateTime(iso: string): string {
+  return EASTERN_DATE_TIME.format(new Date(iso));
 }
+
+const HEAD_CELL =
+  'h-[38px] whitespace-nowrap border-r border-[#e5e9ef] bg-[#fbfcfd] px-3 text-left text-[11px] font-semibold text-[#667085]';
+const BODY_CELL = 'h-[38px] border-r border-[#e5e9ef] px-3 align-middle';
 
 export function ContactsTable({
   contacts,
@@ -62,135 +66,142 @@ export function ContactsTable({
     return <EmptyState title="No contacts found" body="Try adjusting your search, saved view, or filters." />;
   }
 
-  const visibleIds = contacts.map((c) => c.id);
+  const visibleIds = contacts.map((contact) => contact.id);
   const allSelected = selected.size > 0 && visibleIds.every((id) => selected.has(id));
   const someSelected = selected.size > 0 && !allSelected;
   const show = (id: string) => visibleColumns.has(id);
 
   return (
-    <table className="w-full border-collapse text-sm">
-      <thead className="sticky top-0 z-[1]">
-        <tr className="border-b border-line text-left">
-          <th className="w-10 bg-surface px-4 py-2.5">
+    <table className="w-full min-w-[1180px] table-fixed border-collapse text-[12px]">
+      <thead className="sticky top-0 z-[2] border-b border-[#dfe4eb]">
+        <tr>
+          <th className="h-[38px] w-11 border-r border-[#e5e9ef] bg-[#fbfcfd] px-3">
             <input
               type="checkbox"
               checked={allSelected}
-              ref={(el) => { if (el) el.indeterminate = someSelected; }}
+              ref={(element) => {
+                if (element) element.indeterminate = someSelected;
+              }}
               onChange={onToggleAll}
               aria-label="Select all contacts"
-              className="h-3.5 w-3.5 cursor-pointer rounded border-line accent-brand"
+              className="h-3.5 w-3.5 cursor-pointer rounded border-[#cbd3df] accent-[#1689f4]"
             />
           </th>
-          <th className="whitespace-nowrap bg-surface px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-subtle">Name</th>
-          {CONTACT_COLUMNS.filter((c) => show(c.id)).map((c) => (
-            <th key={c.id} className="whitespace-nowrap bg-surface px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-subtle">
-              {c.label}
-            </th>
-          ))}
-          <th className="w-10 bg-surface px-4 py-2.5" aria-label="Actions" />
+          <th className={cx(HEAD_CELL, 'w-[230px]')}>Contact name</th>
+          {show('phone') && <th className={cx(HEAD_CELL, 'w-[150px]')}>Phone</th>}
+          {show('email') && <th className={cx(HEAD_CELL, 'w-[220px]')}>Email</th>}
+          {show('company') && <th className={cx(HEAD_CELL, 'w-[170px]')}>Business name</th>}
+          {show('created') && <th className={cx(HEAD_CELL, 'w-[170px]')}>Created (EDT)</th>}
+          {show('lastActivity') && <th className={cx(HEAD_CELL, 'w-[170px]')}>Last activity (EDT)</th>}
+          {show('tags') && <th className={cx(HEAD_CELL, 'w-[190px]')}>Tags</th>}
+          {show('source') && <th className={cx(HEAD_CELL, 'w-[135px]')}>Source</th>}
+          {show('status') && <th className={cx(HEAD_CELL, 'w-[110px]')}>Status</th>}
+          {show('owner') && <th className={cx(HEAD_CELL, 'w-[145px]')}>Owner</th>}
+          <th className="h-[38px] w-10 bg-[#fbfcfd]" aria-label="Actions" />
         </tr>
       </thead>
       <tbody>
         {contacts.map((contact) => {
           const owner = userById(users, contact.ownerId);
-          const company = companies.find((co) => co.id === contact.companyId);
-          const isSel = selected.has(contact.id);
-          const status = statusOf(contact);
+          const company = companies.find((item) => item.id === contact.companyId);
+          const isSelected = selected.has(contact.id);
+
           return (
             <tr
               key={contact.id}
               data-tour="contacts.row"
               onClick={() => onRowClick(contact)}
               className={cx(
-                'cursor-pointer border-b border-line/70 transition-colors hover:bg-surface-sunken',
-                isSel && 'bg-brand-soft/50',
+                'group h-[38px] cursor-pointer border-b border-[#e8ebf0] bg-white transition-colors hover:bg-[#f7faff]',
+                isSelected && 'bg-[#eef6ff]',
               )}
             >
-              <td className="w-10 px-4 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
+              <td className="h-[38px] w-11 border-r border-[#e5e9ef] px-3 align-middle" onClick={(event) => event.stopPropagation()}>
                 <input
                   type="checkbox"
-                  checked={isSel}
+                  checked={isSelected}
                   onChange={() => onToggle(contact.id)}
                   aria-label={`Select ${fullName(contact)}`}
-                  className="h-3.5 w-3.5 cursor-pointer rounded border-line accent-brand"
+                  className="h-3.5 w-3.5 cursor-pointer rounded border-[#cbd3df] accent-[#1689f4]"
                 />
               </td>
-              <td className="px-4 py-3 align-middle">
-                <div className="flex items-center gap-2.5">
-                  <Avatar name={fullName(contact)} size="sm" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-ink">{fullName(contact)}</p>
-                    {contact.dnd && <span className="text-[10px] font-bold text-bad">DND</span>}
+              <td className={cx(BODY_CELL, 'w-[230px]')}>
+                <div className="flex min-w-0 items-center gap-2">
+                  <Avatar name={fullName(contact)} size="xs" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium leading-4 text-[#344054]">{fullName(contact)}</p>
+                    {contact.dnd && <span className="text-[9px] font-semibold leading-none text-[#d92d20]">DND</span>}
                   </div>
+                  <span className="hidden shrink-0 items-center gap-0.5 text-[#98a2b3] xl:flex">
+                    <span className="grid h-5 w-5 place-items-center rounded-full hover:bg-[#e8f2ff] hover:text-[#1689f4]"><Phone size={10} /></span>
+                    <span className="grid h-5 w-5 place-items-center rounded-full hover:bg-[#e8f2ff] hover:text-[#1689f4]"><Mail size={10} /></span>
+                    <span className="grid h-5 w-5 place-items-center rounded-full hover:bg-[#e8f2ff] hover:text-[#1689f4]"><MessageSquare size={10} /></span>
+                  </span>
                 </div>
               </td>
-              {show('email') && (
-                <td className="px-4 py-3 align-middle">
-                  <span className="block max-w-[200px] truncate text-xs text-ink-muted">{contact.email}</span>
+              {show('phone') && (
+                <td className={cx(BODY_CELL, 'w-[150px]')}>
+                  <span className="block truncate text-[#475467]">{contact.phone || '—'}</span>
                 </td>
               )}
-              {show('phone') && (
-                <td className="px-4 py-3 align-middle">
-                  <span className="whitespace-nowrap text-xs text-ink-muted">{contact.phone}</span>
+              {show('email') && (
+                <td className={cx(BODY_CELL, 'w-[220px]')}>
+                  <span className="block truncate text-[#475467]">{contact.email || '—'}</span>
                 </td>
               )}
               {show('company') && (
-                <td className="px-4 py-3 align-middle">
+                <td className={cx(BODY_CELL, 'w-[170px]')}>
                   {company ? (
-                    <div className="flex max-w-[150px] items-center gap-1 text-xs text-ink-muted">
-                      <Building2 size={11} className="shrink-0 text-ink-subtle" />
+                    <span className="flex min-w-0 items-center gap-1.5 text-[#475467]">
+                      <Building2 size={11} className="shrink-0 text-[#98a2b3]" />
                       <span className="truncate">{company.name}</span>
-                    </div>
+                    </span>
                   ) : (
-                    <span className="text-xs text-ink-subtle">—</span>
+                    <span className="text-[#98a2b3]">—</span>
                   )}
-                </td>
-              )}
-              {show('tags') && (
-                <td className="px-4 py-3 align-middle">
-                  <div className="flex flex-wrap gap-1">
-                    {contact.tags.slice(0, 2).map((tag) => (
-                      <Badge key={tag} tone="brand" size="sm">{tag}</Badge>
-                    ))}
-                    {contact.tags.length > 2 && <Badge tone="neutral" size="sm">+{contact.tags.length - 2}</Badge>}
-                    {contact.tags.length === 0 && <span className="text-xs text-ink-subtle">—</span>}
-                  </div>
-                </td>
-              )}
-              {show('source') && (
-                <td className="px-4 py-3 align-middle">
-                  <Badge tone={sourceTone(contact.source)} size="sm">{contact.source}</Badge>
-                </td>
-              )}
-              {show('status') && (
-                <td className="px-4 py-3 align-middle">
-                  <Badge tone={status.tone} size="sm">{status.label}</Badge>
-                </td>
-              )}
-              {show('owner') && (
-                <td className="px-4 py-3 align-middle">
-                  {owner ? (
-                    <div className="flex items-center gap-1.5">
-                      <Avatar name={owner.name} size="xs" />
-                      <span className="whitespace-nowrap text-xs text-ink-muted">{owner.name.split(' ')[0]}</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-ink-subtle">—</span>
-                  )}
-                </td>
-              )}
-              {show('lastActivity') && (
-                <td className="px-4 py-3 align-middle">
-                  <span className="whitespace-nowrap text-xs text-ink-subtle">{relativeTime(contact.lastActivityAt)}</span>
                 </td>
               )}
               {show('created') && (
-                <td className="px-4 py-3 align-middle">
-                  <span className="whitespace-nowrap text-xs text-ink-subtle">{dateLabel(contact.createdAt)}</span>
+                <td className={cx(BODY_CELL, 'w-[170px] whitespace-nowrap text-[#667085]')}>{easternDateTime(contact.createdAt)}</td>
+              )}
+              {show('lastActivity') && (
+                <td className={cx(BODY_CELL, 'w-[170px] whitespace-nowrap text-[#667085]')}>{easternDateTime(contact.lastActivityAt)}</td>
+              )}
+              {show('tags') && (
+                <td className={cx(BODY_CELL, 'w-[190px]')}>
+                  <div className="flex items-center gap-1 overflow-hidden">
+                    {contact.tags.length === 0 && <span className="text-[#98a2b3]">—</span>}
+                    {contact.tags.slice(0, 2).map((tag) => (
+                      <span key={tag} className="max-w-[78px] truncate rounded-[4px] bg-[#eef1f4] px-1.5 py-0.5 text-[10px] font-medium text-[#475467]">
+                        {tag}
+                      </span>
+                    ))}
+                    {contact.tags.length > 2 && <span className="text-[10px] text-[#667085]">+{contact.tags.length - 2}</span>}
+                  </div>
                 </td>
               )}
-              <td className="w-10 px-2 py-3 align-middle text-right" onClick={(e) => e.stopPropagation()}>
-                <RowMenu items={rowMenu(contact)} label={`Actions for ${fullName(contact)}`} />
+              {show('source') && <td className={cx(BODY_CELL, 'w-[135px] truncate text-[#667085]')}>{contact.source}</td>}
+              {show('status') && (
+                <td className={cx(BODY_CELL, 'w-[110px]')}>
+                  <span className="rounded-full bg-[#edf4ff] px-2 py-0.5 text-[10px] font-semibold text-[#175cd3]">{contactStatus(contact)}</span>
+                </td>
+              )}
+              {show('owner') && (
+                <td className={cx(BODY_CELL, 'w-[145px]')}>
+                  {owner ? (
+                    <span className="flex items-center gap-1.5 text-[#475467]">
+                      <Avatar name={owner.name} size="xs" />
+                      <span className="truncate">{owner.name}</span>
+                    </span>
+                  ) : (
+                    <span className="text-[#98a2b3]">—</span>
+                  )}
+                </td>
+              )}
+              <td className="h-[38px] w-10 px-1.5 text-right align-middle" onClick={(event) => event.stopPropagation()}>
+                <span className="opacity-40 transition-opacity group-hover:opacity-100">
+                  <RowMenu items={rowMenu(contact)} label={`Actions for ${fullName(contact)}`} />
+                </span>
               </td>
             </tr>
           );

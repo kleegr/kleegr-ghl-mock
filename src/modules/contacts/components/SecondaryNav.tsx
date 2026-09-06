@@ -1,14 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { Users, Building2, Filter, ListChecks, Upload, Sliders, ExternalLink } from 'lucide-react';
 import { cx } from '@/utils';
 import { useContactsModule, type ContactsView } from '../context';
 
-const TABS: { id: ContactsView; label: string; icon: typeof Users }[] = [
-  { id: 'contacts', label: 'Contacts', icon: Users },
-  { id: 'smart-lists', label: 'Smart Lists', icon: Filter },
-  { id: 'companies', label: 'Companies', icon: Building2 },
-  { id: 'bulk-actions', label: 'Bulk Actions', icon: ListChecks },
-  { id: 'imports', label: 'Imports', icon: Upload },
+const TABS: { id: ContactsView; label: string }[] = [
+  { id: 'contacts', label: 'Smart Lists' },
+  { id: 'bulk-actions', label: 'Bulk Actions' },
 ];
 
 /** Secondary navigation for the Contacts area (GHL renders a sub-nav under the
@@ -18,29 +14,42 @@ export function SecondaryNav() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center gap-1 overflow-x-auto border-b border-line bg-surface px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="mt-2.5 flex h-[39px] items-end gap-7 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {TABS.map((t) => {
-        const Icon = t.icon;
         const active = view === t.id;
         return (
           <button
             key={t.id}
             onClick={() => setView(t.id)}
             className={cx(
-              'relative -mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors',
-              active ? 'border-brand text-brand' : 'border-transparent text-ink-muted hover:text-ink',
+              'relative flex h-full items-center whitespace-nowrap border-b-2 px-0 pt-0.5 text-[13px] font-medium transition-colors',
+              active ? 'border-[#20c5e8] text-white' : 'border-transparent text-white/65 hover:text-white',
             )}
           >
-            <Icon size={15} /> {t.label}
+            {t.label}
           </button>
         );
       })}
-      <span className="mx-1 h-5 w-px bg-line" aria-hidden="true" />
       <button
         onClick={() => navigate('/settings/custom-fields')}
-        className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-ink-muted hover:bg-surface-sunken hover:text-ink"
+        className="flex h-full items-center whitespace-nowrap border-b-2 border-transparent pt-0.5 text-[13px] font-medium text-white/65 transition-colors hover:text-white"
       >
-        <Sliders size={15} /> Custom Fields <ExternalLink size={12} className="opacity-60" />
+        Custom Fields
+      </button>
+      <button
+        onClick={() => navigate('/productivity')}
+        className="flex h-full items-center whitespace-nowrap border-b-2 border-transparent pt-0.5 text-[13px] font-medium text-white/65 transition-colors hover:text-white"
+      >
+        Tasks
+      </button>
+      <button
+        onClick={() => setView('companies')}
+        className={cx(
+          'flex h-full items-center whitespace-nowrap border-b-2 pt-0.5 text-[13px] font-medium transition-colors',
+          view === 'companies' ? 'border-[#20c5e8] text-white' : 'border-transparent text-white/65 hover:text-white',
+        )}
+      >
+        Companies
       </button>
     </div>
   );

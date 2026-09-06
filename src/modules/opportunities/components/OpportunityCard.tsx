@@ -26,12 +26,12 @@ function ActivityRow({ activity }: { activity: OpportunityActivity }) {
     { Icon: Calendar, badge: activity.appointments },
   ];
   return (
-    <div className="mt-3 flex items-center gap-3 text-ink-subtle">
+    <div className="mt-2 flex items-center gap-1.5 text-[#98a2b3]">
       {items.map(({ Icon, badge }, i) => (
-        <span key={i} className="relative inline-flex">
-          <Icon size={15} strokeWidth={1.8} />
+        <span key={i} className="relative grid h-5 w-5 place-items-center rounded-full border border-[#e1e6ed] bg-[#fbfcfd]">
+          <Icon size={10} strokeWidth={1.8} />
           {badge > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-brand px-0.5 text-[8px] font-bold leading-none text-brand-fg">
+            <span className="absolute -right-1.5 -top-1.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#1689f4] px-0.5 text-[8px] font-bold leading-none text-white">
               {badge}
             </span>
           )}
@@ -57,50 +57,50 @@ function CardBody({
   const businessName = opp.businessName ?? company?.name;
 
   return (
-    <div className="px-3.5 py-3">
+    <div className="px-2.5 py-2.5">
       {/* Title + owner */}
       <div className={cx('flex items-start justify-between gap-2', reserveCorner && 'pr-7')}>
-        <p className="flex-1 truncate text-[13px] font-semibold leading-snug text-ink">
+        <p className="flex-1 truncate text-[12px] font-semibold leading-[17px] text-[#344054]">
           {opp.name || (contact ? fullName(contact) : 'Untitled')}
         </p>
         {owner ? (
-          <Avatar name={owner.name} size="xs" className="mt-0.5" />
+          <Avatar name={owner.name} size="xs" />
         ) : (
-          <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface-sunken text-ink-subtle">
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#eef1f5] text-[#98a2b3]">
             <UserX size={12} />
           </span>
         )}
       </div>
 
       {/* Field rows */}
-      <dl className="mt-2.5 space-y-1.5 text-[12px]">
+      <dl className="mt-2 space-y-1 text-[11px] leading-4">
         {businessName && (
           <div className="flex items-baseline gap-2">
-            <dt className="w-24 shrink-0 text-ink-subtle">Business Name:</dt>
-            <dd className="min-w-0 truncate text-ink-muted">{businessName}</dd>
+            <dt className="w-[82px] shrink-0 text-[#98a2b3]">Business:</dt>
+            <dd className="min-w-0 truncate text-[#667085]">{businessName}</dd>
           </div>
         )}
         {opp.source && (
           <div className="flex items-baseline gap-2">
-            <dt className="w-24 shrink-0 text-ink-subtle">Source:</dt>
-            <dd className="min-w-0 truncate text-ink-muted">{opp.source}</dd>
+            <dt className="w-[82px] shrink-0 text-[#98a2b3]">Source:</dt>
+            <dd className="min-w-0 truncate text-[#667085]">{opp.source}</dd>
           </div>
         )}
         <div className="flex items-baseline gap-2">
-          <dt className="w-24 shrink-0 text-ink-subtle">Value:</dt>
-          <dd className="font-semibold text-ink">{moneyCents(opp.monetaryValue)}</dd>
+          <dt className="w-[82px] shrink-0 text-[#98a2b3]">Value:</dt>
+          <dd className="font-semibold text-[#344054]">{moneyCents(opp.monetaryValue)}</dd>
         </div>
       </dl>
 
       {opp.tags.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap gap-1">
+        <div className="mt-2 flex flex-wrap gap-1">
           {opp.tags.slice(0, 3).map((t) => (
-            <span key={t} className="rounded-full bg-surface-sunken px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+            <span key={t} className="rounded-[4px] bg-[#eef1f4] px-1.5 py-0.5 text-[9px] font-medium text-[#667085]">
               {t}
             </span>
           ))}
           {opp.tags.length > 3 && (
-            <span className="self-center text-[10px] text-ink-subtle">+{opp.tags.length - 3}</span>
+            <span className="self-center text-[9px] text-[#98a2b3]">+{opp.tags.length - 3}</span>
           )}
         </div>
       )}
@@ -113,7 +113,7 @@ function CardBody({
 /** Floating preview rendered inside DragOverlay while dragging. */
 export function OpportunityCardOverlay(props: SharedProps) {
   return (
-    <div className="w-[280px] rotate-1 rounded-lg border border-brand bg-surface opacity-95 shadow-pop">
+    <div className="w-[266px] rotate-1 rounded-lg border border-[#1689f4] bg-white opacity-95 shadow-pop">
       <CardBody {...props} />
     </div>
   );
@@ -178,10 +178,10 @@ export function OpportunityCard({
       aria-label={`Open ${opportunity.name}`}
       data-tour="opportunities.card"
       className={cx(
-        'group relative rounded-lg border bg-surface shadow-card transition-all',
+        'group relative rounded-lg border bg-white transition-all',
         selectable ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing',
-        isDragging ? 'opacity-30' : 'hover:border-brand/40 hover:shadow-pop/40',
-        selected ? 'border-brand ring-1 ring-brand' : 'border-line',
+        isDragging ? 'opacity-30' : 'hover:border-[#9ecbfb] hover:shadow-[0_2px_8px_rgba(16,24,40,0.08)]',
+        selected ? 'border-[#1689f4] ring-1 ring-[#1689f4]' : 'border-[#dfe4eb]',
       )}
     >
       {/* Selection checkbox (selection mode only) */}
@@ -189,7 +189,7 @@ export function OpportunityCard({
         <span
           className={cx(
             'absolute right-2.5 top-2.5 grid h-5 w-5 place-items-center rounded border transition-colors',
-            selected ? 'border-brand bg-brand text-brand-fg' : 'border-line bg-surface text-transparent',
+            selected ? 'border-[#1689f4] bg-[#1689f4] text-white' : 'border-[#cbd3df] bg-white text-transparent',
           )}
           aria-hidden="true"
         >

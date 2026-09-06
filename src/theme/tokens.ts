@@ -52,19 +52,19 @@ export const kleegrTheme: ThemeTokens = {
     // Surfaces
     surface: '255 255 255',
     'surface-raised': '255 255 255',
-    'surface-sunken': '247 248 250',
-    line: '228 231 236',
+    'surface-sunken': '243 245 248', // #f3f5f8 — live dashboard canvas
+    line: '221 226 233',
     // Sidebar — deep-navy→rich-blue rail with light text, tuned to the live GHL
     // sub-account portal: deep navy at the top lifting to a richer blue toward the
     // bottom (top→bottom gradient via the three stop tokens below, consumed via
     // arbitrary utilities in Sidebar.tsx). The active nav pill is the GHL accent
     // cyan (not azure) so it reads like the real CRM's highlighted item.
-    sidebar: '7 59 122', // #073b7a — solid fallback (mid navy-blue, ≈ gradient midpoint)
+    sidebar: '7 55 121', // #073779 — solid fallback
     'sidebar-fg': '219 231 243', // #dbe7f3 — light slate text
-    'sidebar-active': '73 191 232', // #49bfe8 — GHL accent cyan, active nav pill
-    'sidebar-from': '4 39 92', // #04275c — deep navy (top)
-    'sidebar-via': '7 59 122', // #073b7a — rich blue (middle)
-    'sidebar-to': '1 79 143', // #014f8f — blue depth lift (bottom)
+    'sidebar-active': '84 192 229', // #54c0e5 — selected rail row
+    'sidebar-from': '5 43 101', // #052b65 — deep navy (top)
+    'sidebar-via': '6 92 151', // #065c97 — rich blue (middle)
+    'sidebar-to': '0 185 217', // #00b9d9 — Kleegr cyan at the foot
     // Status
     good: '18 152 99',
     warn: '217 145 17',
@@ -76,8 +76,8 @@ export const kleegrTheme: ThemeTokens = {
     // Dark surface reused by modules for white-text strips (Opportunities header,
     // Automations "Beta" badge). KEEP THIS DARK — the bright top-bar wedge lives in
     // TopBar.tsx as a cyan→blue gradient, NOT in this token.
-    banner: '0 35 68', // #002344 — dark navy (white-text surface)
-    'banner-accent': '85 199 238', // #55c7ee — GHL accent cyan (wedge lead + active rail)
+    banner: '5 47 111', // #052f6f — live Kleegr header navy
+    'banner-accent': '0 185 217', // #00b9d9 — live cyan wedge
   },
   fonts: {
     // Neutral geometric sans pairing the wordmark's clean lowercase forms.

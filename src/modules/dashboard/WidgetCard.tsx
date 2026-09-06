@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import type { Pipeline } from '@/types';
 import { cx } from '@/utils';
-import { Card } from '@/components/ui/primitives';
 import {
   WIDGET_META, type DashWidget, type WidgetSpan,
 } from './dashboardData';
@@ -99,25 +98,22 @@ export function WidgetCard({
   );
 
   return (
-    <Card
+    <div
       className={cx(
-        'flex h-full flex-col overflow-hidden transition-shadow',
+        'flex h-full min-h-[168px] flex-col overflow-hidden rounded-[6px] border border-[#d9dee7] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.025)] transition-shadow',
         dragging && 'opacity-60',
-        editing && 'ring-1 ring-line',
+        editing && 'ring-1 ring-[#9ccfe2]',
       )}
     >
       {kpi ? (
-        <div className="flex items-center justify-between px-4 pt-3">
-          <span className="text-xs font-semibold text-ink-muted">{meta.title}</span>
+        <div className="flex min-h-[42px] items-center justify-between border-b border-[#edf0f3] px-3.5">
+          <span className="text-[12px] font-semibold text-[#344054]">{meta.title}</span>
           {controls}
         </div>
       ) : (
-        <div className="flex items-start justify-between gap-2 border-b border-line px-4 py-2.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-surface-sunken text-ink-muted">
-              <Icon size={15} />
-            </span>
-            <span className="truncate text-sm font-bold text-ink">{meta.title}</span>
+        <div className="flex min-h-[42px] items-center justify-between gap-2 border-b border-[#edf0f3] px-3.5">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-[12px] font-semibold text-[#344054]">{meta.title}</span>
           </div>
           {controls}
         </div>
@@ -136,7 +132,7 @@ export function WidgetCard({
           <WidgetBody widget={widget} ctx={ctx} icon={<Icon size={16} />} />
         </div>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -161,7 +157,7 @@ function PipelineSelect({
       trigger={
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex max-w-[7.5rem] items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-[11px] font-medium text-ink-muted hover:bg-surface-sunken"
+          className="flex h-6 max-w-[7.5rem] items-center gap-1 rounded-[3px] border border-[#e1e5ea] bg-white px-2 text-[10px] font-medium text-[#667085] hover:bg-[#f7f8fa]"
         >
           <span className="truncate">{current?.name ?? 'Pipeline'}</span>
           <ChevronDown size={12} className="shrink-0" />
@@ -208,7 +204,7 @@ function WidgetMenu({
         <button
           onClick={() => setOpen((v) => !v)}
           aria-label="Widget options"
-          className="grid h-7 w-7 place-items-center rounded-md text-ink-subtle hover:bg-surface-sunken hover:text-ink"
+          className="grid h-6 w-6 place-items-center rounded-[3px] text-[#98a2b3] hover:bg-[#f2f4f7] hover:text-[#475467]"
         >
           <MoreHorizontal size={16} />
         </button>

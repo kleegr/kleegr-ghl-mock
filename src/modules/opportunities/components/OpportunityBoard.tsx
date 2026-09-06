@@ -69,7 +69,7 @@ export function OpportunityBoard({
       onDragCancel={() => setActiveOppId(null)}
     >
       <div
-        className="flex h-full items-stretch gap-3 overflow-x-auto px-5 py-4"
+        className="flex h-full items-stretch gap-3 overflow-x-auto px-4 py-3"
         data-tour="opportunities.board"
       >
         {sortedStages.map((stage, idx) => (

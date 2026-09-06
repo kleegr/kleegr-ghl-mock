@@ -15,21 +15,21 @@
   --ink-subtle: 152 162 179;
   --surface: 255 255 255;
   --surface-raised: 255 255 255;
-  --surface-sunken: 247 248 250;
-  --line: 228 231 236;
-  --sidebar: 7 59 122;
+  --surface-sunken: 243 245 248;
+  --line: 221 226 233;
+  --sidebar: 7 55 121;
   --sidebar-fg: 219 231 243;
-  --sidebar-active: 73 191 232;
-  --sidebar-from: 4 39 92;
-  --sidebar-via: 7 59 122;
-  --sidebar-to: 1 79 143;
+  --sidebar-active: 84 192 229;
+  --sidebar-from: 5 43 101;
+  --sidebar-via: 6 92 151;
+  --sidebar-to: 0 185 217;
   --good: 18 152 99;
   --warn: 217 145 17;
   --bad: 217 54 62;
   --ai: 124 58 237;
   --ai-soft: 237 233 254;
-  --banner: 0 35 68;
-  --banner-accent: 85 199 238;
+  --banner: 5 47 111;
+  --banner-accent: 0 185 217;
   --font-sans: 'Plus Jakarta Sans';
   --font-display: 'Plus Jakarta Sans';
 }
@@ -51,6 +51,16 @@ body {
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-thumb { background: rgb(var(--line)); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
 *::-webkit-scrollbar-thumb:hover { background: rgb(var(--ink-subtle)); background-clip: content-box; }
+
+/* The live Kleegr rail keeps a narrow, visible internal scrollbar. */
+.kleegr-sidebar-scroll { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.32) transparent; }
+.kleegr-sidebar-scroll::-webkit-scrollbar { width: 5px; }
+.kleegr-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.kleegr-sidebar-scroll::-webkit-scrollbar-thumb {
+  border: 0;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.32);
+}
 
 @layer utilities {
   .animate-in { animation: fade-in 0.18s ease-out both; }

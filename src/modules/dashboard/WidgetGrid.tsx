@@ -63,7 +63,7 @@ export function WidgetGrid(props: WidgetGridProps) {
 
   const activeWidget = activeId ? widgets.find((w) => w.id === activeId) ?? null : null;
 
-  const gridCls = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3';
+  const gridCls = 'grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3';
 
   if (!editing) {
     return (
@@ -116,7 +116,7 @@ export function WidgetGrid(props: WidgetGridProps) {
           ))}
           <button
             onClick={onAdd}
-            className="flex min-h-[8rem] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line text-ink-muted transition-colors hover:border-brand/50 hover:bg-brand-soft/40 hover:text-brand"
+            className="flex min-h-[9rem] flex-col items-center justify-center gap-2 rounded-[6px] border border-dashed border-[#c8d0da] bg-white text-ink-muted transition-colors hover:border-brand/50 hover:bg-brand-soft/40 hover:text-brand"
           >
             <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-sunken">
               <Plus size={18} />

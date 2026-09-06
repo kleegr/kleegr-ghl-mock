@@ -1,39 +1,14 @@
-/**
- * Dashboard — GoHighLevel-style sub-account home, rebuilt as an editable
- * widget workspace (Wave 3).
- *
- * The screen is a configurable board: a header with a dashboard switcher,
- * date-range selector, refresh, and an Edit mode; a responsive, drag-reorderable
- * grid of widgets (KPIs, opportunity charts, a pipeline funnel, recharts graphs,
- * and activity/task/appointment lists); and the Wave 1 onboarding checklist that
- * launches Tutorial Mode.
- *
- * Everything is local, in-memory state derived from the Zustand demo store —
- * switching dashboards, adding/removing/reordering/resizing widgets, and the
- * date range all live here and reset with the page. No API calls, no real PII.
- *
- * State model
- *   • dashboards      — working copy of the saved-dashboard set (mutable)
- *   • activeId        — which dashboard is shown
- *   • editing         — edit mode on/off; a snapshot is taken on enter so Cancel
- *                       can fully restore the layout
- *   • dateRangeId     — global range feeding range-aware widgets via computeMetrics
- *
- * data-tour anchors `dashboard.page` and `dashboard.onboardingChecklist` are
- * preserved from Wave 1. No tutorial flow targets the dashboard, so the rest of
- * the layout is free to change.
- */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ChevronDown, RefreshCw, Pencil, Plus, Check,
-  CalendarDays, GraduationCap, CheckCircle2, Circle,
+  CalendarDays, Check, ChevronDown, Copy, LayoutDashboard, MoreHorizontal,
+  Pencil, Plus, RefreshCw, ShieldCheck, Sparkles,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { Button, Card, CardHeader, Badge } from '@/components/ui/primitives';
+import { Badge, Button } from '@/components/ui/primitives';
 import { cx } from '@/utils';
 import {
-  initialDashboards, DATE_RANGES, WIDGET_META,
+  DATE_RANGES, WIDGET_META, initialDashboards,
   type DashboardConfig, type DashWidget, type WidgetKind,
   type WidgetSpan, type DateRangeId,
 } from './dashboardData';
@@ -42,47 +17,49 @@ import { WidgetGrid } from './WidgetGrid';
 import { AddWidgetModal } from './AddWidgetModal';
 import { Popover } from './Popover';
 
-/** Deep clone the layout for the edit-mode snapshot (plain JSON data). */
-const clone = (d: DashboardConfig[]): DashboardConfig[] => JSON.parse(JSON.stringify(d));
+const clone = (dashboards: DashboardConfig[]): DashboardConfig[] =>
+  JSON.parse(JSON.stringify(dashboards));
 
-/** Monotonic suffix so widgets added during a session always get unique ids. */
 let addSeq = 0;
 
 export function Dashboard() {
   const data = useDashboardData();
-  const startTutorial = useStore((s) => s.startTutorial);
-  const completedTutorials = useStore((s) => s.completedTutorials);
-  const pushToast = useStore((s) => s.pushToast);
-
+  const navigate = useNavigate();
+  const pushToast = useStore((state) => state.pushToast);
   const [dashboards, setDashboards] = useState<DashboardConfig[]>(() => initialDashboards());
-  const [activeId, setActiveId] = useState<string>('dash_default');
+  const [activeId, setActiveId] = useState('dash_default');
   const [dateRangeId, setDateRangeId] = useState<DateRangeId>('last30');
   const [editing, setEditing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-
   const snapshotRef = useRef<DashboardConfig[] | null>(null);
   const timers = useRef<number[]>([]);
-  useEffect(() => () => { timers.current.forEach((t) => clearTimeout(t)); }, []);
 
-  const active = dashboards.find((d) => d.id === activeId) ?? dashboards[0];
+  useEffect(() => () => timers.current.forEach((timer) => clearTimeout(timer)), []);
+
+  const active = dashboards.find((dashboard) => dashboard.id === activeId) ?? dashboards[0];
   const ctx = useMemo(() => computeMetrics(data, dateRangeId), [data, dateRangeId]);
+  const updateActive = (update: (dashboard: DashboardConfig) => DashboardConfig) =>
+    setDashboards((current) => current.map((dashboard) => dashboard.id === active.id ? update(dashboard) : dashboard));
 
-  /* ──── Layout mutations (operate on the active dashboard) ──── */
-  const updateActive = (fn: (d: DashboardConfig) => DashboardConfig) =>
-    setDashboards((ds) => ds.map((d) => (d.id === active.id ? fn(d) : d)));
-
-  const onReorder = (next: DashWidget[]) => updateActive((d) => ({ ...d, widgets: next }));
-  const onSetPipeline = (id: string, pipelineId: string) =>
-    updateActive((d) => ({ ...d, widgets: d.widgets.map((w) => (w.id === id ? { ...w, pipelineId } : w)) }));
-  const onToggleCollapse = (id: string) =>
-    updateActive((d) => ({ ...d, widgets: d.widgets.map((w) => (w.id === id ? { ...w, collapsed: !w.collapsed } : w)) }));
-  const onSetSpan = (id: string, span: WidgetSpan) =>
-    updateActive((d) => ({ ...d, widgets: d.widgets.map((w) => (w.id === id ? { ...w, span } : w)) }));
-  const onRemove = (id: string) =>
-    updateActive((d) => ({ ...d, widgets: d.widgets.filter((w) => w.id !== id) }));
-
+  const onReorder = (widgets: DashWidget[]) => updateActive((dashboard) => ({ ...dashboard, widgets }));
+  const onSetPipeline = (id: string, pipelineId: string) => updateActive((dashboard) => ({
+    ...dashboard,
+    widgets: dashboard.widgets.map((widget) => widget.id === id ? { ...widget, pipelineId } : widget),
+  }));
+  const onToggleCollapse = (id: string) => updateActive((dashboard) => ({
+    ...dashboard,
+    widgets: dashboard.widgets.map((widget) => widget.id === id ? { ...widget, collapsed: !widget.collapsed } : widget),
+  }));
+  const onSetSpan = (id: string, span: WidgetSpan) => updateActive((dashboard) => ({
+    ...dashboard,
+    widgets: dashboard.widgets.map((widget) => widget.id === id ? { ...widget, span } : widget),
+  }));
+  const onRemove = (id: string) => updateActive((dashboard) => ({
+    ...dashboard,
+    widgets: dashboard.widgets.filter((widget) => widget.id !== id),
+  }));
   const onAdd = (kind: WidgetKind) => {
     const meta = WIDGET_META[kind];
     const widget: DashWidget = {
@@ -91,12 +68,14 @@ export function Dashboard() {
       span: meta.defaultSpan,
       ...(meta.scoped ? { pipelineId: meta.allowAllPipelines ? 'all' : ctx.primaryPipelineId } : {}),
     };
-    updateActive((d) => ({ ...d, widgets: [...d.widgets, widget] }));
+    updateActive((dashboard) => ({ ...dashboard, widgets: [...dashboard.widgets, widget] }));
     pushToast({ title: 'Widget added', description: `${meta.title} added to ${active.name}.`, variant: 'info' });
   };
 
-  /* ──── Edit / refresh / switch ──── */
-  const enterEdit = () => { snapshotRef.current = clone(dashboards); setEditing(true); };
+  const enterEdit = () => {
+    snapshotRef.current = clone(dashboards);
+    setEditing(true);
+  };
   const cancelEdit = () => {
     if (snapshotRef.current) setDashboards(snapshotRef.current);
     snapshotRef.current = null;
@@ -108,101 +87,87 @@ export function Dashboard() {
     setEditing(false);
     setAddOpen(false);
     setShowSaved(true);
-    const t = window.setTimeout(() => setShowSaved(false), 2600);
-    timers.current.push(t);
-    pushToast({ title: 'Dashboard saved', description: `“${active.name}” layout updated for this demo session.`, variant: 'success' });
+    timers.current.push(window.setTimeout(() => setShowSaved(false), 2200));
+    pushToast({ title: 'Dashboard saved', description: `“${active.name}” was updated for this demo session.`, variant: 'success' });
   };
   const refresh = () => {
     if (refreshing) return;
     setRefreshing(true);
-    const t = window.setTimeout(() => {
+    timers.current.push(window.setTimeout(() => {
       setRefreshing(false);
-      pushToast({ title: 'Dashboard refreshed', description: 'Metrics recalculated from the latest demo data.', variant: 'info' });
-    }, 700);
-    timers.current.push(t);
+      pushToast({ title: 'Dashboard refreshed', description: 'Metrics are up to date.', variant: 'info' });
+    }, 650));
   };
-  const selectDashboard = (id: string) => { if (!editing) setActiveId(id); };
-
-  /* ──── Onboarding checklist (Wave 1 — launches Tutorial Mode) ──── */
-  const onboardingItems = [
-    { id: 'add-contact', label: 'Add a new contact' },
-    { id: 'reply-conversation', label: 'Reply to a conversation' },
-    { id: 'move-pipeline', label: 'Move a lead through a pipeline' },
-    { id: 'book-appointment', label: 'Book an appointment' },
-    { id: 'create-invoice', label: 'Create an invoice' },
-  ];
-  const doneCount = onboardingItems.filter((i) => completedTutorials.includes(i.id)).length;
 
   return (
     <div data-tour="dashboard.page" className="flex h-full flex-col">
-      {/* ──── Header ──── */}
-      <div className="border-b border-line bg-surface px-5 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
-              <LayoutDashboard size={20} />
+      <div data-tour="dashboard.onboardingChecklist" className="flex min-h-[58px] shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2.5 lg:px-5">
+        <div className="flex min-w-0 items-center gap-2">
+          <DashboardSwitcher
+            dashboards={dashboards}
+            activeId={active.id}
+            onSelect={(id) => { if (!editing) setActiveId(id); }}
+          />
+          <button
+            type="button"
+            disabled={editing}
+            onClick={() => pushToast({ title: 'New dashboard', description: 'Dashboard creation is simulated in this public demo.', variant: 'info' })}
+            className="inline-flex h-8 items-center gap-1.5 rounded-[4px] bg-[#4bb8df] px-3 text-[12px] font-semibold text-white hover:bg-[#37abd4] disabled:opacity-45"
+          >
+            <Plus size={14} /> New
+          </button>
+          {showSaved && (
+            <span className="hidden items-center gap-1 text-[11px] font-semibold text-good sm:inline-flex">
+              <Check size={12} /> Saved
             </span>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="truncate font-display text-xl font-bold leading-tight text-ink">{active.name}</h1>
-                {active.isDefault && <Badge tone="neutral">Default</Badge>}
-                {showSaved && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-good/10 px-2 py-0.5 text-[11px] font-semibold text-good">
-                    <Check size={12} /> Saved
-                  </span>
-                )}
-              </div>
-              <p className="truncate text-sm text-ink-muted">{active.description}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {!editing && (
-              <DashboardSwitcher dashboards={dashboards} activeId={active.id} onSelect={selectDashboard} />
-            )}
-            <DateRangePicker value={dateRangeId} onChange={setDateRangeId} />
-            {!editing ? (
-              <>
-                <Button variant="secondary" size="sm" onClick={refresh} disabled={refreshing}>
-                  <RefreshCw size={15} className={cx(refreshing && 'animate-spin')} />
-                  {refreshing ? 'Refreshing…' : 'Refresh'}
-                </Button>
-                <Button size="sm" onClick={enterEdit}>
-                  <Pencil size={15} /> Edit dashboard
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="secondary" size="sm" onClick={() => setAddOpen(true)}>
-                  <Plus size={15} /> Add widget
-                </Button>
-                <Button variant="ghost" size="sm" onClick={cancelEdit}>Cancel</Button>
-                <Button size="sm" onClick={saveEdit}>
-                  <Check size={15} /> Save
-                </Button>
-              </>
-            )}
-          </div>
+          )}
         </div>
 
-        {editing && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-brand/30 bg-brand-soft/40 px-3 py-2 text-xs text-ink-muted">
-            <Pencil size={13} className="shrink-0 text-brand" />
-            <span>
-              <span className="font-semibold text-ink">Editing “{active.name}”.</span>{' '}
-              Drag the grip to reorder, use a widget’s ⋯ menu to resize or remove, or add a new widget. Changes are local to this demo.
-            </span>
-            <span className="ml-auto hidden shrink-0 font-medium text-ink-subtle sm:inline">
-              {active.widgets.length} widget{active.widgets.length === 1 ? '' : 's'}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <DateRangePicker value={dateRangeId} onChange={setDateRangeId} />
+          <button
+            type="button"
+            onClick={() => pushToast({ title: 'Dashboard insights', description: 'AI insights are represented with fictional demo data.', variant: 'info' })}
+            className="grid h-8 w-8 place-items-center rounded-[4px] border border-[#d9dee7] bg-white text-[#7358d8] hover:bg-[#f7f5ff]"
+            aria-label="Dashboard insights"
+            title="Dashboard insights"
+          >
+            <Sparkles size={15} />
+          </button>
+          {editing ? (
+            <>
+              <button type="button" onClick={cancelEdit} className="h-8 rounded-[4px] px-3 text-[12px] font-semibold text-ink-muted hover:bg-surface-sunken">Cancel</button>
+              <button type="button" onClick={saveEdit} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] bg-[#4bb8df] px-3 text-[12px] font-semibold text-white hover:bg-[#37abd4]"><Check size={14} /> Save</button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={enterEdit}
+              className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-[#d9dee7] bg-white px-3 text-[12px] font-semibold text-[#344054] hover:bg-[#f7f8fa]"
+            >
+              <Pencil size={13} /> Edit Dashboard
+            </button>
+          )}
+          <DashboardMenu
+            refreshing={refreshing}
+            onRefresh={refresh}
+            onOpenGuides={() => navigate('/guides')}
+            onDuplicate={() => pushToast({ title: 'Dashboard duplicated', description: 'A demo copy would be created here.', variant: 'info' })}
+          />
+        </div>
       </div>
 
-      {/* ──── Body ──── */}
-      <div className="flex-1 overflow-y-auto bg-surface-sunken/40 px-5 py-5">
+      <div className="flex-1 overflow-y-auto bg-[#f3f5f8] p-4 lg:p-[18px]">
+        {editing && (
+          <div className="mb-3 flex min-h-9 items-center gap-2 rounded-[5px] border border-[#b8dff0] bg-[#eef9fd] px-3 text-[11px] text-[#476072]">
+            <Pencil size={12} className="shrink-0 text-[#1599c6]" />
+            <span><strong className="font-semibold text-[#263b4b]">Editing {active.name}.</strong> Drag cards to reorder them or use each card menu to resize and remove.</span>
+            <button type="button" onClick={() => setAddOpen(true)} className="ml-auto inline-flex shrink-0 items-center gap-1 font-semibold text-[#158fbb] hover:underline"><Plus size={12} /> Add widget</button>
+          </div>
+        )}
+
         {active.widgets.length === 0 ? (
-          <EmptyDashboard editing={editing} onAct={() => (editing ? setAddOpen(true) : enterEdit())} />
+          <EmptyDashboard editing={editing} onAct={() => editing ? setAddOpen(true) : enterEdit()} />
         ) : (
           <WidgetGrid
             widgets={active.widgets}
@@ -217,93 +182,30 @@ export function Dashboard() {
             onAdd={() => setAddOpen(true)}
           />
         )}
-
-        {/* ──── Onboarding checklist (hidden while editing the layout) ──── */}
-        {!editing && (
-          <Card data-tour="dashboard.onboardingChecklist" className="mt-5">
-            <CardHeader
-              title="Getting started"
-              subtitle={`${doneCount} of ${onboardingItems.length} completed — launch a guided walkthrough for any task`}
-              actions={
-                <Link to="/guides" className="flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
-                  <GraduationCap size={13} />
-                  Open guides
-                </Link>
-              }
-            />
-            <div className="px-4 pt-3">
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
-                <div
-                  className="h-full rounded-full bg-brand transition-[width] duration-500"
-                  style={{ width: `${(doneCount / onboardingItems.length) * 100}%` }}
-                />
-              </div>
-            </div>
-            <ul className="divide-y divide-line/60 px-2 py-2">
-              {onboardingItems.map((item) => {
-                const done = completedTutorials.includes(item.id);
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => startTutorial(item.id)}
-                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-surface-sunken"
-                    >
-                      {done ? (
-                        <CheckCircle2 size={16} className="shrink-0 text-good" />
-                      ) : (
-                        <Circle size={16} className="shrink-0 text-ink-subtle" />
-                      )}
-                      <span className={cx('text-sm', done ? 'text-ink-subtle line-through' : 'font-medium text-ink')}>
-                        {item.label}
-                      </span>
-                      <Badge tone={done ? 'good' : 'brand'} className="ml-auto">
-                        {done ? 'Replay' : 'Start'}
-                      </Badge>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="border-t border-line px-4 py-3">
-              <p className="text-[11px] text-ink-subtle">
-                <span className="font-semibold text-ink">Tutorial Mode</span> overlays step-by-step guides on each task —
-                click any item above (or switch to Tutorial in the top bar) to begin a guided walkthrough.
-              </p>
-            </div>
-          </Card>
-        )}
       </div>
 
       <AddWidgetModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        present={active.widgets.map((w) => w.kind)}
+        present={active.widgets.map((widget) => widget.kind)}
         onAdd={onAdd}
       />
     </div>
   );
 }
 
-/* ──── Empty state ──── */
-
 function EmptyDashboard({ editing, onAct }: { editing: boolean; onAct: () => void }) {
   return (
-    <div className="grid place-items-center rounded-2xl border-2 border-dashed border-line py-20 text-center">
-      <span className="grid h-14 w-14 place-items-center rounded-2xl bg-surface text-ink-subtle shadow-card">
-        <LayoutDashboard size={26} />
-      </span>
-      <p className="mt-4 text-sm font-bold text-ink">This dashboard is empty</p>
-      <p className="mt-1 max-w-xs text-xs text-ink-muted">
-        {editing ? 'Add a widget to start building your view.' : 'Switch to edit mode to add widgets to this dashboard.'}
-      </p>
-      <Button size="sm" className="mt-4" onClick={onAct}>
-        <Plus size={15} /> {editing ? 'Add widget' : 'Edit dashboard'}
-      </Button>
+    <div className="grid min-h-[360px] place-items-center rounded-[6px] border border-dashed border-[#cfd6df] bg-white text-center">
+      <div>
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[#eef8fc] text-[#34a9d3]"><LayoutDashboard size={22} /></span>
+        <p className="mt-3 text-sm font-semibold text-ink">This dashboard is empty</p>
+        <p className="mt-1 text-xs text-ink-muted">{editing ? 'Add a widget to start building your view.' : 'Edit the dashboard to add your first widget.'}</p>
+        <Button size="sm" className="mt-4 rounded-[4px]" onClick={onAct}><Plus size={14} /> {editing ? 'Add widget' : 'Edit dashboard'}</Button>
+      </div>
     </div>
   );
 }
-
-/* ──── Dashboard switcher ──── */
 
 function DashboardSwitcher({
   dashboards, activeId, onSelect,
@@ -313,40 +215,29 @@ function DashboardSwitcher({
   onSelect: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const active = dashboards.find((d) => d.id === activeId);
+  const active = dashboards.find((dashboard) => dashboard.id === activeId);
   return (
     <Popover
       open={open}
       setOpen={setOpen}
       width="w-72"
       trigger={
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink hover:bg-surface-sunken"
-        >
-          <LayoutDashboard size={15} className="text-ink-muted" />
-          <span className="max-w-[9rem] truncate">{active?.name ?? 'Dashboard'}</span>
-          <ChevronDown size={14} className="text-ink-subtle" />
+        <button type="button" onClick={() => setOpen((current) => !current)} className="flex h-8 min-w-[190px] items-center gap-2 rounded-[4px] border border-[#d9dee7] bg-white px-2.5 text-[12px] font-semibold text-[#344054] hover:bg-[#f7f8fa]">
+          <LayoutDashboard size={14} className="text-[#6e7b8c]" />
+          <span className="min-w-0 flex-1 truncate text-left">{active?.name ?? 'Dashboard'}</span>
+          <ChevronDown size={13} className="text-[#8b96a7]" />
         </button>
       }
     >
-      <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">
-        Switch dashboard
-      </p>
+      <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">Switch dashboard</p>
       <ul className="pb-1">
-        {dashboards.map((d) => (
-          <li key={d.id}>
-            <button
-              onClick={() => { onSelect(d.id); setOpen(false); }}
-              className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-surface-sunken"
-            >
-              <Check size={14} className={cx('mt-0.5 shrink-0', d.id === activeId ? 'text-brand' : 'text-transparent')} />
+        {dashboards.map((dashboard) => (
+          <li key={dashboard.id}>
+            <button type="button" onClick={() => { onSelect(dashboard.id); setOpen(false); }} className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-surface-sunken">
+              <Check size={14} className={cx('mt-0.5 shrink-0', dashboard.id === activeId ? 'text-brand' : 'text-transparent')} />
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-semibold text-ink">{d.name}</span>
-                  {d.isDefault && <Badge tone="neutral">Default</Badge>}
-                </span>
-                <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{d.description}</span>
+                <span className="flex items-center gap-1.5"><span className="truncate text-sm font-semibold text-ink">{dashboard.name}</span>{dashboard.isDefault && <Badge tone="neutral">Default</Badge>}</span>
+                <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{dashboard.description}</span>
               </span>
             </button>
           </li>
@@ -356,45 +247,59 @@ function DashboardSwitcher({
   );
 }
 
-/* ──── Date-range picker ──── */
-
-function DateRangePicker({
-  value, onChange,
-}: {
-  value: DateRangeId;
-  onChange: (id: DateRangeId) => void;
-}) {
+function DateRangePicker({ value, onChange }: { value: DateRangeId; onChange: (id: DateRangeId) => void }) {
   const [open, setOpen] = useState(false);
-  const current = DATE_RANGES.find((r) => r.id === value);
+  const current = DATE_RANGES.find((range) => range.id === value);
   return (
     <Popover
       open={open}
       setOpen={setOpen}
       width="w-48"
       trigger={
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink hover:bg-surface-sunken"
-        >
-          <CalendarDays size={15} className="text-ink-muted" />
+        <button type="button" onClick={() => setOpen((currentOpen) => !currentOpen)} className="flex h-8 items-center gap-2 rounded-[4px] border border-[#d9dee7] bg-white px-2.5 text-[12px] font-medium text-[#475467] hover:bg-[#f7f8fa]">
+          <CalendarDays size={14} className="text-[#6e7b8c]" />
           <span className="whitespace-nowrap">{current?.label ?? 'Date range'}</span>
-          <ChevronDown size={14} className="text-ink-subtle" />
+          <ChevronDown size={13} className="text-[#8b96a7]" />
         </button>
       }
     >
       <ul className="py-1">
-        {DATE_RANGES.map((r) => (
-          <li key={r.id}>
-            <button
-              onClick={() => { onChange(r.id); setOpen(false); }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-surface-sunken"
-            >
-              <Check size={13} className={cx('shrink-0', r.id === value ? 'text-brand' : 'text-transparent')} />
-              {r.label}
+        {DATE_RANGES.map((range) => (
+          <li key={range.id}>
+            <button type="button" onClick={() => { onChange(range.id); setOpen(false); }} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-ink hover:bg-surface-sunken">
+              <Check size={13} className={cx('shrink-0', range.id === value ? 'text-brand' : 'text-transparent')} /> {range.label}
             </button>
           </li>
         ))}
       </ul>
+    </Popover>
+  );
+}
+
+function DashboardMenu({
+  refreshing, onRefresh, onOpenGuides, onDuplicate,
+}: {
+  refreshing: boolean;
+  onRefresh: () => void;
+  onOpenGuides: () => void;
+  onDuplicate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const act = (action: () => void) => { setOpen(false); action(); };
+  return (
+    <Popover
+      open={open}
+      setOpen={setOpen}
+      width="w-52"
+      trigger={
+        <button type="button" onClick={() => setOpen((current) => !current)} className="grid h-8 w-8 place-items-center rounded-[4px] border border-[#d9dee7] bg-white text-[#667085] hover:bg-[#f7f8fa]" aria-label="Dashboard options"><MoreHorizontal size={16} /></button>
+      }
+    >
+      <div className="py-1 text-xs">
+        <button type="button" onClick={() => act(onRefresh)} disabled={refreshing} className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink hover:bg-surface-sunken disabled:opacity-50"><RefreshCw size={13} className={cx(refreshing && 'animate-spin')} /> {refreshing ? 'Refreshing…' : 'Refresh dashboard'}</button>
+        <button type="button" onClick={() => act(onDuplicate)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink hover:bg-surface-sunken"><Copy size={13} /> Duplicate dashboard</button>
+        <button type="button" onClick={() => act(onOpenGuides)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink hover:bg-surface-sunken"><ShieldCheck size={13} /> Guided setup</button>
+      </div>
     </Popover>
   );
 }

@@ -313,7 +313,9 @@ export const CREATE_OPTIONS: CreateOption[] = [
 
 export interface FolderRow { id: string; name: string; updated: string; created: string; }
 export const FOLDERS: FolderRow[] = [
-  { id: 'fld_archives', name: 'Archived Workflows', updated: 'Jan 06 2026, 10:43 AM', created: 'Nov 22 2025, 9:15 AM' },
+  { id: 'fld_archives', name: 'Archives', updated: 'Jan 06 2026, 10:43 AM', created: 'Nov 22 2025, 9:15 AM' },
+  { id: 'fld_timing', name: 'Stage Timing', updated: 'Aug 28 2026, 2:16 PM', created: 'Feb 18 2026, 11:08 AM' },
+  { id: 'fld_demo_ops', name: 'Demo Operations', updated: 'Sep 02 2026, 4:31 PM', created: 'Apr 09 2026, 8:42 AM' },
 ];
 
 /* ── Workflow templates (New Workflow modal) ───────────────────────────── */

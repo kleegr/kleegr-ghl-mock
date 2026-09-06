@@ -11,7 +11,6 @@ import {
 import type { Workflow } from '@/types';
 import { useStore } from '@/store/useStore';
 import { Button, Badge } from '@/components/ui/primitives';
-import { Modal } from '@/components/ui/Modal';
 import { cx } from '@/utils';
 import { getNodesForWorkflow, type WorkflowDisplayNode, type WorkflowNodeKind } from './workflowNodes';
 import { BuilderPicker } from './BuilderPickers';
@@ -164,7 +163,7 @@ function NodeCard({
       onClick={onClick}
       data-tour={isTrigger ? 'automations.triggerNode' : 'automations.actionNode'}
       className={cx(
-        'group flex w-[300px] items-center gap-3 rounded-xl border bg-surface px-3.5 py-3 text-left shadow-card transition-all hover:-translate-y-px hover:border-brand/50 hover:shadow-pop',
+        'group flex w-[300px] items-center gap-3 rounded-lg border bg-surface px-3.5 py-3 text-left shadow-card transition-all hover:-translate-y-px hover:border-brand/50 hover:shadow-pop',
         selected ? 'border-brand ring-2 ring-brand/40' : isTrigger ? 'border-brand/40' : 'border-line',
       )}
     >
@@ -299,55 +298,62 @@ function Flow({
   );
 }
 
-/* ── node settings modal (demo-safe) ── */
+/* ── node settings side panel (demo-safe) ── */
 
 function NodeSettings({ node, onClose }: { node: WorkflowDisplayNode | null; onClose: () => void }) {
   const pushToast = useStore((s) => s.pushToast);
-  const Icon = node ? iconFor(node.subtype) : Zap;
+  if (!node) return null;
+  const Icon = iconFor(node.subtype);
   return (
-    <Modal
-      open={!!node}
-      onClose={onClose}
-      title={node?.type === 'trigger' ? 'Trigger Settings' : 'Action Settings'}
-      size="sm"
-      footer={
-        <>
-          <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" onClick={() => { pushToast({ title: 'Saved (demo only)', description: 'Step config is not persisted.', variant: 'success' }); onClose(); }}>Save</Button>
-        </>
-      }
-    >
-      {node && (
-        <div className="space-y-3">
-          <span className={cx('inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold', KIND_CHIP[node.type])}>
-            <Icon size={13} /> {KIND_LABEL[node.type]}
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-ink-subtle">Label</p>
-            <p className="mt-0.5 text-sm font-semibold text-ink">{node.label}</p>
-          </div>
-          {node.config && (
-            <div>
-              <p className="text-xs font-semibold text-ink-subtle">Configuration</p>
-              <p className="mt-1 rounded-lg border border-line bg-surface-sunken px-3 py-2 text-xs text-ink">{node.config}</p>
-            </div>
-          )}
-          {node.note && (
-            <div>
-              <p className="text-xs font-semibold text-ink-subtle">What this step does</p>
-              <p className="mt-1 text-xs leading-relaxed text-ink-muted">{node.note}</p>
-            </div>
-          )}
-          {node.example && (
-            <div>
-              <p className="text-xs font-semibold text-ink-subtle">Example</p>
-              <p className="mt-1 rounded-lg border border-line bg-surface px-3 py-2 text-xs italic leading-relaxed text-ink-subtle">{node.example}</p>
-            </div>
-          )}
-          <p className="rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-xs text-warn">Demo view — edits are cosmetic only.</p>
+    <aside className="relative z-20 flex w-[360px] shrink-0 flex-col border-l border-line bg-surface shadow-[-8px_0_20px_rgba(16,24,40,.06)]">
+      <div className="flex h-12 items-center justify-between border-b border-line px-4">
+        <div>
+          <p className="text-[11px] font-medium text-ink-subtle">Workflow step</p>
+          <h2 className="text-[13px] font-semibold text-ink">{node.type === 'trigger' ? 'Trigger Settings' : 'Action Settings'}</h2>
         </div>
-      )}
-    </Modal>
+        <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-[5px] text-ink-muted hover:bg-surface-sunken" aria-label="Close settings">
+          <X size={15} />
+        </button>
+      </div>
+      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+        <div className="flex items-center gap-2.5 rounded-lg border border-line bg-[#fafbfc] p-3">
+          <span className={cx('grid h-8 w-8 place-items-center rounded-[5px]', KIND_CHIP[node.type])}>
+            <Icon size={15} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">{KIND_LABEL[node.type]}</p>
+            <p className="truncate text-[13px] font-semibold text-ink">{node.label}</p>
+          </div>
+        </div>
+        <label className="block">
+          <span className="mb-1.5 block text-[11px] font-semibold text-ink-muted">Step name</span>
+          <input defaultValue={node.label} className="h-9 w-full rounded-[5px] border border-line bg-surface px-3 text-[12px] text-ink outline-none focus:border-brand" />
+        </label>
+        {node.config && (
+          <label className="block">
+            <span className="mb-1.5 block text-[11px] font-semibold text-ink-muted">Configuration</span>
+            <div className="rounded-[5px] border border-line bg-surface px-3 py-2.5 text-[12px] leading-5 text-ink">{node.config}</div>
+          </label>
+        )}
+        {node.note && (
+          <div>
+            <p className="text-[11px] font-semibold text-ink-muted">What this step does</p>
+            <p className="mt-1 text-[12px] leading-5 text-ink-muted">{node.note}</p>
+          </div>
+        )}
+        {node.example && (
+          <div className="rounded-[5px] border border-line bg-brand-soft/30 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-subtle">Example</p>
+            <p className="mt-1 text-[11px] italic leading-5 text-ink-muted">{node.example}</p>
+          </div>
+        )}
+        <p className="rounded-[5px] border border-warn/30 bg-warn/5 px-3 py-2 text-[11px] text-warn">Demo view — edits are cosmetic only.</p>
+      </div>
+      <div className="flex h-14 items-center justify-end gap-2 border-t border-line px-4">
+        <Button variant="secondary" size="sm" className="rounded-[5px]" onClick={onClose}>Cancel</Button>
+        <Button size="sm" className="rounded-[5px]" onClick={() => { pushToast({ title: 'Saved (demo only)', description: 'Step config is not persisted.', variant: 'success' }); onClose(); }}>Save</Button>
+      </div>
+    </aside>
   );
 }
 
@@ -470,7 +476,12 @@ export function WorkflowBuilder({
   const [nodes, setNodes] = useState<WorkflowDisplayNode[]>(() => (blank ? [] : getNodesForWorkflow(wf.id, wf.trigger)));
 
   const cosmetic = (title: string, description: string) => pushToast({ title, description, variant: 'info' });
-  const selectNode = (n: WorkflowDisplayNode) => { setSelNode(n); setSelId(n.id); };
+  const selectNode = (n: WorkflowDisplayNode) => {
+    setPicker(null);
+    setCatalog(null);
+    setSelNode(n);
+    setSelId(n.id);
+  };
 
   /* Add a node from the picker / catalog — real local canvas state, then select it. */
   const addNode = (item: CatalogItem, kind: 'trigger' | 'action') => {
@@ -500,29 +511,30 @@ export function WorkflowBuilder({
   return (
     <div className="flex h-full flex-col">
       {/* ── Header bar ── */}
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface px-4">
-        <button onClick={onBack} className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm font-semibold text-ink hover:bg-surface-sunken">
-          <ArrowLeft size={18} /> Workflows list
+      <div className="flex h-12 shrink-0 items-center gap-3 border-b border-line bg-surface px-3">
+        <button onClick={onBack} className="flex items-center gap-1.5 rounded-[5px] px-1.5 py-1 text-[12px] font-semibold text-ink hover:bg-surface-sunken">
+          <ArrowLeft size={16} /> Workflows
         </button>
-        <div className="flex flex-1 items-center justify-center gap-2">
-          <span className="text-base font-bold text-ink">{wf.name}</span>
+        <span className="h-5 w-px bg-line" />
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="truncate text-[13px] font-semibold text-ink">{wf.name}</span>
           <button onClick={() => cosmetic('Rename workflow', 'Renaming is cosmetic in demo mode.')} className="rounded p-1 text-ink-subtle hover:bg-surface-sunken hover:text-ink" aria-label="Rename">
-            <Pencil size={14} />
+            <Pencil size={13} />
           </button>
         </div>
         <div className="flex items-center gap-1.5">
-          <button onClick={() => cosmetic('Undo', 'Demo only.')} className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-surface-sunken" aria-label="Undo"><Undo2 size={16} /></button>
-          <button onClick={() => cosmetic('Redo', 'Demo only.')} className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-surface-sunken" aria-label="Redo"><Redo2 size={16} /></button>
-          <Button size="sm" onClick={() => cosmetic('Saved', 'Changes are not persisted in demo mode.')}>Saved</Button>
+          <button onClick={() => cosmetic('Undo', 'Demo only.')} className="grid h-7 w-7 place-items-center rounded-[5px] text-ink-muted hover:bg-surface-sunken" aria-label="Undo"><Undo2 size={15} /></button>
+          <button onClick={() => cosmetic('Redo', 'Demo only.')} className="grid h-7 w-7 place-items-center rounded-[5px] text-ink-muted hover:bg-surface-sunken" aria-label="Redo"><Redo2 size={15} /></button>
+          <Button size="sm" className="h-7 rounded-[5px] text-[11px]" onClick={() => cosmetic('Saved', 'Changes are not persisted in demo mode.')}>Save</Button>
         </div>
       </div>
 
       {/* ── Toolbar row ── */}
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-line bg-surface px-4 py-2">
+      <div className="flex h-11 shrink-0 flex-wrap items-center gap-3 border-b border-line bg-surface px-3">
         <div className="relative">
           <button
             onClick={() => setBuilderModeOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-ink hover:bg-surface-sunken"
+            className="flex h-8 items-center gap-2 rounded-[5px] border border-line px-3 text-[12px] font-semibold text-ink hover:bg-surface-sunken"
           >
             Advanced Builder <ChevronDown size={15} className="text-ink-subtle" />
           </button>
@@ -547,7 +559,7 @@ export function WorkflowBuilder({
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={cx(
-                  'relative border-b-2 px-3 py-1.5 text-sm font-semibold transition-colors',
+                  'relative border-b-2 px-3 py-2 text-[12px] font-semibold transition-colors',
                   tab === t.id ? 'border-brand text-brand' : 'border-transparent text-ink-muted hover:text-ink',
                 )}
               >
@@ -558,11 +570,11 @@ export function WorkflowBuilder({
         </div>
 
         <div className="flex items-center gap-3">
-          <button onClick={() => cosmetic('Test Workflow', 'Test runs are disabled in demo mode.')} className="rounded-lg bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-soft/70">
+          <button onClick={() => cosmetic('Test Workflow', 'Test runs are disabled in demo mode.')} className="h-8 rounded-[5px] bg-brand-soft px-3 text-[12px] font-semibold text-brand hover:bg-brand-soft/70">
             Test Workflow
           </button>
           <div className="flex items-center gap-2" data-tour="automations.publishToggle">
-            <span className={cx('text-sm font-semibold', published ? 'text-ink-subtle' : 'text-ink')}>Draft</span>
+            <span className={cx('text-[11px] font-semibold', published ? 'text-ink-subtle' : 'text-ink')}>Draft</span>
             <button
               role="switch"
               aria-checked={published}
@@ -576,7 +588,7 @@ export function WorkflowBuilder({
             >
               <span className={cx('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform', published ? 'left-0.5 translate-x-4' : 'left-0.5')} />
             </button>
-            <span className={cx('text-sm font-semibold', published ? 'text-brand' : 'text-ink-subtle')}>Publish</span>
+            <span className={cx('text-[11px] font-semibold', published ? 'text-brand' : 'text-ink-subtle')}>Publish</span>
           </div>
         </div>
       </div>
@@ -589,19 +601,19 @@ export function WorkflowBuilder({
               data-tour="automations.canvas"
               className="relative h-full w-full"
               style={{
-                backgroundColor: 'rgb(var(--surface))',
+                backgroundColor: 'rgb(var(--surface-sunken))',
                 backgroundImage: 'radial-gradient(rgb(var(--line)) 1px, transparent 1px)',
-                backgroundSize: '22px 22px',
+                backgroundSize: '20px 20px',
               }}
             >
               {/* left toolbar */}
-              <div className="absolute left-4 top-4 z-10 flex flex-col gap-1 rounded-xl border border-line bg-surface p-1 shadow-card">
-                <span className="grid h-9 w-9 place-items-center rounded-lg text-ink-subtle"><Keyboard size={17} /></span>
+              <div className="absolute left-3 top-3 z-10 flex flex-col gap-0.5 rounded-lg border border-line bg-surface p-1 shadow-card">
+                <span className="grid h-8 w-8 place-items-center rounded-[5px] text-ink-subtle"><Keyboard size={16} /></span>
                 {LEFT_TOOLS.map((t) => {
                   const Icon = t.icon;
                   return (
-                    <button key={t.id} onClick={() => cosmetic(t.label, 'Demo only.')} className="grid h-9 w-9 place-items-center rounded-lg text-ink-subtle hover:bg-surface-sunken hover:text-ink" aria-label={t.label}>
-                      <Icon size={17} />
+                    <button key={t.id} onClick={() => cosmetic(t.label, 'Demo only.')} className="grid h-8 w-8 place-items-center rounded-[5px] text-ink-subtle hover:bg-surface-sunken hover:text-ink" aria-label={t.label}>
+                      <Icon size={16} />
                     </button>
                   );
                 })}
@@ -610,7 +622,7 @@ export function WorkflowBuilder({
               {/* add button top-right */}
               <button
                 onClick={() => setPicker('action')}
-                className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink shadow-card hover:bg-surface-sunken"
+                className="absolute right-3 top-3 z-10 flex h-8 items-center gap-1.5 rounded-[5px] border border-line bg-surface px-3 text-[12px] font-semibold text-ink shadow-card hover:bg-surface-sunken"
               >
                 <Plus size={15} /> Add
               </button>
@@ -643,7 +655,7 @@ export function WorkflowBuilder({
               </div>
 
               {/* zoom controls */}
-              <div className="absolute bottom-4 left-4 z-10 flex flex-col items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-card">
+              <div className="absolute bottom-3 left-3 z-10 flex flex-col items-center gap-0.5 rounded-lg border border-line bg-surface p-1 shadow-card">
                 <button onClick={() => cosmetic('Pan', 'Demo only.')} className="grid h-8 w-8 place-items-center rounded-lg text-ink-subtle hover:bg-surface-sunken" aria-label="Pan"><Hand size={15} /></button>
                 <button onClick={() => setZoom((z) => Math.min(150, z + 10))} className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-surface-sunken" aria-label="Zoom in"><Plus size={15} /></button>
                 <span className="py-0.5 text-[11px] font-bold text-ink">{zoom}%</span>
@@ -741,9 +753,12 @@ export function WorkflowBuilder({
             />
           </div>
         )}
+
+        {!picker && tab === 'builder' && (
+          <NodeSettings node={selNode} onClose={() => setSelNode(null)} />
+        )}
       </div>
 
-      <NodeSettings node={selNode} onClose={() => setSelNode(null)} />
       <CatalogModal kind={catalog} onClose={() => setCatalog(null)} onSelect={onCatalogPick} />
     </div>
   );

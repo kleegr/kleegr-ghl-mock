@@ -43,6 +43,7 @@ export default function App() {
               "/tasks" is still declared here). */}
           <Route path="/tasks" element={<Navigate to="/productivity" replace />} />
           <Route path="/productivity" element={<Productivity />} />
+          <Route path="/tickets" element={<Productivity />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/media" element={<Media />} />
           <Route path="/settings" element={<Settings />} />
@@ -55,6 +56,8 @@ export default function App() {
           <Route path="/ai-studio" element={<Placeholder />} />
           <Route path="/ask-ai" element={<Placeholder />} />
           <Route path="/urls" element={<Placeholder />} />
+          <Route path="/onboardings" element={<Placeholder />} />
+          <Route path="/mobile-app" element={<Placeholder />} />
           {/* Foundation routes for upcoming module workstreams (polished placeholders). */}
           <Route path="/companies" element={<Placeholder />} />
           <Route path="/documents" element={<Payments />} />

@@ -28,17 +28,17 @@ export function PipelineSelect({ pipelines, value, onChange, onNewPipeline }: Pr
       <button
         onClick={() => setOpen((v) => !v)}
         title={`Pipeline - ${current?.name ?? ''}`}
-        className="flex h-10 w-64 items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 text-sm font-semibold text-ink transition-colors hover:border-brand/40"
+        className="flex h-9 w-[255px] items-center justify-between gap-2 rounded-md border border-[#d7dde6] bg-white px-3 text-[12px] font-semibold text-[#344054] transition-colors hover:border-[#aeb8c6]"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
         <span className="truncate">{current?.name ?? 'Select pipeline'}</span>
-        <ChevronDown size={16} className="shrink-0 text-ink-subtle" />
+        <ChevronDown size={14} className="shrink-0 text-[#98a2b3]" />
       </button>
 
       {open && (
         <div
-          className="absolute left-0 top-full z-20 mt-1 w-64 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-pop"
+          className="absolute left-0 top-full z-20 mt-1 w-[255px] overflow-hidden rounded-lg border border-[#dfe4eb] bg-white py-1 shadow-pop"
           role="listbox"
         >
           {pipelines.map((p) => {
@@ -50,19 +50,19 @@ export function PipelineSelect({ pipelines, value, onChange, onNewPipeline }: Pr
                 aria-selected={active}
                 onClick={() => { onChange(p.id); setOpen(false); }}
                 className={cx(
-                  'flex w-full items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors hover:bg-surface-sunken',
-                  active ? 'font-semibold text-brand' : 'text-ink',
+                  'flex w-full items-center justify-between gap-2 px-3 py-2 text-[12px] transition-colors hover:bg-[#f5f7fa]',
+                  active ? 'font-semibold text-[#1689f4]' : 'text-[#344054]',
                 )}
               >
                 <span className="truncate">{p.name}</span>
-                {active && <Check size={15} className="shrink-0 text-brand" />}
+                {active && <Check size={14} className="shrink-0 text-[#1689f4]" />}
               </button>
             );
           })}
           <div className="my-1 border-t border-line" />
           <button
             onClick={() => { setOpen(false); onNewPipeline(); }}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold text-brand hover:bg-brand-soft/50"
+            className="flex w-full items-center gap-2 px-3 py-2 text-[12px] font-semibold text-[#1689f4] hover:bg-[#eef6ff]"
           >
             <Plus size={15} /> New pipeline
           </button>

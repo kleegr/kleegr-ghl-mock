@@ -9,6 +9,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Search, MoreHorizontal, CalendarClock, CheckCircle2, XCircle, Eye, Ban,
+  SlidersHorizontal, Plus,
 } from 'lucide-react';
 import type { Appointment, Contact, User } from '@/types';
 import { Badge, Avatar, EmptyState, Button } from '@/components/ui/primitives';
@@ -105,19 +106,19 @@ export function AppointmentList({
   }, [appointments, filter, query, now, contactById, calById]);
 
   return (
-    <div className="flex flex-col">
+    <div className="m-4 flex min-h-[calc(100%-2rem)] flex-col overflow-visible rounded-xl border border-line bg-surface shadow-card">
       {/* Toolbar: status tabs + search */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface px-5 py-3">
-        <div className="flex items-center gap-1">
+      <div className="flex min-h-[58px] flex-wrap items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
+        <div className="flex items-center overflow-hidden rounded-[5px] border border-line">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
               className={cx(
-                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                'inline-flex h-8 items-center gap-1.5 border-r border-line px-3 text-[12px] font-medium transition-colors last:border-r-0',
                 filter === f.id
-                  ? 'bg-brand text-brand-fg'
-                  : 'bg-surface-sunken text-ink-muted hover:text-ink',
+                  ? 'bg-brand-soft text-brand'
+                  : 'bg-surface text-ink-muted hover:bg-surface-sunken hover:text-ink',
               )}
             >
               {f.label}
@@ -130,15 +131,22 @@ export function AppointmentList({
 
         <div className="flex-1" />
 
+        <button className="flex h-8 items-center gap-1.5 rounded-[5px] border border-line px-3 text-[12px] font-medium text-ink-muted hover:bg-surface-sunken">
+          <SlidersHorizontal size={14} /> Filters
+        </button>
+
         <div className="relative">
           <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search appointments"
-            className="w-56 rounded-lg border border-line bg-surface py-1.5 pl-8 pr-3 text-sm text-ink placeholder:text-ink-subtle focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
+            className="h-8 w-56 rounded-[5px] border border-line bg-surface pl-8 pr-3 text-[12px] text-ink placeholder:text-ink-subtle focus:border-brand focus:outline-none"
           />
         </div>
+        <Button size="sm" className="rounded-[5px] text-[12px]" onClick={onBook}>
+          <Plus size={14} /> New appointment
+        </Button>
       </div>
 
       {/* Table */}
@@ -164,7 +172,7 @@ export function AppointmentList({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-line bg-surface-sunken text-left text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
+              <tr className="border-b border-line bg-[#fafbfc] text-left text-[10px] font-semibold uppercase tracking-[0.04em] text-ink-subtle">
                 <th className="px-5 py-2.5">Appointment</th>
                 <th className="px-3 py-2.5">Contact</th>
                 <th className="px-3 py-2.5">Date &amp; time</th>
@@ -190,7 +198,7 @@ export function AppointmentList({
                     )}
                     onClick={() => onOpen(a)}
                   >
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-2.5">
                       <p className={cx('font-semibold text-ink', cancelled && 'line-through')}>
                         {a.title}
                       </p>
@@ -198,7 +206,7 @@ export function AppointmentList({
                         <p className="text-xs text-ink-subtle">{a.location}</p>
                       )}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       {contact ? (
                         <div className="flex items-center gap-2">
                           <Avatar name={fullName(contact)} size="xs" />
@@ -208,13 +216,13 @@ export function AppointmentList({
                         <span className="text-ink-subtle">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-ink-muted">
+                    <td className="px-3 py-2.5 text-ink-muted">
                       <p className="text-ink">{dateLabel(a.startTime)}</p>
                       <p className="text-xs text-ink-subtle">
                         {clockTime(a.startTime)} – {clockTime(a.endTime)}
                       </p>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       {cal ? (
                         <span className="inline-flex items-center gap-1.5 text-ink-muted">
                           <span className="h-2.5 w-2.5 rounded-full" style={{ background: cal.color }} />
@@ -224,11 +232,11 @@ export function AppointmentList({
                         <span className="text-ink-subtle">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-ink-muted">{owner?.name ?? '—'}</td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5 text-ink-muted">{owner?.name ?? '—'}</td>
+                    <td className="px-3 py-2.5">
                       <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
                     </td>
-                    <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="relative inline-block">
                         <button
                           aria-label="Appointment actions"
@@ -286,7 +294,7 @@ export function AppointmentList({
       )}
 
       {/* Footer count */}
-      <div className="flex items-center gap-2 border-t border-line bg-surface-sunken px-5 py-2">
+      <div className="mt-auto flex h-9 items-center gap-2 border-t border-line bg-[#fafbfc] px-5">
         <Badge tone="neutral">{rows.length} shown</Badge>
         <span className="text-xs text-ink-muted">{appointments.length} total appointments</span>
       </div>

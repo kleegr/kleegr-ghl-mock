@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import type { Stage, Opportunity, Contact, User, Company } from '@/types';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { Company, Contact, Opportunity, Stage, User } from '@/types';
 import { moneyCents, cx } from '@/utils';
 import { OpportunityCard } from './OpportunityCard';
 
@@ -21,16 +21,8 @@ interface Props {
   onToggleAll?: (ids: string[], next: boolean) => void;
 }
 
-/** First stage gets a green tint; the rest use the warm tan GHL uses for "Called" stages. */
-function headerTint(index: number): string {
-  return index === 0
-    ? 'bg-[#e7f6ee] border-[#cdeede]'
-    : 'bg-[#fbf3e3] border-[#f0e2c2]';
-}
-
 export function StageColumn({
   stage,
-  index = 1,
   opportunities,
   contacts,
   users,
@@ -45,33 +37,23 @@ export function StageColumn({
   onToggleAll,
 }: Props) {
   const { isOver, setNodeRef } = useDroppable({ id: stage.id });
-
-  const total = opportunities.reduce((sum, o) => sum + o.monetaryValue, 0);
-  const count = opportunities.length;
-  const tint = headerTint(index);
-  const ids = opportunities.map((o) => o.id);
+  const total = opportunities.reduce((sum, opportunity) => sum + opportunity.monetaryValue, 0);
+  const ids = opportunities.map((opportunity) => opportunity.id);
   const allSelected = selectable && ids.length > 0 && ids.every((id) => selectedIds?.has(id));
 
-  /* Collapsed rail */
   if (collapsed) {
     return (
       <button
         onClick={onToggleCollapse}
         title={`Expand ${stage.name}`}
         aria-label={`Expand ${stage.name}`}
-        className={cx(
-          'flex h-full w-11 shrink-0 flex-col items-center gap-3 rounded-xl border pt-3 transition-colors hover:brightness-[0.98]',
-          tint,
-        )}
+        className="flex h-full w-10 shrink-0 flex-col items-center gap-3 rounded-lg border border-[#dfe4eb] bg-white pt-3 text-[#667085] transition-colors hover:border-[#b9c2cf]"
       >
-        <ChevronRight size={15} className="text-ink-muted" />
-        <span className="grid min-w-5 place-items-center rounded-full bg-surface/70 px-1.5 py-0.5 text-[11px] font-bold text-ink">
-          {count}
+        <ChevronRight size={14} />
+        <span className="grid min-w-5 place-items-center rounded-full bg-[#eef1f5] px-1.5 py-0.5 text-[10px] font-semibold text-[#475467]">
+          {opportunities.length}
         </span>
-        <span
-          className="mt-1 whitespace-nowrap text-[12px] font-semibold text-ink"
-          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-        >
+        <span className="mt-1 whitespace-nowrap text-[11px] font-semibold text-[#344054]" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
           {stage.name}
         </span>
       </button>
@@ -79,81 +61,70 @@ export function StageColumn({
   }
 
   return (
-    <div
-      className="flex w-[296px] shrink-0 flex-col rounded-xl border border-line bg-surface-sunken"
-      data-tour="opportunities.stageColumn"
-    >
-      {/* Header */}
-      <div className={cx('flex items-start justify-between gap-2 rounded-t-xl border-b px-3 py-2.5', tint)}>
-        <div className="min-w-0">
-          <span className="block truncate text-[15px] font-bold text-ink">{stage.name}</span>
-          <p className="mt-0.5 text-[11px] font-medium text-ink-muted">
-            {count} Opportunit{count === 1 ? 'y' : 'ies'}
-            <span className="ml-3 font-semibold text-ink">{moneyCents(total)}</span>
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
+    <section className="flex h-full w-[276px] shrink-0 flex-col" data-tour="opportunities.stageColumn">
+      <header className="h-[62px] shrink-0 rounded-lg border border-[#dfe4eb] bg-white px-3 py-2 shadow-[0_1px_1px_rgba(16,24,40,0.03)]">
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[#344054]">{stage.name}</span>
+          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#eef1f5] px-1.5 text-[10px] font-semibold text-[#475467]">
+            {opportunities.length}
+          </span>
           {selectable && (
             <button
               onClick={() => onToggleAll?.(ids, !allSelected)}
               aria-label={`Select all in ${stage.name}`}
               className={cx(
                 'grid h-5 w-5 place-items-center rounded border transition-colors',
-                allSelected ? 'border-brand bg-brand text-brand-fg' : 'border-ink-subtle/40 bg-surface/70 text-transparent',
+                allSelected ? 'border-[#1689f4] bg-[#1689f4] text-white' : 'border-[#cbd3df] bg-white text-transparent',
               )}
             >
-              <Check size={13} strokeWidth={3} />
+              <Check size={12} strokeWidth={3} />
             </button>
           )}
           <button
             onClick={onToggleCollapse}
-            className="rounded p-0.5 text-ink-muted transition-colors hover:bg-black/5 hover:text-ink"
+            className="grid h-5 w-5 place-items-center rounded text-[#98a2b3] hover:bg-[#f2f4f7] hover:text-[#475467]"
             aria-label={`Collapse ${stage.name}`}
             title="Collapse"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} />
           </button>
         </div>
-      </div>
+        <p className="mt-1.5 text-[11px] font-medium text-[#667085]">{moneyCents(total)}</p>
+      </header>
 
-      {/* Drop zone */}
       <div
         ref={setNodeRef}
         className={cx(
-          'flex flex-1 flex-col gap-2.5 overflow-y-auto p-2.5 transition-all',
-          isOver
-            ? 'rounded-b-xl bg-brand/5 ring-1 ring-inset ring-brand/30'
-            : isAnyDragging
-              ? 'rounded-b-xl ring-1 ring-inset ring-line/80'
-              : '',
+          'mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1 [scrollbar-color:#cbd3df_transparent] [scrollbar-width:thin]',
+          isOver ? 'rounded-lg bg-[#eaf4ff] ring-1 ring-inset ring-[#1689f4]/30' : '',
+          isAnyDragging && !isOver ? 'rounded-lg ring-1 ring-inset ring-[#dfe4eb]' : '',
         )}
-        style={{ minHeight: 140 }}
       >
-        {count === 0 ? (
+        {opportunities.length === 0 ? (
           <div
             className={cx(
-              'flex flex-1 items-center justify-center rounded-lg border border-dashed py-10 text-xs transition-colors',
-              isOver ? 'border-brand/50 bg-brand/5 text-brand' : 'border-line text-ink-subtle',
+              'flex min-h-[108px] items-center justify-center rounded-lg border border-dashed bg-white/60 text-[11px]',
+              isOver ? 'border-[#1689f4] text-[#1689f4]' : 'border-[#d7dde6] text-[#98a2b3]',
             )}
           >
             {isAnyDragging ? 'Drop here' : 'No opportunities'}
           </div>
         ) : (
-          opportunities.map((opp) => (
+          opportunities.map((opportunity) => (
             <OpportunityCard
-              key={opp.id}
-              opportunity={opp}
+              key={opportunity.id}
+              opportunity={opportunity}
               contacts={contacts}
               users={users}
               companies={companies}
-              onClick={() => onCardClick(opp.id)}
+              onClick={() => onCardClick(opportunity.id)}
               selectable={selectable}
-              selected={selectedIds?.has(opp.id)}
-              onToggleSelect={() => onToggleCard?.(opp.id)}
+              selected={selectedIds?.has(opportunity.id)}
+              onToggleSelect={() => onToggleCard?.(opportunity.id)}
             />
           ))
         )}
       </div>
-    </div>
+    </section>
   );
 }
