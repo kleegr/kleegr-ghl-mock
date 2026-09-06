@@ -10,7 +10,7 @@
  *   • "New Message" creates a local thread and a fictional contact reply
  *   • Reset Demo restores the original seed and removes sent replies
  */
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
@@ -21,21 +21,12 @@ import { Composer } from './components/Composer';
 import { ConversationContextPanel } from './components/ConversationContextPanel';
 import { NewMessageModal } from './components/NewMessageModal';
 import { SUBNAV_TABS, type ConvFilter, type SubNavTab } from './utils';
-import type { LocalNote } from './threadModel';
-import { ConversationRecordsProvider } from './ConversationRecords';
+
+const ConversationSubView = lazy(() =>
+  import('./components/ConversationSubViews').then((module) => ({ default: module.ConversationSubView })),
+);
 
 export function Conversations() {
-  const contacts = useStore((s) => s.contacts);
-  const currentUserName = useStore((s) => s.users.find((user) => user.isCurrentUser)?.name ?? 'Demo Agent');
-  const demoRevision = useStore((s) => s.demoRevision);
-  return (
-    <ConversationRecordsProvider key={demoRevision} contacts={contacts} currentUserName={currentUserName}>
-      <ConversationsWorkspace />
-    </ConversationRecordsProvider>
-  );
-}
-
-function ConversationsWorkspace() {
   const [panelParams, setPanelParams] = useSearchParams();
   const conversations = useStore((s) => s.conversations);
   const allMessages = useStore((s) => s.messages);
@@ -44,10 +35,15 @@ function ConversationsWorkspace() {
   const calls = useStore((s) => s.calls);
   const opportunities = useStore((s) => s.opportunities);
   const markRead = useStore((s) => s.markConversationRead);
-  const appendInboundReply = useStore((s) => s.appendInboundReply);
   const toggleConversationStar = useStore((s) => s.toggleConversationStar);
   const setConversationUnread = useStore((s) => s.setConversationUnread);
   const removeConversation = useStore((s) => s.removeConversation);
+  const conversationInternalNotes = useStore((s) => s.conversationInternalNotes);
+  const pendingConversationReplies = useStore((s) => s.pendingConversationReplies);
+  const addConversationInternalNote = useStore((s) => s.addConversationInternalNote);
+  const updateConversationInternalNote = useStore((s) => s.updateConversationInternalNote);
+  const deleteConversationInternalNote = useStore((s) => s.deleteConversationInternalNote);
+  const scheduleConversationReply = useStore((s) => s.scheduleConversationReply);
   const pushToast = useStore((s) => s.pushToast);
 
   // Default to a conversation that best showcases the thread. Preference order:
@@ -74,17 +70,7 @@ function ConversationsWorkspace() {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(defaultConvId);
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
   const [newMsgOpen, setNewMsgOpen] = useState(false);
-  const [threadNotes, setThreadNotes] = useState<Record<string, LocalNote[]>>({});
-  const [pendingReplies, setPendingReplies] = useState<Record<string, number>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
-  const replyTimers = useRef<number[]>([]);
-  const selectedConversationRef = useRef<string | null>(selectedConvId);
-
-  useEffect(() => {
-    selectedConversationRef.current = selectedConvId;
-  }, [selectedConvId]);
-
-  useEffect(() => () => replyTimers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
   // last message + a trailing-inbound "unread count" per conversation
   const { lastMessageMap, unreadCountMap } = useMemo(() => {
@@ -112,6 +98,7 @@ function ConversationsWorkspace() {
         .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)),
     [allMessages, selectedConvId],
   );
+  const lastThreadMessage = threadMessages[threadMessages.length - 1];
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId) ?? null;
   const selectedContact = selectedConv ? contacts.find((c) => c.id === selectedConv.contactId) ?? null : null;
@@ -164,13 +151,7 @@ function ConversationsWorkspace() {
   };
 
   const scheduleReply = (conversationId: string, channel: Channel, body: string) => {
-    setPendingReplies((current) => ({ ...current, [conversationId]: (current[conversationId] ?? 0) + 1 }));
-    const timer = window.setTimeout(() => {
-      appendInboundReply(conversationId, fictionalReply(channel, body), channel);
-      setPendingReplies((current) => ({ ...current, [conversationId]: Math.max(0, (current[conversationId] ?? 1) - 1) }));
-      if (selectedConversationRef.current === conversationId) markRead(conversationId);
-    }, 1500);
-    replyTimers.current.push(timer);
+    scheduleConversationReply(conversationId, fictionalReply(channel, body), channel);
   };
 
   const handleConversationCreated = (id: string, channel: Channel, body: string) => {
@@ -199,47 +180,30 @@ function ConversationsWorkspace() {
 
   const addInternalNote = (body: string) => {
     if (!selectedConv) return;
-    const note: LocalNote = {
-      id: `thread-note-${selectedConv.id}-${Date.now()}`,
-      at: new Date().toISOString(),
-      author: agentName,
-      body,
-    };
-    setThreadNotes((previous) => ({
-      ...previous,
-      [selectedConv.id]: [...(previous[selectedConv.id] ?? []), note],
-    }));
+    addConversationInternalNote(selectedConv.id, body, agentName);
   };
 
   const updateInternalNote = (id: string, body: string) => {
     if (!selectedConv) return;
-    setThreadNotes((previous) => ({
-      ...previous,
-      [selectedConv.id]: (previous[selectedConv.id] ?? []).map((note) => note.id === id ? { ...note, body } : note),
-    }));
+    updateConversationInternalNote(selectedConv.id, id, body);
     pushToast({ title: 'Internal comment updated', description: 'Saved for this demo session.', variant: 'success' });
   };
 
   const deleteInternalNote = (id: string) => {
     if (!selectedConv) return;
-    setThreadNotes((previous) => ({
-      ...previous,
-      [selectedConv.id]: (previous[selectedConv.id] ?? []).filter((note) => note.id !== id),
-    }));
+    deleteConversationInternalNote(selectedConv.id, id);
     pushToast({ title: 'Internal comment deleted', description: 'Removed from this demo session.', variant: 'success' });
   };
 
-  const handleSubTab = (t: SubNavTab) => {
-    if (t === 'Conversations') {
-      setSubTab(t);
-      return;
-    }
-    pushToast({ title: t, description: 'This Conversations sub-tab is cosmetic in the demo.', variant: 'info' });
-  };
+  const handleSubTab = (t: SubNavTab) => setSubTab(t);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedConvId, threadMessages.length]);
+
+  useEffect(() => {
+    if (selectedConvId && lastThreadMessage?.direction === 'inbound') markRead(selectedConvId);
+  }, [lastThreadMessage?.direction, lastThreadMessage?.id, markRead, selectedConvId]);
 
   return (
     <div data-tour="conversations.page" className="flex h-full min-h-0 flex-col bg-surface-sunken">
@@ -248,7 +212,7 @@ function ConversationsWorkspace() {
         <h1 className="py-3 text-[20px] font-bold leading-none text-ink">Conversations</h1>
         <nav className="flex items-center gap-5 overflow-x-auto">
           {SUBNAV_TABS.map((t) => {
-            const isActive = subTab === t && t === 'Conversations';
+            const isActive = subTab === t;
             return (
               <button
                 key={t}
@@ -267,6 +231,12 @@ function ConversationsWorkspace() {
         </nav>
       </div>
 
+      {subTab !== 'Conversations' ? (
+        <Suspense fallback={<div className="flex min-h-0 flex-1 items-center justify-center bg-surface-sunken text-sm text-ink-muted">Loading Conversations tools…</div>}>
+          <ConversationSubView tab={subTab} onNavigate={handleSubTab} />
+        </Suspense>
+      ) : (
+        <>
       {/* 3-pane body */}
       <div data-tour="conversations.inbox" className="flex min-h-0 flex-1 overflow-hidden">
         <ConversationList
@@ -301,8 +271,8 @@ function ConversationsWorkspace() {
                 messages={threadMessages}
                 agentName={agentName}
                 rich
-                localNotes={threadNotes[selectedConv.id] ?? []}
-                typing={(pendingReplies[selectedConv.id] ?? 0) > 0}
+                localNotes={conversationInternalNotes[selectedConv.id] ?? []}
+                typing={pendingConversationReplies.some((reply) => reply.conversationId === selectedConv.id)}
                 scrollRef={scrollRef}
                 onBack={() => setMobileView('list')}
                 onDeleted={() => handleConversationDeleted(selectedConv.id)}
@@ -338,6 +308,8 @@ function ConversationsWorkspace() {
         contacts={contacts}
         onCreated={handleConversationCreated}
       />
+        </>
+      )}
     </div>
   );
 }
