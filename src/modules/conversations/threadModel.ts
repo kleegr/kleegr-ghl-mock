@@ -18,7 +18,7 @@ export type ThreadItem =
   | { kind: 'message'; key: string; at: number; iso: string; message: Message }
   | { kind: 'call'; key: string; at: number; iso: string; call: Call }
   | { kind: 'event'; key: string; at: number; iso: string; title: string; detail?: string }
-  | { kind: 'note'; key: string; at: number; iso: string; author: string; body: string }
+  | { kind: 'note'; key: string; at: number; iso: string; author: string; body: string; localNoteId?: string }
   | {
       kind: 'email';
       key: string;
@@ -138,12 +138,17 @@ export function buildThreadItems({
     items.push({ kind: 'call', key: `call_${c.id}`, at: ms(c.createdAt), iso: c.createdAt, call: c });
   }
 
-  // Thread time bounds (used to place injected demo items within the span).
-  const lastIso = messages.length ? messages[messages.length - 1].createdAt : conv.lastMessageAt;
-  const lastAt = ms(lastIso);
-  const firstAt = messages.length ? ms(messages[0].createdAt) : lastAt - 4 * 3600_000;
-  const span = Math.max(lastAt - firstAt, 6 * 3600_000);
-  const frac = (f: number) => firstAt + span * f;
+  // Thread time bounds (used to place injected demo items within the real
+  // message span). Never extend a short exchange with an artificial minimum
+  // span: that could place demo cards after the conversation's latest message.
+  const messageTimes = messages.map((message) => ms(message.createdAt)).filter(Number.isFinite).sort((a, b) => a - b);
+  const fallbackLastAt = ms(conv.lastMessageAt);
+  const lastAt = messageTimes[messageTimes.length - 1] ?? fallbackLastAt;
+  const firstAt = messageTimes[0] ?? lastAt;
+  const syntheticEndAt = Math.min(lastAt, Date.now());
+  const syntheticStartAt = Math.min(firstAt, syntheticEndAt);
+  const span = Math.max(0, syntheticEndAt - syntheticStartAt);
+  const frac = (f: number) => Math.min(syntheticEndAt, syntheticStartAt + span * f);
 
   // 3) System events — prefer real opportunity moves; always include lifecycle.
   const oppsByRecent = [...opportunities].sort((a, b) => ms(b.updatedAt) - ms(a.updatedAt));
@@ -192,7 +197,14 @@ export function buildThreadItems({
   // 4) Richer demo items (showcase threads only) — internal note w/ @mention,
   //    collapsed email, and appointment / opportunity / task cards. These reuse
   //    real linked records where the contact has them.
-  if (rich) {
+  // Rich cards belong to the populated, seeded showcase histories. A newly
+  // composed conversation can quickly gain a reply or two, but should remain
+  // an honest short exchange instead of suddenly acquiring invented history.
+  const hasSeededHistory =
+    messages.length >= 4 &&
+    messages.some((message) => message.id.startsWith(`msg_${conv.id}_`));
+
+  if (rich && hasSeededHistory) {
     const rnd = seeded(conv.id);
     const contactName = fullName(contact);
     const service = SERVICE_WORDS[Math.floor(rnd() * SERVICE_WORDS.length)];
@@ -261,7 +273,7 @@ export function buildThreadItems({
 
   // 5) Session internal comments (always) — appended in distinct note styling.
   for (const n of localNotes) {
-    items.push({ kind: 'note', key: n.id, at: ms(n.at), iso: n.at, author: n.author, body: n.body });
+    items.push({ kind: 'note', key: n.id, at: ms(n.at), iso: n.at, author: n.author, body: n.body, localNoteId: n.id });
   }
 
   // Sort ascending; stable tiebreak so items never jitter between renders.

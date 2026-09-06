@@ -1,9 +1,9 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, Send } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/primitives';
-import { fullName, cx } from '@/utils';
+import { cx, fullName } from '@/utils';
 import type { Channel, Contact } from '@/types';
 import { CHANNEL_LABEL } from '../utils';
 
@@ -13,17 +13,11 @@ import { CHANNEL_LABEL } from '../utils';
  * Lets the user pick a recipient + channel and draft a message, mirroring the
  * real portal's new-conversation flow instead of firing a bare toast.
  *
- * DEMO-SAFE: per the demo guardrails there is no real messaging. The store's
- * `sendMessage` only appends to an *existing* conversation thread, and there is
- * no `startConversation` action, so submit is simulated with a toast and
- * nothing is sent or persisted.
- *
- * NEEDS FROM DEVELOPER #38 (shared store): a `startConversation(contactId,
- * channel, body)` action to create a new in-memory thread — at which point this
- * modal can open the new thread instead of toasting.
+ * DEMO-SAFE: submission creates a local, session-only thread. Nothing is sent
+ * to a provider and refreshing/resetting restores the original seed.
  */
 
-const CHANNELS: Channel[] = ['sms', 'email', 'webchat', 'whatsapp'];
+const CHANNELS: Channel[] = ['sms', 'email', 'whatsapp', 'telegram', 'instagram', 'facebook', 'webchat'];
 
 const inputCls =
   'h-10 w-full rounded-lg border border-line bg-surface-sunken px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-brand focus:ring-1 focus:ring-brand/30';
@@ -41,21 +35,43 @@ export function NewMessageModal({
   open,
   onClose,
   contacts,
+  onCreated,
 }: {
   open: boolean;
   onClose: () => void;
   contacts: Contact[];
+  onCreated: (conversationId: string, channel: Channel, body: string) => void;
 }) {
-  const pushToast = useStore((s) => s.pushToast);
+  const startConversation = useStore((s) => s.startConversation);
+  const updateMessageStatus = useStore((s) => s.updateMessageStatus);
+  const demoRevision = useStore((s) => s.demoRevision);
 
   const [contactId, setContactId] = useState(contacts[0]?.id ?? '');
   const [channel, setChannel] = useState<Channel>('sms');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const deliveryTimersRef = useRef<Set<number>>(new Set());
 
-  const recipient = useMemo(() => contacts.find((c) => c.id === contactId) ?? null, [contacts, contactId]);
+  useEffect(() => {
+    if (!open) return;
+    setContactId((currentId) =>
+      contacts.some((contact) => contact.id === currentId)
+        ? currentId
+        : contacts[0]?.id ?? '',
+    );
+  }, [contacts, open]);
+
+  useEffect(() => {
+    const deliveryTimers = deliveryTimersRef.current;
+    return () => {
+      deliveryTimers.forEach((timer) => window.clearTimeout(timer));
+      deliveryTimers.clear();
+    };
+  }, [demoRevision]);
+
   const isEmail = channel === 'email';
-  const isValid = Boolean(contactId && body.trim() && (!isEmail || subject.trim()));
+  const hasValidRecipient = contacts.some((contact) => contact.id === contactId);
+  const isValid = Boolean(hasValidRecipient && body.trim() && (!isEmail || subject.trim()));
 
   const reset = () => {
     setSubject('');
@@ -64,11 +80,31 @@ export function NewMessageModal({
 
   const handleSend = () => {
     if (!isValid) return;
-    pushToast({
-      title: 'Demo: Message queued',
-      description: `A ${CHANNEL_LABEL[channel]} message to ${recipient ? fullName(recipient) : 'the contact'} would be sent. (Demo only — no real messages are delivered.)`,
-      variant: 'info',
+    const currentContacts = useStore.getState().contacts;
+    if (!currentContacts.some((contact) => contact.id === contactId)) {
+      setContactId(currentContacts[0]?.id ?? '');
+      return;
+    }
+    const trimmed = body.trim();
+    const conversation = startConversation({
+      contactId,
+      channel,
+      body: trimmed,
+      subject: isEmail ? subject.trim() : undefined,
     });
+    const initialMessageId = conversation.messageIds[0];
+    if (initialMessageId) {
+      const scheduleStatus = (status: 'delivered' | 'read', delay: number) => {
+        const timer = window.setTimeout(() => {
+          deliveryTimersRef.current.delete(timer);
+          updateMessageStatus(initialMessageId, status);
+        }, delay);
+        deliveryTimersRef.current.add(timer);
+      };
+      scheduleStatus('delivered', 300);
+      scheduleStatus('read', 900);
+    }
+    onCreated(conversation.id, channel, trimmed);
     reset();
     onClose();
   };
@@ -143,7 +179,7 @@ export function NewMessageModal({
         </Field>
 
         <p className="rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-xs text-warn">
-          Demo only — no real messages are delivered.
+          Safe demo workspace — this message and any fictional reply exist only in this browser session.
         </p>
       </div>
     </Modal>

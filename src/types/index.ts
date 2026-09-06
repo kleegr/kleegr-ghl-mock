@@ -49,6 +49,7 @@ export type Channel =
   | 'facebook'
   | 'instagram'
   | 'whatsapp'
+  | 'telegram'
   | 'call';
 
 export interface Message {
@@ -56,6 +57,12 @@ export interface Message {
   conversationId: ID;
   direction: 'inbound' | 'outbound';
   channel: Channel;
+  /** Subject is present for email messages and omitted for chat-style channels. */
+  subject?: string;
+  /** Demo attachment names and optional email recipients; no files are uploaded. */
+  attachments?: string[];
+  cc?: string[];
+  bcc?: string[];
   body: string;
   createdAt: string;
   status?: 'sent' | 'delivered' | 'read' | 'failed';

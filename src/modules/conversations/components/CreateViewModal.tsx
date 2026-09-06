@@ -34,7 +34,7 @@ const STATUSES: { id: SavedView['status']; label: string }[] = [
   { id: 'starred', label: 'Starred' },
 ];
 
-const CHANNELS: (Channel | 'any')[] = ['any', 'sms', 'email', 'whatsapp', 'webchat', 'facebook', 'instagram', 'call'];
+const CHANNELS: (Channel | 'any')[] = ['any', 'sms', 'email', 'whatsapp', 'telegram', 'instagram', 'facebook', 'webchat', 'call'];
 
 const pillCls = (on: boolean) =>
   cx(

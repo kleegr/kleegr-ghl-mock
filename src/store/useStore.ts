@@ -2,15 +2,21 @@ import { create } from 'zustand';
 import { generateDemoData } from '@/data/seed';
 import type {
   Appointment,
+  Channel,
   Company,
   Contact,
+  Conversation,
   DemoData,
   ID,
   Message,
   Opportunity,
+  Task,
 } from '@/types';
 
 let toastSeq = 0;
+let mutationSeq = 0;
+
+const makeId = (prefix: string) => `${prefix}_${Date.now()}_${++mutationSeq}`;
 export interface Toast {
   id: number;
   title: string;
@@ -67,11 +73,53 @@ export interface AddCompanyInput {
   phone?: string;
 }
 
+/** Editable fields for the lightweight CRM tasks used across Contacts and Conversations. */
+export interface AddTaskInput {
+  title: string;
+  description?: string;
+  dueDate: string;
+  assigneeId?: ID;
+  contactId?: ID;
+  priority?: Task['priority'];
+  status?: Task['status'];
+}
+
+export type TaskPatch = Partial<Omit<Task, 'id'>>;
+export type AppointmentPatch = Partial<Omit<Appointment, 'id'>>;
+
+export interface AddAppointmentInput {
+  calendarId: ID;
+  contactId: ID;
+  title: string;
+  startTime: string;
+  endTime: string;
+  status?: Appointment['status'];
+  location?: string;
+  notes?: string;
+}
+
+export interface StartConversationInput {
+  contactId: ID;
+  channel: Channel;
+  body: string;
+  subject?: string;
+}
+
+export interface SendMessageOptions {
+  channel?: Channel;
+  subject?: string;
+  attachments?: string[];
+  cc?: string[];
+  bcc?: string[];
+}
+
 interface StoreState extends DemoData {
   mode: Mode;
   sidebarCollapsed: boolean;
   searchOpen: boolean;
   toasts: Toast[];
+  /** Bumps on Reset Demo so session-only module providers can remount. */
+  demoRevision: number;
 
   // global dialer (foundation — opens from the topbar phone button; demo-safe)
   dialerOpen: boolean;
@@ -120,8 +168,17 @@ interface StoreState extends DemoData {
   removeTagFromContacts: (ids: ID[], tag: string) => void;
   assignOwnerToContacts: (ids: ID[], ownerId: ID) => void;
   addCompany: (input: AddCompanyInput) => Company;
-  sendMessage: (conversationId: ID, body: string) => void;
+  setContactCompany: (contactId: ID, companyId?: ID) => void;
+
+  // conversation + message lifecycle (all simulated and session-only)
+  startConversation: (input: StartConversationInput) => Conversation;
+  sendMessage: (conversationId: ID, body: string, options?: SendMessageOptions) => Message | void;
+  appendInboundReply: (conversationId: ID, body: string, channel?: Channel) => Message | void;
+  updateMessageStatus: (messageId: ID, status: NonNullable<Message['status']>) => void;
   markConversationRead: (conversationId: ID) => void;
+  setConversationUnread: (conversationId: ID, unread: boolean) => void;
+  toggleConversationStar: (conversationId: ID) => void;
+  removeConversation: (conversationId: ID) => void;
   moveOpportunity: (opportunityId: ID, toStageId: ID) => void;
 
   // opportunity CRUD (in-memory, session only)
@@ -132,6 +189,12 @@ interface StoreState extends DemoData {
   bulkUpdateOpportunities: (ids: ID[], patch: OpportunityPatch) => void;
 
   bookAppointment: (input: Pick<Appointment, 'calendarId' | 'contactId' | 'title' | 'startTime' | 'endTime' | 'location'>) => void;
+  addAppointment: (input: AddAppointmentInput) => Appointment;
+  updateAppointment: (id: ID, patch: AppointmentPatch) => void;
+  removeAppointment: (id: ID) => void;
+  addTask: (input: AddTaskInput) => Task;
+  updateTask: (id: ID, patch: TaskPatch) => void;
+  removeTask: (id: ID) => void;
   toggleTask: (taskId: ID) => void;
   markAllNotificationsRead: () => void;
 }
@@ -146,6 +209,7 @@ export const useStore = create<StoreState>((set, get) => ({
   dialerOpen: false,
   dialerPrefill: '',
   toasts: [],
+  demoRevision: 0,
   activeTutorialId: null,
   tutorialStep: 0,
   completedTutorials: [],
@@ -192,8 +256,10 @@ export const useStore = create<StoreState>((set, get) => ({
   closeHelp: () => set({ activeHelpKey: null }),
 
   resetDemo: () => {
+    const demoRevision = get().demoRevision + 1;
     set({
       ...fresh(),
+      demoRevision,
       activeTutorialId: null,
       tutorialStep: 0,
       completedTutorials: [],
@@ -234,21 +300,59 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   updateContact: (id, patch) =>
-    set((s) => ({
-      contacts: s.contacts.map((c) =>
-        c.id === id ? { ...c, ...patch, id: c.id, lastActivityAt: new Date().toISOString() } : c,
-      ),
-    })),
+    set((s) => {
+      const companyChanged = Object.prototype.hasOwnProperty.call(patch, 'companyId');
+      const nextCompanyId =
+        patch.companyId && s.companies.some((company) => company.id === patch.companyId)
+          ? patch.companyId
+          : undefined;
+      return {
+        contacts: s.contacts.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                ...patch,
+                ...(companyChanged ? { companyId: nextCompanyId } : {}),
+                id: c.id,
+                lastActivityAt: new Date().toISOString(),
+              }
+            : c,
+        ),
+        companies: companyChanged
+          ? s.companies.map((company) => ({
+              ...company,
+              contactIds:
+                company.id === nextCompanyId
+                  ? Array.from(new Set([...company.contactIds.filter((contactId) => contactId !== id), id]))
+                  : company.contactIds.filter((contactId) => contactId !== id),
+            }))
+          : s.companies,
+      };
+    }),
 
   removeContacts: (ids) => {
     const target = new Set(ids);
-    set((s) => ({
-      contacts: s.contacts.filter((c) => !target.has(c.id)),
-      companies: s.companies.map((co) => ({
-        ...co,
-        contactIds: co.contactIds.filter((cid) => !target.has(cid)),
-      })),
-    }));
+    set((s) => {
+      const removedConversationIds = new Set(
+        s.conversations
+          .filter((conversation) => target.has(conversation.contactId))
+          .map((conversation) => conversation.id),
+      );
+
+      return {
+        contacts: s.contacts.filter((contact) => !target.has(contact.id)),
+        companies: s.companies.map((company) => ({
+          ...company,
+          contactIds: company.contactIds.filter((contactId) => !target.has(contactId)),
+        })),
+        conversations: s.conversations.filter(
+          (conversation) => !target.has(conversation.contactId),
+        ),
+        messages: s.messages.filter(
+          (message) => !removedConversationIds.has(message.conversationId),
+        ),
+      };
+    });
   },
 
   addTagToContacts: (ids, tag) => {
@@ -293,16 +397,80 @@ export const useStore = create<StoreState>((set, get) => ({
     return company;
   },
 
-  sendMessage: (conversationId, body) => {
-    if (!body.trim()) return;
-    const conv = get().conversations.find((c) => c.id === conversationId);
-    if (!conv) return;
-    const msg: Message = {
-      id: `msg_${conversationId}_${Date.now()}`,
+  setContactCompany: (contactId, companyId) => {
+    const state = get();
+    if (!state.contacts.some((contact) => contact.id === contactId)) return;
+    const validCompanyId = companyId && state.companies.some((company) => company.id === companyId)
+      ? companyId
+      : undefined;
+    set((s) => ({
+      contacts: s.contacts.map((contact) =>
+        contact.id === contactId
+          ? { ...contact, companyId: validCompanyId, lastActivityAt: new Date().toISOString() }
+          : contact,
+      ),
+      companies: s.companies.map((company) => ({
+        ...company,
+        contactIds:
+          company.id === validCompanyId
+            ? Array.from(new Set([...company.contactIds.filter((id) => id !== contactId), contactId]))
+            : company.contactIds.filter((id) => id !== contactId),
+      })),
+    }));
+  },
+
+  startConversation: (input) => {
+    const state = get();
+    const contact = state.contacts.find((item) => item.id === input.contactId);
+    if (!contact) throw new Error(`Cannot start a conversation for unknown contact ${input.contactId}`);
+    const createdAt = new Date().toISOString();
+    const conversationId = makeId('conv');
+    const message: Message = {
+      id: makeId('msg'),
       conversationId,
       direction: 'outbound',
-      channel: conv.channel,
-      body: body.trim(),
+      channel: input.channel,
+      subject: input.subject?.trim() || undefined,
+      body: input.body.trim(),
+      createdAt,
+      status: 'sent',
+    };
+    const conversation: Conversation = {
+      id: conversationId,
+      contactId: input.contactId,
+      channel: input.channel,
+      unread: false,
+      starred: false,
+      lastMessageAt: createdAt,
+      assignedTo: state.users.find((user) => user.isCurrentUser)?.id ?? state.users[0]?.id,
+      messageIds: [message.id],
+    };
+    set((s) => ({
+      conversations: [conversation, ...s.conversations],
+      messages: [...s.messages, message],
+      contacts: s.contacts.map((item) =>
+        item.id === input.contactId ? { ...item, lastActivityAt: createdAt } : item,
+      ),
+    }));
+    return conversation;
+  },
+
+  sendMessage: (conversationId, body, options) => {
+    const cleanBody = body.trim();
+    if (!cleanBody) return;
+    const conv = get().conversations.find((c) => c.id === conversationId);
+    if (!conv) return;
+    const channel = options?.channel ?? conv.channel;
+    const msg: Message = {
+      id: makeId('msg'),
+      conversationId,
+      direction: 'outbound',
+      channel,
+      subject: options?.subject?.trim() || undefined,
+      attachments: options?.attachments?.length ? [...options.attachments] : undefined,
+      cc: options?.cc?.length ? [...options.cc] : undefined,
+      bcc: options?.bcc?.length ? [...options.bcc] : undefined,
+      body: cleanBody,
       createdAt: new Date().toISOString(),
       status: 'sent',
     };
@@ -310,15 +478,78 @@ export const useStore = create<StoreState>((set, get) => ({
       messages: [...s.messages, msg],
       conversations: s.conversations.map((c) =>
         c.id === conversationId
-          ? { ...c, messageIds: [...c.messageIds, msg.id], lastMessageAt: msg.createdAt, unread: false }
+          ? { ...c, channel, messageIds: [...c.messageIds, msg.id], lastMessageAt: msg.createdAt, unread: false }
           : c,
       ),
+      contacts: s.contacts.map((contact) =>
+        contact.id === conv.contactId ? { ...contact, lastActivityAt: msg.createdAt } : contact,
+      ),
     }));
+    return msg;
   },
+
+  appendInboundReply: (conversationId, body, channelOverride) => {
+    const cleanBody = body.trim();
+    if (!cleanBody) return;
+    const conv = get().conversations.find((c) => c.id === conversationId);
+    if (!conv) return;
+    const channel = channelOverride ?? conv.channel;
+    const msg: Message = {
+      id: makeId('msg'),
+      conversationId,
+      direction: 'inbound',
+      channel,
+      body: cleanBody,
+      createdAt: new Date().toISOString(),
+    };
+    set((s) => ({
+      messages: [...s.messages, msg],
+      conversations: s.conversations.map((c) =>
+        c.id === conversationId
+          ? { ...c, channel, messageIds: [...c.messageIds, msg.id], lastMessageAt: msg.createdAt, unread: true }
+          : c,
+      ),
+      contacts: s.contacts.map((contact) =>
+        contact.id === conv.contactId ? { ...contact, lastActivityAt: msg.createdAt } : contact,
+      ),
+    }));
+    return msg;
+  },
+
+  updateMessageStatus: (messageId, status) =>
+    set((s) => ({
+      messages: s.messages.map((message) =>
+        message.id === messageId && message.direction === 'outbound'
+          ? { ...message, status }
+          : message,
+      ),
+    })),
 
   markConversationRead: (conversationId) =>
     set((s) => ({
       conversations: s.conversations.map((c) => (c.id === conversationId ? { ...c, unread: false } : c)),
+    })),
+
+  setConversationUnread: (conversationId, unread) =>
+    set((s) => ({
+      conversations: s.conversations.map((conversation) =>
+        conversation.id === conversationId ? { ...conversation, unread } : conversation,
+      ),
+    })),
+
+  toggleConversationStar: (conversationId) =>
+    set((s) => ({
+      conversations: s.conversations.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, starred: !conversation.starred }
+          : conversation,
+      ),
+    })),
+
+  removeConversation: (conversationId) =>
+    set((s) => ({
+      conversations: s.conversations.filter((conversation) => conversation.id !== conversationId),
+      messages: s.messages.filter((message) => message.conversationId !== conversationId),
     })),
 
   moveOpportunity: (opportunityId, toStageId) =>
@@ -390,14 +621,62 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   bookAppointment: (input) => {
+    get().addAppointment(input);
+  },
+
+  addAppointment: (input) => {
     const appt: Appointment = {
-      id: `appt_new_${Date.now()}`,
+      id: makeId('appt'),
       ...input,
-      status: 'confirmed',
+      status: input.status ?? 'confirmed',
     };
     set((s) => ({ appointments: [...s.appointments, appt].sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime)) }));
     get().pushToast({ title: 'Appointment booked', description: 'Added to the calendar (demo only).', variant: 'success' });
+    return appt;
   },
+
+  updateAppointment: (id, patch) =>
+    set((s) => ({
+      appointments: s.appointments
+        .map((appointment) =>
+          appointment.id === id ? { ...appointment, ...patch, id: appointment.id } : appointment,
+        )
+        .sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime)),
+    })),
+
+  removeAppointment: (id) =>
+    set((s) => ({ appointments: s.appointments.filter((appointment) => appointment.id !== id) })),
+
+  addTask: (input) => {
+    const state = get();
+    const task: Task = {
+      id: makeId('task'),
+      title: input.title.trim() || 'New task',
+      description: input.description?.trim() || undefined,
+      dueDate: input.dueDate,
+      assigneeId:
+        input.assigneeId ??
+        state.users.find((user) => user.isCurrentUser)?.id ??
+        state.users[0]?.id ??
+        'u_me',
+      contactId: input.contactId,
+      priority: input.priority ?? 'medium',
+      status: input.status ?? 'open',
+    };
+    set((s) => ({ tasks: [task, ...s.tasks] }));
+    get().pushToast({ title: 'Task added', description: 'Saved for this demo session.', variant: 'success' });
+    return task;
+  },
+
+  updateTask: (id, patch) =>
+    set((s) => ({
+      tasks: s.tasks.map((task) =>
+        task.id === id ? { ...task, ...patch, id: task.id } : task,
+      ),
+    })),
+
+  removeTask: (id) =>
+    set((s) => ({ tasks: s.tasks.filter((task) => task.id !== id) })),
 
   toggleTask: (taskId) =>
     set((s) => ({

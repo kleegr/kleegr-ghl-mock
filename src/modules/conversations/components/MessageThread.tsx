@@ -14,6 +14,7 @@ import {
   PhoneOutgoing,
   PhoneMissed,
   FolderInput,
+  Pencil,
   Star,
   MailOpen,
   Trash2,
@@ -33,7 +34,8 @@ import {
   TrendingUp,
   CheckSquare,
 } from 'lucide-react';
-import { Avatar, Badge } from '@/components/ui/primitives';
+import { Avatar, Badge, Button } from '@/components/ui/primitives';
+import { Modal } from '@/components/ui/Modal';
 import { useStore } from '@/store/useStore';
 import { cx, fullName, clockTime, initials, relativeTime, money } from '@/utils';
 import type { Conversation, Contact, Call, Message } from '@/types';
@@ -67,11 +69,21 @@ function HeaderAction({
   );
 }
 
-function ThreadHeader({ contact, onBack }: { contact: Contact; onBack?: () => void }) {
+function ThreadHeader({ conv, contact, onBack, onDeleted }: { conv: Conversation; contact: Contact; onBack?: () => void; onDeleted: () => void }) {
   const pushToast = useStore((s) => s.pushToast);
-  const demo = (title: string) =>
-    pushToast({ title, description: 'This action is cosmetic in the demo.', variant: 'info' });
+  const openDialer = useStore((s) => s.openDialer);
+  const toggleStar = useStore((s) => s.toggleConversationStar);
+  const setUnread = useStore((s) => s.setConversationUnread);
+  const removeConversation = useStore((s) => s.removeConversation);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const name = fullName(contact);
+
+  const remove = () => {
+    removeConversation(conv.id);
+    setDeleteOpen(false);
+    onDeleted();
+    pushToast({ title: 'Conversation deleted', description: 'Removed from this demo session only.', variant: 'success' });
+  };
 
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
@@ -86,15 +98,33 @@ function ThreadHeader({ contact, onBack }: { contact: Contact; onBack?: () => vo
         </button>
       )}
       <Avatar name={name} size="sm" />
-      <p className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink">{name}</p>
+      <p className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink" title={name}>{name}</p>
       <div className="flex shrink-0 items-center gap-0.5">
-        <HeaderAction Icon={Reply} label="Reply channel" withChevron onClick={() => demo('Channel')} />
-        <HeaderAction Icon={Phone} label="Call contact" withChevron onClick={() => demo('Call')} />
-        <HeaderAction Icon={FolderInput} label="Move conversation" onClick={() => demo('Move to folder')} />
-        <HeaderAction Icon={Star} label="Star conversation" onClick={() => demo('Star')} />
-        <HeaderAction Icon={MailOpen} label="Mark as unread" onClick={() => demo('Mark unread')} />
-        <HeaderAction Icon={Trash2} label="Delete conversation" onClick={() => demo('Delete')} />
+        <span className="hidden 2xl:contents"><HeaderAction Icon={Reply} label="Focus reply composer" onClick={() => document.querySelector<HTMLTextAreaElement>('[data-tour="conversations.composer"] textarea')?.focus()} /></span>
+        <HeaderAction Icon={Phone} label="Call contact" withChevron onClick={() => openDialer(contact.phone)} />
+        <span className="hidden 2xl:contents"><HeaderAction Icon={FolderInput} label="Move conversation" onClick={() => pushToast({ title: 'Moved to Team Inbox', description: 'Inbox placement updated for this demo session.', variant: 'success' })} /></span>
+        <button
+          type="button"
+          title={conv.starred ? 'Remove star' : 'Star conversation'}
+          aria-label={conv.starred ? 'Remove star' : 'Star conversation'}
+          onClick={() => toggleStar(conv.id)}
+          className={cx('flex h-8 items-center rounded-md px-1.5 transition-colors hover:bg-surface-sunken', conv.starred ? 'text-warn' : 'text-ink-muted hover:text-ink')}
+        >
+          <Star size={17} className={conv.starred ? 'fill-warn' : ''} aria-hidden />
+        </button>
+        <HeaderAction Icon={MailOpen} label="Mark as unread" onClick={() => { setUnread(conv.id, true); pushToast({ title: 'Marked unread', variant: 'success' }); }} />
+        <HeaderAction Icon={Trash2} label="Delete conversation" onClick={() => setDeleteOpen(true)} />
       </div>
+
+      <Modal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete conversation?"
+        size="sm"
+        footer={<><Button variant="secondary" onClick={() => setDeleteOpen(false)}>Cancel</Button><Button variant="danger" onClick={remove}>Delete</Button></>}
+      >
+        <p className="text-sm text-ink-muted">This removes the thread with {name} from the current demo session. No real contact data is affected.</p>
+      </Modal>
     </div>
   );
 }
@@ -246,7 +276,10 @@ function MessageRow({ msg, contactName, agentName }: { msg: Message; contactName
               : 'rounded-bl-sm bg-surface text-ink shadow-sm ring-1 ring-line',
           )}
         >
+          {msg.subject && <p className="mb-1 border-b border-current/10 pb-1 font-semibold">{msg.subject}</p>}
+          {(msg.cc?.length || msg.bcc?.length) ? <p className="mb-1 text-[10px] text-ink-muted">{msg.cc?.length ? `CC: ${msg.cc.join(', ')}` : ''}{msg.cc?.length && msg.bcc?.length ? ' · ' : ''}{msg.bcc?.length ? `BCC: ${msg.bcc.join(', ')}` : ''}</p> : null}
           <p className="whitespace-pre-wrap">{msg.body}</p>
+          {msg.attachments?.length ? <div className="mt-2 space-y-1">{msg.attachments.map((name) => <span key={name} className="flex items-center gap-1.5 rounded-lg bg-surface/70 px-2 py-1 text-[11px] font-medium"><FileText size={12} />{name}</span>)}</div> : null}
         </div>
         <div className={cx('mt-1 flex items-center gap-1 text-[10px] text-ink-subtle', isOut ? 'justify-end' : 'justify-start')}>
           <span>{clockTime(msg.createdAt)}</span>
@@ -274,7 +307,7 @@ function renderWithMentions(body: string) {
   );
 }
 
-function NoteRow({ author, body, iso }: { author: string; body: string; iso: string }) {
+function NoteRow({ author, body, iso, onEdit, onDelete }: { author: string; body: string; iso: string; onEdit?: () => void; onDelete?: () => void }) {
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-[78%] rounded-xl border-l-4 border-warn bg-warn/10 px-3.5 py-2.5 shadow-sm">
@@ -283,6 +316,8 @@ function NoteRow({ author, body, iso }: { author: string; body: string; iso: str
           <span className="ml-auto font-medium normal-case text-ink-subtle">
             {author} · {clockTime(iso)}
           </span>
+          {onEdit && <button type="button" onClick={onEdit} className="grid h-6 w-6 place-items-center rounded text-ink-subtle hover:bg-warn/15 hover:text-ink" aria-label="Edit internal note"><Pencil size={12} /></button>}
+          {onDelete && <button type="button" onClick={onDelete} className="grid h-6 w-6 place-items-center rounded text-ink-subtle hover:bg-bad/10 hover:text-bad" aria-label="Delete internal note"><Trash2 size={12} /></button>}
         </div>
         <p className="whitespace-pre-wrap text-[13px] leading-snug text-ink">{renderWithMentions(body)}</p>
       </div>
@@ -363,7 +398,7 @@ function EventCard({
 
 // --- One thread item -------------------------------------------------------
 
-function ThreadItemRow({ item, contactName, agentName }: { item: ThreadItem; contactName: string; agentName: string }) {
+function ThreadItemRow({ item, contactName, agentName, onEditNote, onDeleteNote }: { item: ThreadItem; contactName: string; agentName: string; onEditNote: (id: string) => void; onDeleteNote: (id: string) => void }) {
   const pushToast = useStore((s) => s.pushToast);
   const open = (title: string) => pushToast({ title, description: 'Opens the related record (demo).', variant: 'info' });
 
@@ -375,7 +410,7 @@ function ThreadItemRow({ item, contactName, agentName }: { item: ThreadItem; con
     case 'event':
       return <SystemEventRow title={item.title} detail={item.detail} iso={item.iso} />;
     case 'note':
-      return <NoteRow author={item.author} body={item.body} iso={item.iso} />;
+      return <NoteRow author={item.author} body={item.body} iso={item.iso} onEdit={item.localNoteId ? () => onEditNote(item.localNoteId!) : undefined} onDelete={item.localNoteId ? () => onDeleteNote(item.localNoteId!) : undefined} />;
     case 'email':
       return <EmailCard direction={item.direction} from={item.from} to={item.to} subject={item.subject} body={item.body} iso={item.iso} />;
     case 'appointment':
@@ -431,13 +466,20 @@ interface ThreadProps {
   agentName: string;
   rich: boolean;
   localNotes: LocalNote[];
+  typing?: boolean;
   scrollRef: React.RefObject<HTMLDivElement>;
   onBack?: () => void;
+  onDeleted: () => void;
+  onUpdateLocalNote: (id: string, body: string) => void;
+  onDeleteLocalNote: (id: string) => void;
 }
 
-export function MessageThread({ conv, contact, messages, agentName, rich, localNotes, scrollRef, onBack }: ThreadProps) {
+export function MessageThread({ conv, contact, messages, agentName, rich, localNotes, typing = false, scrollRef, onBack, onDeleted, onUpdateLocalNote, onDeleteLocalNote }: ThreadProps) {
   const contactName = fullName(contact);
   const meta = CHANNEL_META[conv.channel];
+  const [editingNote, setEditingNote] = useState<LocalNote | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [deletingNote, setDeletingNote] = useState<LocalNote | null>(null);
 
   const calls = useStore((s) => s.calls);
   const opportunities = useStore((s) => s.opportunities);
@@ -478,7 +520,7 @@ export function MessageThread({ conv, contact, messages, agentName, rich, localN
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ThreadHeader contact={contact} onBack={onBack} />
+      <ThreadHeader conv={conv} contact={contact} onBack={onBack} onDeleted={onDeleted} />
 
       <div
         data-tour="conversations.thread"
@@ -495,14 +537,50 @@ export function MessageThread({ conv, contact, messages, agentName, rich, localN
               <DateSeparator label={g.label} />
               <div className="space-y-2.5">
                 {g.items.map((it) => (
-                  <ThreadItemRow key={it.key} item={it} contactName={contactName} agentName={agentName} />
+                  <ThreadItemRow
+                    key={it.key}
+                    item={it}
+                    contactName={contactName}
+                    agentName={agentName}
+                    onEditNote={(id) => {
+                      const note = localNotes.find((value) => value.id === id);
+                      if (!note) return;
+                      setEditingNote(note);
+                      setNoteDraft(note.body);
+                    }}
+                    onDeleteNote={(id) => {
+                      const note = localNotes.find((value) => value.id === id);
+                      if (note) setDeletingNote(note);
+                    }}
+                  />
                 ))}
               </div>
             </Fragment>
           ))
         )}
+        {typing && (
+          <div className="mt-3 flex items-end gap-2" aria-live="polite">
+            <Avatar name={contactName} size="xs" />
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-surface px-3 py-2.5 shadow-sm ring-1 ring-line" aria-label={`${contactName} is typing`}>
+              {[0, 1, 2].map((i) => <span key={i} className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink-subtle" style={{ animationDelay: `${i * 140}ms` }} />)}
+            </div>
+          </div>
+        )}
         <div ref={scrollRef} />
       </div>
+
+      <Modal open={editingNote !== null} title="Edit internal note" onClose={() => setEditingNote(null)} size="sm">
+        <form onSubmit={(event) => { event.preventDefault(); if (!editingNote || !noteDraft.trim()) return; onUpdateLocalNote(editingNote.id, noteDraft.trim()); setEditingNote(null); }}>
+          <label className="block text-[12px] font-semibold text-ink-muted" htmlFor="internal-note-edit">Comment</label>
+          <textarea id="internal-note-edit" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} rows={5} autoFocus className="mt-1.5 w-full resize-y rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-ink outline-none focus:border-brand focus:ring-1 focus:ring-brand/20" />
+          <div className="mt-4 flex justify-end gap-2"><Button variant="secondary" onClick={() => setEditingNote(null)}>Cancel</Button><Button type="submit" disabled={!noteDraft.trim()}>Save changes</Button></div>
+        </form>
+      </Modal>
+
+      <Modal open={deletingNote !== null} title="Delete internal note?" onClose={() => setDeletingNote(null)} size="sm">
+        <p className="text-[13px] text-ink-muted">This removes the comment from the current demo session.</p>
+        <div className="mt-4 flex justify-end gap-2"><Button variant="secondary" onClick={() => setDeletingNote(null)}>Cancel</Button><Button variant="danger" onClick={() => { if (deletingNote) onDeleteLocalNote(deletingNote.id); setDeletingNote(null); }}>Delete</Button></div>
+      </Modal>
     </div>
   );
 }

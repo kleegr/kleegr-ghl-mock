@@ -14,6 +14,7 @@ import {
   Facebook,
   Instagram,
   MessageCircle,
+  Send,
 } from 'lucide-react';
 import type { Channel } from '@/types';
 
@@ -25,6 +26,7 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
   facebook: 'Facebook',
   instagram: 'Instagram',
   whatsapp: 'WhatsApp',
+  telegram: 'Telegram',
   call: 'Call',
 };
 
@@ -43,6 +45,7 @@ export const CHANNEL_META: Record<Channel, ChannelMeta> = {
   facebook: { label: 'Facebook', Icon: Facebook, badge: 'bg-[#e6efff] text-[#1877f2]' },
   instagram: { label: 'Instagram', Icon: Instagram, badge: 'bg-[#fdeaf3] text-[#c13584]' },
   whatsapp: { label: 'WhatsApp', Icon: MessageCircle, badge: 'bg-[#dcf8e8] text-[#1faf55]' },
+  telegram: { label: 'Telegram', Icon: Send, badge: 'bg-[#e2f2fc] text-[#229ed9]' },
   call: { label: 'Call', Icon: Phone, badge: 'bg-[#ede9fe] text-[#7c3aed]' },
 };
 
@@ -87,14 +90,17 @@ export interface ComposerChannelOption {
 
 /**
  * Channel dropdown options mirroring GHL's composer menu (img 11):
- * `SMS · WhatsApp · Email · — · Whatsapp Send Only · Kleegr Whatsapp`.
- * The last two are demo-only WhatsApp variants (cosmetic); all replies still
- * route through the conversation's own channel via the store.
+ * The standard inbox channels plus Kleegr's two WhatsApp connection variants.
+ * The selected channel is stored on every session-only outbound message.
  */
 export const COMPOSER_CHANNELS: ComposerChannelOption[] = [
   { key: 'sms', id: 'sms', label: 'SMS', Icon: MessageSquare, kind: 'sms' },
   { key: 'whatsapp', id: 'whatsapp', label: 'WhatsApp', Icon: MessageCircle, kind: 'whatsapp' },
   { key: 'email', id: 'email', label: 'Email', Icon: Mail, kind: 'email' },
+  { key: 'telegram', id: 'telegram', label: 'Telegram', Icon: Send, kind: 'sms' },
+  { key: 'instagram', id: 'instagram', label: 'Instagram', Icon: Instagram, kind: 'sms' },
+  { key: 'facebook', id: 'facebook', label: 'Facebook', Icon: Facebook, kind: 'sms' },
+  { key: 'webchat', id: 'webchat', label: 'Live Chat', Icon: Globe, kind: 'sms' },
   { key: 'wa-send-only', id: 'whatsapp', label: 'Whatsapp Send Only', Icon: MessageCircle, kind: 'whatsapp', dividerBefore: true },
   { key: 'kleegr-wa', id: 'whatsapp', label: 'Kleegr Whatsapp', Icon: MessageCircle, kind: 'whatsapp' },
 ];
