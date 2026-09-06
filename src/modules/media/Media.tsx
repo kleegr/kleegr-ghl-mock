@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
   Image, FileText, Film, UploadCloud, Search, X,
-  Download, Link, FolderOpen, Eye, Filter, SortAsc,
+  Download, Link, FolderOpen, Eye, Sparkles, FolderPlus,
+  MoreVertical, LayoutGrid, List, HardDrive, ChevronDown,
 } from 'lucide-react';
-import { PageHeader, Button, Badge, Card } from '@/components/ui/primitives';
-import { MiniStat } from '@/components/tables/SimpleTable';
+import { Button } from '@/components/ui/primitives';
 import { Modal } from '@/components/ui/Modal';
 import { useStore } from '@/store/useStore';
 import { cx } from '@/utils';
@@ -66,31 +66,22 @@ const TYPE_ICON: Record<MediaType, React.ReactNode> = {
   video:    <Film size={20} />,
 };
 
-const TYPE_COLOR: Record<MediaType, string> = {
-  image:    'bg-blue-50 text-blue-600',
-  document: 'bg-orange-50 text-orange-600',
-  video:    'bg-purple-50 text-purple-600',
-};
-
-const TYPE_TONE: Record<MediaType, 'brand' | 'warn' | 'neutral'> = {
-  image:    'brand',
-  document: 'warn',
-  video:    'neutral',
-};
-
 /* ─── Thumbnail / Icon ───────────────────────── */
 
 function AssetThumb({ asset }: { asset: MediaAsset }) {
-  const BG_COLORS = ['#dbeafe', '#dcfce7', '#fce7f3', '#ede9fe', '#ffedd5', '#e0f2fe', '#fef9c3'];
-  const FG_COLORS = ['#1e40af', '#166534', '#9d174d', '#5b21b6', '#9a3412', '#075985', '#854d0e'];
-  const idx = asset.id.charCodeAt(3) % BG_COLORS.length;
+  const iconClass = asset.type === 'image'
+    ? 'bg-[#54c0e5] text-white'
+    : asset.type === 'video'
+      ? 'bg-[#8b73db] text-white'
+      : 'bg-[#fff0db] text-[#df861b]';
   return (
-    <div
-      className="flex h-full w-full items-center justify-center rounded-lg"
-      style={{ background: BG_COLORS[idx], color: FG_COLORS[idx] }}
-    >
-      {TYPE_ICON[asset.type]}
-      <span className="ml-1 text-[10px] font-bold uppercase">.{asset.ext}</span>
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-[#f1f2f5] via-[#e3e5e8] to-[#202224]">
+      <div className={cx('flex h-14 w-14 items-center justify-center rounded-xl shadow-sm', iconClass)}>
+        {TYPE_ICON[asset.type]}
+      </div>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-2 pb-2 pt-8">
+        <p className="truncate text-[11px] font-semibold text-white">{asset.name}.{asset.ext}</p>
+      </div>
     </div>
   );
 }
@@ -206,13 +197,9 @@ export function Media() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | MediaType>('all');
   const [sort, setSort] = useState<SortKey>('recent');
+  const [view, setView] = useState<'grid' | 'list'>('grid');
   const [selAsset, setSelAsset] = useState<MediaAsset | null>(null);
   const [showUpload, setShowUpload] = useState(false);
-
-  const images    = MEDIA_ASSETS.filter((a) => a.type === 'image');
-  const documents = MEDIA_ASSETS.filter((a) => a.type === 'document');
-  const videos    = MEDIA_ASSETS.filter((a) => a.type === 'video');
-  const totalKB   = MEDIA_ASSETS.reduce((s, a) => s + a.sizeKB, 0);
 
   const filtered = useMemo(() => {
     let list = MEDIA_ASSETS;
@@ -228,106 +215,141 @@ export function Media() {
   }, [search, typeFilter, sort]);
 
   return (
-    <div data-tour="media.page">
-      <PageHeader
-        title="Media"
-        subtitle="File storage — images, PDFs, videos, and uploaded assets"
-        actions={
-          <Button size="sm" data-tour="media.uploadButton" onClick={() => setShowUpload(true)}>
-            <UploadCloud size={14} /> Upload File
-          </Button>
-        }
-      />
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4 px-5 pt-5 lg:grid-cols-5" data-tour="media.summary">
-        <MiniStat label="Total Files" value={MEDIA_ASSETS.length} />
-        <MiniStat label="Images" value={images.length} sub={`${fmtSize(images.reduce((s, a) => s + a.sizeKB, 0))}`} />
-        <MiniStat label="Documents" value={documents.length} sub={`${fmtSize(documents.reduce((s, a) => s + a.sizeKB, 0))}`} />
-        <MiniStat label="Videos" value={videos.length} sub={`${fmtSize(videos.reduce((s, a) => s + a.sizeKB, 0))}`} />
-        <MiniStat label="Storage Used" value={fmtSize(totalKB)} sub="of 10 GB plan" />
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 px-5 py-4" data-tour="media.filters">
-        <div className="relative flex-1 min-w-48 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search files…"
-            className="h-9 w-full rounded-lg border border-line bg-surface pl-8 pr-3 text-sm text-ink placeholder-ink-subtle focus:border-brand focus:outline-none"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink">
-              <X size={13} />
-            </button>
-          )}
+    <div data-tour="media.page" className="flex h-full min-h-0 flex-col bg-surface">
+      <div className="border-b border-line bg-surface px-6 pb-5 pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-display text-[30px] font-semibold tracking-[-0.02em] text-ink">Media Storage</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" className="h-11 px-4 text-sm font-medium">
+              <span className="h-4 w-4 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500" />
+              Connect Canva
+            </Button>
+            <Button variant="secondary" className="h-11 px-4 text-sm font-medium">
+              <HardDrive size={17} className="text-[#4285f4]" /> Connect Drive
+            </Button>
+            <Button variant="secondary" className="h-11 w-11 px-0" aria-label="AI media tools">
+              <Sparkles size={18} className="text-ai" />
+            </Button>
+            <Button variant="secondary" className="h-11 w-11 px-0" aria-label="Create folder">
+              <FolderPlus size={18} />
+            </Button>
+            <Button className="h-11 px-4 text-sm" data-tour="media.uploadButton" onClick={() => setShowUpload(true)}>
+              <UploadCloud size={17} /> Upload <ChevronDown size={15} />
+            </Button>
+            <Button variant="secondary" className="h-11 w-11 px-0" aria-label="More media actions">
+              <MoreVertical size={18} />
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg border border-line bg-surface p-1">
-          <Filter size={12} className="ml-1.5 text-ink-subtle" />
-          {(['all', 'image', 'document', 'video'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={cx(
-                'rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors',
-                typeFilter === t ? 'bg-brand text-white' : 'text-ink-muted hover:text-ink',
-              )}
+        <div className="mt-8 flex items-center gap-3" data-tour="media.filters">
+          <label className="relative min-w-[220px] flex-1 max-w-[240px]">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | MediaType)}
+              className="h-10 w-full appearance-none rounded-md border border-line bg-surface px-3 pr-9 text-[13px] text-ink outline-none focus:border-brand"
+              aria-label="Media type"
             >
-              {t}
+              <option value="all">My Media</option>
+              <option value="image">Images</option>
+              <option value="document">Documents</option>
+              <option value="video">Videos</option>
+            </select>
+            <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
+          </label>
+          <label className="relative min-w-[250px] flex-1 max-w-[300px]">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search media library"
+              placeholder="Search the entire media library"
+              className="h-10 w-full rounded-md border border-line bg-surface pl-9 pr-9 text-[13px] text-ink outline-none placeholder:text-ink-subtle focus:border-brand"
+            />
+            {search ? (
+              <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle" aria-label="Clear search">
+                <X size={14} />
+              </button>
+            ) : null}
+          </label>
+          <label className="relative min-w-[185px]">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="h-10 w-full appearance-none rounded-md border border-line bg-surface px-3 pr-8 text-[13px] text-ink outline-none focus:border-brand"
+              aria-label="Sort media"
+            >
+              <option value="recent">Modified: Newest First</option>
+              <option value="name">Name: A–Z</option>
+              <option value="size">Size: Largest First</option>
+            </select>
+            <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
+          </label>
+          <label className="relative min-w-[130px]">
+            <select className="h-10 w-full appearance-none rounded-md border border-line bg-surface px-3 pr-8 text-[13px] text-ink outline-none focus:border-brand" aria-label="File ownership filter">
+              <option>All</option>
+              <option>Created by me</option>
+              <option>Shared with me</option>
+            </select>
+            <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
+          </label>
+          <div className="flex h-10 overflow-hidden rounded-md border border-line bg-surface">
+            <button type="button" onClick={() => setView('grid')} className={cx('grid w-12 place-items-center border-r border-line', view === 'grid' ? 'bg-surface-sunken text-ink' : 'text-ink-muted')} aria-label="Grid view">
+              <LayoutGrid size={16} />
             </button>
-          ))}
+            <button type="button" onClick={() => setView('list')} className={cx('grid w-12 place-items-center', view === 'list' ? 'bg-surface-sunken text-ink' : 'text-ink-muted')} aria-label="List view">
+              <List size={16} />
+            </button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-1.5">
-          <SortAsc size={14} className="text-ink-subtle" />
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="h-9 rounded-lg border border-line bg-surface px-2 text-sm text-ink focus:border-brand focus:outline-none"
-          >
-            <option value="recent">Most recent</option>
-            <option value="name">Name A–Z</option>
-            <option value="size">Largest first</option>
-          </select>
-        </div>
-
-        <p className="text-xs text-ink-muted">{filtered.length} file{filtered.length !== 1 ? 's' : ''}</p>
       </div>
 
-      {/* Media grid */}
-      <div className="px-5 pb-10">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-10 pt-7">
+        <button type="button" className="mb-12 inline-flex items-center gap-1 text-sm font-medium text-ink-muted">
+          Folders <ChevronDown size={14} className="-rotate-90" />
+        </button>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-ink-muted">Files</h2>
+          <span className="text-xs text-ink-subtle">{filtered.length} files</span>
+        </div>
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <FolderOpen size={32} className="text-ink-subtle" />
             <p className="text-sm font-semibold text-ink">No files match your search</p>
             <p className="text-xs text-ink-muted">Try a different keyword or filter.</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" data-tour="media.grid">
+        ) : view === 'grid' ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-5" data-tour="media.grid">
             {filtered.map((asset) => (
               <button
                 key={asset.id}
                 onClick={() => setSelAsset(asset)}
                 data-tour="media.item"
-                className="group flex flex-col gap-2 rounded-xl border border-line bg-surface p-3 text-left shadow-card transition-all hover:border-brand/40 hover:shadow-pop"
+                className="group relative aspect-square min-h-[160px] overflow-hidden rounded-md border border-line bg-surface text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-pop"
               >
-                <div className="relative h-24 w-full overflow-hidden rounded-lg">
-                  <AssetThumb asset={asset} />
-                  <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-ink/0 transition-colors group-hover:bg-ink/10">
-                    <Eye size={18} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+                <AssetThumb asset={asset} />
+                <div className="absolute inset-0 grid place-items-center bg-black/0 transition-colors group-hover:bg-black/10">
+                  <Eye size={20} className="text-white opacity-0 drop-shadow group-hover:opacity-100" />
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-ink">{asset.name}.{asset.ext}</p>
-                  <div className="mt-0.5 flex items-center gap-1.5">
-                    <Badge tone={TYPE_TONE[asset.type]} size="sm">{asset.type}</Badge>
-                    <span className="text-[10px] text-ink-subtle">{fmtSize(asset.sizeKB)}</span>
-                  </div>
-                  <p className="mt-0.5 text-[10px] text-ink-subtle">{fmtDate(asset.uploadedAt)}</p>
-                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-md border border-line" data-tour="media.list">
+            <div className="grid grid-cols-[minmax(240px,2fr)_100px_100px_160px] bg-surface-sunken px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
+              <span>Name</span><span>Type</span><span>Size</span><span>Modified</span>
+            </div>
+            {filtered.map((asset) => (
+              <button key={asset.id} type="button" onClick={() => setSelAsset(asset)} className="grid w-full grid-cols-[minmax(240px,2fr)_100px_100px_160px] items-center border-t border-line px-4 py-3 text-left text-xs hover:bg-surface-sunken">
+                <span className="flex min-w-0 items-center gap-3 font-medium text-ink">
+                  <span className={cx('grid h-8 w-8 shrink-0 place-items-center rounded-md', asset.type === 'image' ? 'bg-brand-soft text-brand' : asset.type === 'video' ? 'bg-purple-50 text-purple-600' : 'bg-orange-50 text-orange-600')}>
+                    {TYPE_ICON[asset.type]}
+                  </span>
+                  <span className="truncate">{asset.name}.{asset.ext}</span>
+                </span>
+                <span className="capitalize text-ink-muted">{asset.type}</span>
+                <span className="text-ink-muted">{fmtSize(asset.sizeKB)}</span>
+                <span className="text-ink-muted">{fmtDate(asset.uploadedAt)}</span>
               </button>
             ))}
           </div>

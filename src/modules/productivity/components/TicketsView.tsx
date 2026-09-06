@@ -26,7 +26,7 @@ function isOverdue(t: Ticket): boolean {
   return !!t.dueAt && new Date(t.dueAt).getTime() < Date.now() && t.stage !== 'resolved' && t.stage !== 'closed';
 }
 
-export function TicketsView({ onOpenTask }: { onOpenTask?: (taskId: string) => void }) {
+export function TicketsView({ onOpenTask, compact = false }: { onOpenTask?: (taskId: string) => void; compact?: boolean }) {
   const { tickets } = useProductivity();
   const [view, setView] = useState<View>('board');
   const [query, setQuery] = useState('');
@@ -68,15 +68,17 @@ export function TicketsView({ onOpenTask }: { onOpenTask?: (taskId: string) => v
   return (
     <div className="flex h-full flex-col">
       {/* KPI stat strip (clickable quick filters) */}
-      <TicketStats
-        tickets={tickets}
-        activeStage={stage}
-        unreadOnly={unreadOnly}
-        overdueOnly={overdueOnly}
-        onPickStage={pickStage}
-        onToggleUnread={() => setUnreadOnly((v) => !v)}
-        onToggleOverdue={() => setOverdueOnly((v) => !v)}
-      />
+      {compact ? null : (
+        <TicketStats
+          tickets={tickets}
+          activeStage={stage}
+          unreadOnly={unreadOnly}
+          overdueOnly={overdueOnly}
+          onPickStage={pickStage}
+          onToggleUnread={() => setUnreadOnly((v) => !v)}
+          onToggleOverdue={() => setOverdueOnly((v) => !v)}
+        />
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 pb-3">

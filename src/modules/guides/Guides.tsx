@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GraduationCap, PlayCircle, Repeat2, CheckCircle2, Circle, BookOpen, Layers } from 'lucide-react';
-import { PageHeader, Card, CardHeader } from '@/components/ui/primitives';
+import { Card, CardHeader } from '@/components/ui/primitives';
+import { ModuleHeader } from '@/components/shell/ModuleHeader';
 import { useStore } from '@/store/useStore';
 import { TutorialCard } from './components/TutorialCard';
 import { TutorialPreviewModal } from './components/TutorialPreviewModal';
@@ -10,7 +11,7 @@ import { totalEstMinutes } from './utils';
 /**
  * Guides — Tutorial Mode launcher.
  *
- * Shows all 10 required V1 tutorials as cards that launch the interactive
+ * Shows all 16 required V1 tutorials as cards that launch the interactive
  * Tutorial engine (spotlight + coachmark + progress + completion). Tracks
  * completion in-memory (resets with Reset Demo), shows an onboarding
  * checklist, and explains the two modes.
@@ -25,24 +26,40 @@ import { totalEstMinutes } from './utils';
  */
 
 const TOTAL_MIN = totalEstMinutes(TUTORIALS);
+const GUIDE_TABS = [
+  { id: 'tours', label: 'Guided Tours' },
+  { id: 'paths', label: 'Learning Paths' },
+  { id: 'resources', label: 'Resources' },
+];
 
 export function Guides() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const startTutorial = useStore((s) => s.startTutorial);
   const completed = useStore((s) => s.completedTutorials);
+  const pushToast = useStore((s) => s.pushToast);
 
   const previewTutorial = TUTORIALS.find((t) => t.id === previewId);
   const doneCount = TUTORIALS.filter((t) => completed.includes(t.id)).length;
   const pctDone = Math.round((doneCount / TUTORIALS.length) * 100);
 
   return (
-    <div data-tour="guides.page">
-      <PageHeader
+    <div data-tour="guides.page" className="min-h-full bg-[#f4f5f7]">
+      <ModuleHeader
         title="Guides"
-        subtitle="Tutorial Mode — interactive, step-by-step walkthroughs for every core task in the platform"
+        tabs={GUIDE_TABS}
+        activeTab="tours"
+        onTabChange={(tab) => {
+          if (tab !== 'tours') {
+            pushToast({ title: tab === 'paths' ? 'Learning paths' : 'Resource library', description: 'This guided area is available as a preview in the public demo.', variant: 'info' });
+          }
+        }}
       />
 
       <div className="space-y-6 p-5">
+        <div>
+          <h1 className="text-[29px] font-medium tracking-tight text-ink">Interactive Guides</h1>
+          <p className="mt-1 text-sm text-ink-muted">Step-by-step walkthroughs for the everyday work your team completes in Kleegr.</p>
+        </div>
         {/* ── Overview stats ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Card className="flex flex-col gap-0.5 px-4 py-3">
@@ -174,23 +191,20 @@ export function Guides() {
             </Card>
 
             <Card>
-              <CardHeader title="Prompt System" subtitle="Content generation" />
+              <CardHeader title="More resources" subtitle="Keep learning" />
               <div className="space-y-3 px-4 py-3">
                 <div className="flex gap-2.5">
                   <BookOpen size={15} className="mt-0.5 shrink-0 text-ink-muted" />
                   <p className="text-xs leading-relaxed text-ink-muted">
-                    Tutorial scripts and seed data are generated from structured prompt templates
-                    in{' '}
-                    <code className="text-[11px] text-brand">/prompts</code>. Maintainers can
-                    regenerate content without touching app code.
+                    Open a guide whenever you need a refresher. Each walkthrough uses fictional
+                    demo data, so you can practice safely without changing a live account.
                   </p>
                 </div>
                 <div className="flex gap-2.5">
                   <Layers size={15} className="mt-0.5 shrink-0 text-ink-muted" />
                   <p className="text-xs leading-relaxed text-ink-muted">
-                    All tutorials are config-driven from a typed{' '}
-                    <code className="text-[11px] text-brand">TutorialFlow</code> array — no new
-                    components required to add a new guide.
+                    Follow the tours in any order, or start with the core customer journey:
+                    contacts, opportunities, calendars, automation, and reporting.
                   </p>
                 </div>
               </div>

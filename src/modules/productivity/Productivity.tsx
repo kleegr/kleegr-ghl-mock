@@ -12,7 +12,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, ChevronDown, Grid3X3, Menu, MoreHorizontal, Plus, Sparkles, Zap } from 'lucide-react';
+import { Bell, ChevronDown, Grid3X3, LayoutDashboard, Menu, MoreHorizontal, Plus, Settings2, Sparkles, TicketCheck, Zap } from 'lucide-react';
 import { Button, Tabs } from '@/components/ui/primitives';
 import type { TabItem } from '@/components/ui/primitives';
 import { ProductivityProvider, useProductivity } from './state';
@@ -88,6 +88,26 @@ function ProductivityWorkspace() {
       default:
         return null;
     }
+  }
+
+  if (location.pathname === '/tickets') {
+    return (
+      <div className="flex h-full min-h-0 bg-[#f4f5f7]" data-tour="productivity">
+        <aside className="flex w-14 shrink-0 flex-col items-center gap-2 border-r border-line bg-surface py-3">
+          <button aria-label="New ticket" className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-white"><Plus size={17}/></button>
+          <button aria-label="Tickets" className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-brand"><TicketCheck size={17}/></button>
+          <button aria-label="Ticket dashboard" className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-surface-sunken"><LayoutDashboard size={17}/></button>
+          <button aria-label="Ticket settings" className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-surface-sunken"><Settings2 size={17}/></button>
+        </aside>
+        <section className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-line bg-surface px-4">
+            <div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[#163c79] text-white"><TicketCheck size={16}/></span><span className="text-sm font-semibold text-ink">Kleegr Tickets</span></div>
+            <div className="flex items-center gap-2"><div className="inline-flex rounded-lg border border-line bg-surface p-0.5"><span className="rounded-md bg-surface-sunken px-3 py-1.5 text-xs font-semibold text-ink">Board</span><span className="px-3 py-1.5 text-xs text-ink-muted">List</span><span className="px-3 py-1.5 text-xs text-ink-muted">Workspace</span></div><button aria-label="More ticket actions" className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted"><MoreHorizontal size={17}/></button></div>
+          </div>
+          <div className="min-h-0 flex-1 p-4"><TicketsView compact onOpenTask={goToTasks}/></div>
+        </section>
+      </div>
+    );
   }
 
   return (
