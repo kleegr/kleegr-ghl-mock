@@ -1,5 +1,7 @@
+import { useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/shell/AppShell';
+import { useStore } from '@/store/useStore';
 import { Dashboard } from '@/modules/dashboard/Dashboard';
 import { Conversations } from '@/modules/conversations/Conversations';
 import { Contacts } from '@/modules/contacts/Contacts';
@@ -26,12 +28,39 @@ import { Launchpad } from '@/modules/launchpad/Launchpad';
 import { Memberships } from '@/modules/memberships/Memberships';
 import { MobileApp } from '@/modules/mobile/MobileApp';
 import { Placeholder } from '@/modules/placeholder/Placeholder';
+import { ConversationRecordsProvider } from '@/modules/conversations/ConversationRecords';
+import { useConversationWorkspaceStore } from '@/modules/conversations/conversationWorkspaceState';
+
+function ConversationSession({ children }: { children: ReactNode }) {
+  const contacts = useStore((state) => state.contacts);
+  const currentUserName = useStore(
+    (state) => state.users.find((user) => user.isCurrentUser)?.name ?? 'Demo Agent',
+  );
+  const demoRevision = useStore((state) => state.demoRevision);
+  const resetConversationWorkspace = useConversationWorkspaceStore((state) => state.resetForRevision);
+
+  useEffect(
+    () => resetConversationWorkspace(demoRevision),
+    [demoRevision, resetConversationWorkspace],
+  );
+
+  return (
+    <ConversationRecordsProvider
+      key={demoRevision}
+      contacts={contacts}
+      currentUserName={currentUserName}
+    >
+      {children}
+    </ConversationRecordsProvider>
+  );
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<AppShell />}>
+      <ConversationSession>
+        <Routes>
+          <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/conversations" element={<Conversations />} />
           <Route path="/contacts" element={<Contacts />} />
@@ -70,8 +99,9 @@ export default function App() {
           <Route path="/companies" element={<Placeholder />} />
           <Route path="/documents" element={<Payments />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+          </Route>
+        </Routes>
+      </ConversationSession>
     </BrowserRouter>
   );
 }

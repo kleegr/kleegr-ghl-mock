@@ -16,6 +16,28 @@ import type {
 let toastSeq = 0;
 let mutationSeq = 0;
 
+/** Team-only thread comment kept for the lifetime of the current demo session. */
+export interface ConversationInternalNote {
+  id: ID;
+  conversationId: ID;
+  at: string;
+  author: string;
+  body: string;
+}
+
+/** A fictional contact response that is waiting to arrive. */
+export interface PendingConversationReply {
+  id: ID;
+  conversationId: ID;
+  channel: Channel;
+  body: string;
+  dueAt: string;
+}
+
+// Reply timers live with the app store rather than the Conversations route so
+// navigating elsewhere cannot cancel a response that is already on its way.
+const pendingReplyTimers = new Map<ID, number>();
+
 const makeId = (prefix: string) => `${prefix}_${Date.now()}_${++mutationSeq}`;
 export interface Toast {
   id: number;
@@ -120,6 +142,8 @@ interface StoreState extends DemoData {
   toasts: Toast[];
   /** Bumps on Reset Demo so session-only module providers can remount. */
   demoRevision: number;
+  conversationInternalNotes: Record<ID, ConversationInternalNote[]>;
+  pendingConversationReplies: PendingConversationReply[];
 
   // global dialer (foundation — opens from the topbar phone button; demo-safe)
   dialerOpen: boolean;
@@ -179,6 +203,19 @@ interface StoreState extends DemoData {
   setConversationUnread: (conversationId: ID, unread: boolean) => void;
   toggleConversationStar: (conversationId: ID) => void;
   removeConversation: (conversationId: ID) => void;
+  addConversationInternalNote: (
+    conversationId: ID,
+    body: string,
+    author: string,
+  ) => ConversationInternalNote | void;
+  updateConversationInternalNote: (conversationId: ID, noteId: ID, body: string) => void;
+  deleteConversationInternalNote: (conversationId: ID, noteId: ID) => void;
+  scheduleConversationReply: (
+    conversationId: ID,
+    body: string,
+    channel: Channel,
+    delayMs?: number,
+  ) => ID | void;
   moveOpportunity: (opportunityId: ID, toStageId: ID) => void;
 
   // opportunity CRUD (in-memory, session only)
@@ -210,6 +247,8 @@ export const useStore = create<StoreState>((set, get) => ({
   dialerPrefill: '',
   toasts: [],
   demoRevision: 0,
+  conversationInternalNotes: {},
+  pendingConversationReplies: [],
   activeTutorialId: null,
   tutorialStep: 0,
   completedTutorials: [],
@@ -256,10 +295,14 @@ export const useStore = create<StoreState>((set, get) => ({
   closeHelp: () => set({ activeHelpKey: null }),
 
   resetDemo: () => {
+    pendingReplyTimers.forEach((timer) => window.clearTimeout(timer));
+    pendingReplyTimers.clear();
     const demoRevision = get().demoRevision + 1;
     set({
       ...fresh(),
       demoRevision,
+      conversationInternalNotes: {},
+      pendingConversationReplies: [],
       activeTutorialId: null,
       tutorialStep: 0,
       completedTutorials: [],
@@ -546,11 +589,93 @@ export const useStore = create<StoreState>((set, get) => ({
       ),
     })),
 
-  removeConversation: (conversationId) =>
+  removeConversation: (conversationId) => {
+    get().pendingConversationReplies
+      .filter((reply) => reply.conversationId === conversationId)
+      .forEach((reply) => {
+        const timer = pendingReplyTimers.get(reply.id);
+        if (timer !== undefined) window.clearTimeout(timer);
+        pendingReplyTimers.delete(reply.id);
+      });
+    set((s) => {
+      const { [conversationId]: _removedNotes, ...conversationInternalNotes } =
+        s.conversationInternalNotes;
+      return {
+        conversations: s.conversations.filter((conversation) => conversation.id !== conversationId),
+        messages: s.messages.filter((message) => message.conversationId !== conversationId),
+        conversationInternalNotes,
+        pendingConversationReplies: s.pendingConversationReplies.filter(
+          (reply) => reply.conversationId !== conversationId,
+        ),
+      };
+    });
+  },
+
+  addConversationInternalNote: (conversationId, body, author) => {
+    const cleanBody = body.trim();
+    if (!cleanBody || !get().conversations.some((conversation) => conversation.id === conversationId)) return;
+    const note: ConversationInternalNote = {
+      id: makeId('thread-note'),
+      conversationId,
+      at: new Date().toISOString(),
+      author,
+      body: cleanBody,
+    };
     set((s) => ({
-      conversations: s.conversations.filter((conversation) => conversation.id !== conversationId),
-      messages: s.messages.filter((message) => message.conversationId !== conversationId),
+      conversationInternalNotes: {
+        ...s.conversationInternalNotes,
+        [conversationId]: [...(s.conversationInternalNotes[conversationId] ?? []), note],
+      },
+    }));
+    return note;
+  },
+
+  updateConversationInternalNote: (conversationId, noteId, body) => {
+    const cleanBody = body.trim();
+    if (!cleanBody) return;
+    set((s) => ({
+      conversationInternalNotes: {
+        ...s.conversationInternalNotes,
+        [conversationId]: (s.conversationInternalNotes[conversationId] ?? []).map((note) =>
+          note.id === noteId ? { ...note, body: cleanBody } : note,
+        ),
+      },
+    }));
+  },
+
+  deleteConversationInternalNote: (conversationId, noteId) =>
+    set((s) => ({
+      conversationInternalNotes: {
+        ...s.conversationInternalNotes,
+        [conversationId]: (s.conversationInternalNotes[conversationId] ?? []).filter(
+          (note) => note.id !== noteId,
+        ),
+      },
     })),
+
+  scheduleConversationReply: (conversationId, body, channel, delayMs = 1500) => {
+    const cleanBody = body.trim();
+    if (!cleanBody || !get().conversations.some((conversation) => conversation.id === conversationId)) return;
+    const id = makeId('pending-reply');
+    const reply: PendingConversationReply = {
+      id,
+      conversationId,
+      channel,
+      body: cleanBody,
+      dueAt: new Date(Date.now() + Math.max(0, delayMs)).toISOString(),
+    };
+    set((s) => ({ pendingConversationReplies: [...s.pendingConversationReplies, reply] }));
+    const timer = window.setTimeout(() => {
+      pendingReplyTimers.delete(id);
+      if (!get().pendingConversationReplies.some((pending) => pending.id === id)) return;
+      get().appendInboundReply(conversationId, cleanBody, channel);
+      set((s) => ({
+        pendingConversationReplies: s.pendingConversationReplies.filter((pending) => pending.id !== id),
+      }));
+    }, Math.max(0, delayMs));
+    pendingReplyTimers.set(id, timer);
+    return id;
+  },
 
   moveOpportunity: (opportunityId, toStageId) =>
     set((s) => ({
